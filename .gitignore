@@ -1,0 +1,21 @@
+# Terraform State
+**/.terraform/
+*.tfstate
+*.tfstate.*
+
+# Installed Databases
+databases/mysql/server/
+databases/mysql/data/
+databases/mysql/mysql.zip
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/

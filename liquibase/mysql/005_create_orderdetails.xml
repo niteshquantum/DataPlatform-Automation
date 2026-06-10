@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005" author="nitesh">
+
+        <createTable tableName="OrderDetails">
+
+            <column name="OrderDetailID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="OrderID" type="VARCHAR(10)"/>
+
+            <column name="ProductID" type="VARCHAR(10)"/>
+
+            <column name="Quantity" type="INT"/>
+
+            <column name="UnitPrice" type="DECIMAL(10,2)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="OrderDetails"
+            baseColumnNames="OrderID"
+            referencedTableName="OrdersTable"
+            referencedColumnNames="OrderID"
+            constraintName="FK_OrderDetails_Orders"/>
+
+        <addForeignKeyConstraint
+            baseTableName="OrderDetails"
+            baseColumnNames="ProductID"
+            referencedTableName="Products"
+            referencedColumnNames="ProductID"
+            constraintName="FK_OrderDetails_Products"/>
+
+    </changeSet>
+
+</databaseChangeLog>
