@@ -1,0 +1,52 @@
+datasets:
+
+  customers:
+    file: Customers.csv
+    required: true
+    required_columns:
+      - CustomerID
+      - FirstName
+      - LastName
+      - City
+      - State
+      - JoinDate
+
+  sellers:
+    file: Sellers.csv
+    required: true
+    required_columns:
+      - SellerID
+      - SellerName
+      - City
+      - Rating
+
+  products:
+    file: Products.csv
+    required: true
+    required_columns:
+      - ProductID
+      - ProductName
+      - Category
+      - Price
+      - Stock
+      - SellerID
+
+  orderstable:
+    file: Orders.csv
+    required: true
+    required_columns:
+      - OrderID
+      - CustomerID
+      - OrderDate
+      - TotalAmount
+      - Status
+
+  orderdetails:
+    file: OrderDetails.csv
+    required: true
+    required_columns:
+      - OrderDetailID
+      - OrderID
+      - ProductID
+      - Quantity
+      - UnitPrice

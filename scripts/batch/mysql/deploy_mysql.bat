@@ -7,9 +7,6 @@ REM =====================================
 
 set ROOT=%~dp0..\..\..
 
-echo ROOT=%ROOT%
-echo TF=%TF%
-pause
 
 REM =====================================
 REM TERRAFORM PATH
@@ -54,5 +51,3 @@ echo.
 -target=null_resource.init_mysql_windows ^
 -target=null_resource.start_mysql_windows ^
 -auto-approve
-
-pause

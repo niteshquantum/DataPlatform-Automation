@@ -50,9 +50,11 @@ for _, row in df.iterrows():
         )
     )
 
+rows_loaded = len(df)
+
 conn.commit()
 
-print(f"{cursor.rowcount} rows loaded into Customers")
+print(f"{rows_loaded} rows loaded into Customers")
 
 cursor.close()
 conn.close()

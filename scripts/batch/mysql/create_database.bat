@@ -50,5 +50,3 @@ if errorlevel 1 (
 )
 
 echo Database Ready : %MYSQL_DB%
-
-pause

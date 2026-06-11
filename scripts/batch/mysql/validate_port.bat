@@ -2,18 +2,18 @@
 
 echo.
 echo =====================================
-echo STARTING MYSQL
+echo VALIDATING MYSQL PORT
 echo =====================================
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\start_mysql.ps1"
+py scripts\python\mysql\validate_port.py
 
 if errorlevel 1 (
     echo.
-    echo MYSQL START FAILED
+    echo PORT VALIDATION FAILED
     exit /b 1
 )
 
 echo.
-echo MYSQL START SUCCESSFUL
+echo PORT VALIDATION SUCCESSFUL
 echo.

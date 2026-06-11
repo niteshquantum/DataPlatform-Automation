@@ -1,21 +1,83 @@
-# Terraform State
+# =====================================================
+
+# Terraform
+
+# =====================================================
+
+# Terraform working directory
+
 **/.terraform/
+
+# Terraform state files
+
 *.tfstate
 *.tfstate.*
 
-# Installed Databases
-databases/mysql/server/
-databases/mysql/data/
-databases/mysql/mysql.zip
+# Terraform dependency lock file
 
-# Python
-__pycache__/
-*.pyc
+.terraform.lock.hcl
+
+# =====================================================
+
+# Database Binaries
+
+# =====================================================
+
+# MySQL server files downloaded/generated locally
+
+databases/mysql/
+
+# =====================================================
+
+# Tools
+
+# =====================================================
+
+# Downloaded tools (auto-installed by scripts)
+
+tools/
+
+# =====================================================
 
 # Logs
+
+# =====================================================
+
+# Runtime logs generated during setup/load
+
 logs/
 *.log
 
-# IDE
+# =====================================================
+
+# Python
+
+# =====================================================
+
+# Python cache files
+
+**pycache**/
+*.pyc
+
+# =====================================================
+
+# IDE / Editor
+
+# =====================================================
+
+# VS Code
+
 .vscode/
+
+# IntelliJ / PyCharm
+
 .idea/
+
+# =====================================================
+
+# Operating System Files
+
+# =====================================================
+
+Thumbs.db
+.DS_Store

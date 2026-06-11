@@ -15,7 +15,9 @@ with open(config_file, "r") as f:
 
 def get_connection():
     return mysql.connector.connect(
-        host="localhost",
+        # host="localhost",
+        # host="127.0.0.1",
+        host=config["MYSQL_HOST"],
         port=int(config["MYSQL_PORT"]),
         user=config["MYSQL_USER"],
         password=config["MYSQL_PASSWORD"],

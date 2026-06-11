@@ -44,9 +44,11 @@ for _, row in df.iterrows():
         )
     )
 
+rows_loaded = len(df)
+
 conn.commit()
 
-print("Orders Load Successful")
+print(f"{rows_loaded} rows loaded into Orders")
 
 cursor.close()
 conn.close()

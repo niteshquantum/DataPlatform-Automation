@@ -2,18 +2,18 @@
 
 echo.
 echo =====================================
-echo STARTING MYSQL
+echo VALIDATING CSV FILES
 echo =====================================
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\start_mysql.ps1"
+py scripts\python\mysql\validate_csv.py
 
 if errorlevel 1 (
     echo.
-    echo MYSQL START FAILED
+    echo CSV VALIDATION FAILED
     exit /b 1
 )
 
 echo.
-echo MYSQL START SUCCESSFUL
+echo CSV VALIDATION SUCCESSFUL
 echo.
