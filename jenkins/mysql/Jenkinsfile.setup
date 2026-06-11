@@ -9,6 +9,17 @@ environment {
 
 stages {
 
+
+    stage('Validate Python Runtime') {
+        steps {
+            dir("${PROJECT_ROOT}") {
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+            }
+        }
+    }
+
+
+
     stage('Install Python Requirements') {
         steps {
             dir("${PROJECT_ROOT}") {

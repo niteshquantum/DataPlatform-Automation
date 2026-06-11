@@ -6,6 +6,12 @@ echo ENVIRONMENT VALIDATION STARTED
 echo =====================================
 echo.
 
+call scripts\batch\common\validate_python_runtime.bat
+
+if errorlevel 1 (
+    exit /b 1
+)
+
 call scripts\batch\validate_python_requirements.bat
 
 if errorlevel 1 (
