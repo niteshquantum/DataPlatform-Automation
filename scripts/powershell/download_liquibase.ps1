@@ -4,6 +4,23 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path $PSScriptRoot -Parent
 $ProjectRoot = Split-Path $ProjectRoot -Parent
 
+# Read config
+$ConfigFile = Join-Path $ProjectRoot "config\mysql.conf"
+
+$Config = @{}
+
+Get-Content $ConfigFile | ForEach-Object {
+
+    if ($_ -match "=") {
+
+        $Key, $Value = $_ -split "=", 2
+
+        $Config[$Key.Trim()] = $Value.Trim()
+    }
+}
+
+$LiquibaseVersion = $Config["LIQUIBASE_VERSION"]
+
 # tools\liquibase path
 $LiquibaseDir = Join-Path $ProjectRoot "tools\liquibase"
 
@@ -18,10 +35,13 @@ if (!(Test-Path $LiquibaseDir)) {
 
 $ZipFile = Join-Path $LiquibaseDir "liquibase.zip"
 
-Write-Host "Downloading Liquibase..."
+$DownloadUrl = "https://github.com/liquibase/liquibase/releases/download/v$LiquibaseVersion/liquibase-$LiquibaseVersion.zip"
+
+Write-Host "Downloading Liquibase Version $LiquibaseVersion ..."
+Write-Host "URL : $DownloadUrl"
 
 Invoke-WebRequest `
--Uri "https://github.com/liquibase/liquibase/releases/download/v5.0.1/liquibase-5.0.1.zip" `
+-Uri $DownloadUrl `
 -OutFile $ZipFile
 
 Expand-Archive $ZipFile $LiquibaseDir -Force

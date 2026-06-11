@@ -6,8 +6,18 @@ echo MYSQL DESTROY
 echo =====================================
 echo.
 
-echo Destroy functionality will be implemented later.
+call scripts\batch\mysql\stop_mysql.bat
+
+if exist databases\mysql (
+    rmdir /s /q databases\mysql
+)
+
+if exist logs (
+    rmdir /s /q logs
+)
 
 echo.
-echo MYSQL DESTROY COMPLETED
+echo =====================================
+echo MYSQL DESTROY SUCCESSFUL
+echo =====================================
 echo.

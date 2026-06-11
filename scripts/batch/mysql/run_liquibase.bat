@@ -18,6 +18,7 @@ REM READ CONFIG
 REM =====================================
 
 for /f "tokens=1,2 delims==" %%A in (%CONFIG%) do (
+if "%%A"=="MYSQL_HOST" set MYSQL_HOST=%%B
 if "%%A"=="MYSQL_PORT" set MYSQL_PORT=%%B
 if "%%A"=="MYSQL_DB" set MYSQL_DB=%%B
 if "%%A"=="MYSQL_USER" set MYSQL_USER=%%B
@@ -67,7 +68,7 @@ echo.
 --classpath="%DRIVER%" ^
 --driver=com.mysql.cj.jdbc.Driver ^
 --changeLogFile="%CHANGELOG%" ^
---url="jdbc:mysql://localhost:%MYSQL_PORT%/%MYSQL_DB%" ^
+--url="jdbc:mysql://%MYSQL_HOST%:%MYSQL_PORT%/%MYSQL_DB%" ^
 --username=%MYSQL_USER% ^
 --password=%MYSQL_PASSWORD% ^
 update

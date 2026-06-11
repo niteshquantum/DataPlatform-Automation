@@ -11,6 +11,11 @@ $port = (
 $baseDir = "$ROOT\databases\mysql\server"
 $dataDir = "$ROOT\databases\mysql\data"
 
+if (!(Test-Path "$baseDir\bin\mysqld.exe")) {
+
+    throw "mysqld.exe not found. Run deploy_mysql.bat first."
+}
+
 Start-Process `
     -FilePath "$baseDir\bin\mysqld.exe" `
     -ArgumentList "--port=$port --basedir=$baseDir --datadir=$dataDir"
