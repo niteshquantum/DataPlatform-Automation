@@ -33,13 +33,7 @@ stages {
         }
     }
 
-    stage('Start MySQL') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\mysql\\start_mysql.bat'
-            }
-        }
-    }
+    
 
     stage('Validate Environment') {
         steps {

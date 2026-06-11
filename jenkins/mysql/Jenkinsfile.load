@@ -1,52 +1,61 @@
 pipeline {
 
-    agent any
 
-    stages {
+agent any
 
-        stage('Start MySQL') {
-            steps {
-                bat 'scripts\\batch\\mysql\\start_mysql.bat'
-            }
-        }
+environment {
+    PROJECT_ROOT = 'D:\\QT\\Team_d\\DataPlatform-Automation'
+}
 
-        stage('Validate Environment') {
-            steps {
+stages {
+
+    stage('Validate Environment') {
+        steps {
+            dir("${PROJECT_ROOT}") {
                 bat 'scripts\\batch\\mysql\\validate_environment.bat'
             }
         }
+    }
 
-        stage('Validate CSV') {
-            steps {
+    stage('Validate CSV') {
+        steps {
+            dir("${PROJECT_ROOT}") {
                 bat 'scripts\\batch\\mysql\\validate_csv.bat'
             }
         }
+    }
 
-        stage('Load Data') {
-            steps {
+    stage('Load Data') {
+        steps {
+            dir("${PROJECT_ROOT}") {
                 bat 'scripts\\batch\\mysql\\load_data.bat'
             }
         }
+    }
 
-        stage('Validate MySQL') {
-            steps {
+    stage('Validate MySQL') {
+        steps {
+            dir("${PROJECT_ROOT}") {
                 bat 'scripts\\batch\\mysql\\validate_mysql.bat'
             }
         }
     }
+}
 
-    post {
+post {
 
-        success {
-            echo 'MYSQL LOAD SUCCESSFUL'
-        }
-
-        failure {
-            echo 'MYSQL LOAD FAILED'
-        }
-
-        always {
-            echo 'MYSQL LOAD PIPELINE COMPLETED'
-        }
+    success {
+        echo 'MYSQL LOAD SUCCESSFUL'
     }
+
+    failure {
+        echo 'MYSQL LOAD FAILED'
+    }
+
+    always {
+        echo 'MYSQL LOAD PIPELINE COMPLETED'
+    }
+}
+
+
 }

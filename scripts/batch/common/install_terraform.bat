@@ -7,6 +7,10 @@ REM =====================================
 
 set ROOT=%~dp0..\..\..
 
+if not exist "%ROOT%\tools" (
+    mkdir "%ROOT%\tools"
+)
+
 REM =====================================
 REM TERRAFORM PATH
 REM =====================================
@@ -40,5 +44,3 @@ if exist "%TF_DIR%\terraform.exe" (
 
     echo Terraform Installed Successfully.
 )
-
-pause

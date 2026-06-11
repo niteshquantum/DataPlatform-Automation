@@ -21,7 +21,6 @@ REM =====================================
 if not exist "%TF%" (
 echo Terraform is not installed.
 echo Run install_terraform.bat first.
-pause
 exit /b 1
 )
 
