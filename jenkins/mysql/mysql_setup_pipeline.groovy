@@ -12,6 +12,22 @@ stages {
         }
     }
 
+    stage('Install Python Requirements') {
+
+        steps {
+
+            bat 'scripts\\batch\\install_python_requirements.bat'
+        }
+    }
+
+    stage('Validate Python Requirements') {
+
+        steps {
+
+            bat 'scripts\\batch\\validate_python_requirements.bat'
+        }
+    }
+
     stage('Validate Java Runtime') {
 
         steps {
@@ -20,13 +36,7 @@ stages {
         }
     }
 
-    stage('Install Python Requirements') {
 
-        steps {
-
-            bat 'scripts\\batch\\install_python_requirements.bat'
-        }
-    }
 
     stage('Install Tools') {
 
