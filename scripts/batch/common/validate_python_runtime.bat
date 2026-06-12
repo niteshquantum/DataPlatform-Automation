@@ -1,4 +1,34 @@
 @echo off
+setlocal
+
+set ROOT=%~dp0..\..
+set CONFIG=%ROOT%\config\python.conf
+
+set PYTHON_EXE=
+
+for /f "tokens=1,2 delims==" %%A in (%CONFIG%) do (
+    if "%%A"=="PYTHON_EXE" set PYTHON_EXE=%%B
+)
+
+REM =====================================
+REM AUTO DETECT PYTHON
+REM =====================================
+
+if "%PYTHON_EXE%"=="" (
+
+    for /f "delims=" %%i in ('where python 2^>nul') do (
+        set PYTHON_EXE=%%i
+        goto :python_found
+    )
+
+)
+
+:python_found
+
+if "%PYTHON_EXE%"=="" (
+    echo PYTHON NOT FOUND
+    exit /b 1
+)
 
 echo.
 echo =====================================
@@ -6,50 +36,13 @@ echo VALIDATING PYTHON RUNTIME
 echo =====================================
 echo.
 
-where python >nul 2>&1
-if errorlevel 1 (
-    echo PYTHON NOT FOUND IN PATH
-    exit /b 1
-)
+echo Using Python:
+echo %PYTHON_EXE%
 
-where py >nul 2>&1
-if errorlevel 1 (
-    echo PYTHON LAUNCHER (py.exe) NOT FOUND
-    exit /b 1
-)
-
-where pip >nul 2>&1
-if errorlevel 1 (
-    echo PIP NOT FOUND
-    exit /b 1
-)
-
-echo Python Path:
-where python
-
-echo.
-echo Python Launcher Path:
-where py
-
-echo.
-echo Pip Path:
-where pip
-
-echo.
-echo Python Version:
-python --version
+"%PYTHON_EXE%" --version
 
 if errorlevel 1 (
     echo PYTHON VERSION CHECK FAILED
-    exit /b 1
-)
-
-echo.
-echo Python Launcher Version:
-py --version
-
-if errorlevel 1 (
-    echo PYTHON LAUNCHER CHECK FAILED
     exit /b 1
 )
 

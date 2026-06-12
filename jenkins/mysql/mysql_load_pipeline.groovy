@@ -1,0 +1,56 @@
+pipeline {
+
+agent any
+
+stages {
+
+    stage('Validate Environment') {
+
+        steps {
+
+            bat 'scripts\\batch\\mysql\\validate_environment.bat'
+        }
+    }
+
+    stage('Validate CSV') {
+
+        steps {
+
+            bat 'scripts\\batch\\mysql\\validate_csv.bat'
+        }
+    }
+
+    stage('Load Data') {
+
+        steps {
+
+            bat 'scripts\\batch\\mysql\\load_data.bat'
+        }
+    }
+
+    stage('Validate MySQL') {
+
+        steps {
+
+            bat 'scripts\\batch\\mysql\\validate_mysql.bat'
+        }
+    }
+}
+
+post {
+
+    success {
+        echo 'MYSQL LOAD SUCCESSFUL'
+    }
+
+    failure {
+        echo 'MYSQL LOAD FAILED'
+    }
+
+    always {
+        echo 'MYSQL LOAD PIPELINE COMPLETED'
+    }
+}
+
+
+}
