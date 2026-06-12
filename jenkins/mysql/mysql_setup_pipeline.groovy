@@ -12,6 +12,14 @@ stages {
         }
     }
 
+    stage('Validate Java Runtime') {
+
+        steps {
+
+            bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+        }
+    }
+
     stage('Install Python Requirements') {
 
         steps {

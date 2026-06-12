@@ -64,6 +64,19 @@ echo User     : %MYSQL_USER%
 echo Driver   : %DRIVER%
 echo.
 
+echo JAVA_HOME : %JAVA_HOME%
+echo.
+
+java -version
+
+if errorlevel 1 (
+    echo JAVA EXECUTION FAILED
+    exit /b 1
+)
+
+echo.
+
+
 "%LB%" ^
 --classpath="%DRIVER%" ^
 --driver=com.mysql.cj.jdbc.Driver ^
@@ -73,4 +86,4 @@ echo.
 --password=%MYSQL_PASSWORD% ^
 update
 
-
+pause
