@@ -3,21 +3,28 @@ pipeline {
 
 agent any
 
+environment {
+    PROJECT_ROOT = 'F:\\Quantumatrix\\Projects\\DataEng\\DataPlatform-Automation'
+}
+
 stages {
 
     stage('Debug Python Environment') {
 
         steps {
 
-            bat 'type config\\python.conf'
+            dir("${PROJECT_ROOT}") {
 
-            bat 'where python'
+                bat 'type config\\python.conf'
 
-            bat 'where pip'
+                bat 'where python'
 
-            bat 'python --version'
+                bat 'where pip'
 
-            bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                bat 'python --version'
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+            }
         }
     }
 
@@ -25,7 +32,10 @@ stages {
 
         steps {
 
-            bat 'scripts\\batch\\install_python_requirements.bat'
+            dir("${PROJECT_ROOT}") {
+
+                bat 'scripts\\batch\\install_python_requirements.bat'
+            }
         }
     }
 
@@ -33,7 +43,10 @@ stages {
 
         steps {
 
-            bat 'scripts\\batch\\validate_python_requirements.bat'
+            dir("${PROJECT_ROOT}") {
+
+                bat 'scripts\\batch\\validate_python_requirements.bat'
+            }
         }
     }
 }
@@ -52,5 +65,6 @@ post {
         echo 'PYTHON DEBUG PIPELINE COMPLETED'
     }
 }
+
 
 }
