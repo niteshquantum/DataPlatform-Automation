@@ -1,8 +1,15 @@
 @echo off
 setlocal
 
-set ROOT=%~dp0..\..
-set CONFIG=%ROOT%\config\python.conf
+
+
+set "ROOT=%CD%"
+set "CONFIG=%ROOT%\config\python.conf"
+
+if not exist "%CONFIG%" (
+    echo WARNING: python.conf NOT FOUND
+    echo Auto-detecting Python from PATH...
+)
 
 set PYTHON_EXE=
 

@@ -54,6 +54,15 @@ stages {
         }
     }
 
+    stage('Start MySQL') {
+
+        steps {
+
+            bat 'scripts\\batch\\mysql\\start_mysql.bat'
+        }
+    }
+ 
+
     stage('Create Database') {
 
         steps {
