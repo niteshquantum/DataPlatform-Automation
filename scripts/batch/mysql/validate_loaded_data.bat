@@ -3,20 +3,20 @@ setlocal
 
 echo.
 echo =====================================
-echo VALIDATING CSV FILES
+echo VALIDATING LOADED DATA
 echo =====================================
 echo.
 
-python scripts\python\mysql\validate_csv.py
+python scripts\python\mysql\validate_loaded_data.py
 
 if errorlevel 1 (
     echo.
-    echo CSV VALIDATION FAILED
+    echo LOADED DATA VALIDATION FAILED
     exit /b 1
 )
 
 echo.
-echo CSV VALIDATION SUCCESSFUL
+echo LOADED DATA VALIDATION SUCCESSFUL
 echo.
 
 exit /b 0

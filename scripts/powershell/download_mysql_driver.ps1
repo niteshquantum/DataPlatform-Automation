@@ -86,8 +86,7 @@ $DownloadUrl = "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/$Driv
 Write-Host "Downloading MySQL Connector Version $DriverVersion ..."
 Write-Host "URL : $DownloadUrl"
 
-Invoke-WebRequest `    -Uri $DownloadUrl`
--OutFile $JarFile
+Invoke-WebRequest -Uri $DownloadUrl -OutFile $JarFile -UseBasicParsing
 
 # =====================================
 
