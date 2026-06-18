@@ -23,7 +23,9 @@ LB="$PROJECT_ROOT/tools/liquibase/liquibase"
 
 DRIVER="$PROJECT_ROOT/tools/drivers/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar"
 
-CHANGELOG="$PROJECT_ROOT/liquibase/mysql/master.xml"
+CHANGELOG="liquibase/mysql/master.xml"
+
+cd "$PROJECT_ROOT"
 
 echo "Database : $MYSQL_DB"
 echo "Host     : $MYSQL_HOST"
