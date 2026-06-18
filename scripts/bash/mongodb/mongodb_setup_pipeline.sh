@@ -8,13 +8,7 @@ bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_terraform.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"
-
 bash "$PROJECT_ROOT/scripts/bash/common/install_python_requirements.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/common/validate_tools.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mongodb/install_mongodb.sh"
 
