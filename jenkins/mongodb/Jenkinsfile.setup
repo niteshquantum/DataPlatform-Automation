@@ -53,6 +53,18 @@ pipeline {
                 '''
             }
         }
+        stage('Start MongoDB') {
+
+
+steps {
+
+    bat '''
+    scripts\\batch\\mongodb\\start_mongodb.bat
+    '''
+}
+
+
+}
 
         stage('Deploy MongoDB') {
 
