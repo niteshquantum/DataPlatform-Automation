@@ -21,7 +21,7 @@ exit 1
 
 }
 
-Start-Process `    -FilePath $mongodExe`
+Start-Process -FilePath $mongodExe `
 -ArgumentList "--dbpath `"$dataPath`" --logpath `"$logPath`" --bind_ip 127.0.0.1 --port 27018"
 
 Write-Host "MongoDB Started Successfully"
