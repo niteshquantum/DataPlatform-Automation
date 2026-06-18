@@ -4,6 +4,15 @@ pipeline {
 
     stages {
 
+        stage('Set Permissions') {
+            steps {
+                sh '''
+                chmod +x scripts/bash/common/*.sh
+                chmod +x scripts/bash/mysql/*.sh
+                '''
+            }
+        }
+
         stage('Validate Python Runtime') {
             steps {
                 sh './scripts/bash/common/validate_python_runtime.sh'
