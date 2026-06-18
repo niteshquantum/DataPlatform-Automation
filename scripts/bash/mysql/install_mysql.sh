@@ -6,23 +6,28 @@ source "$(dirname "$0")/../common/set_project_root.sh"
 
 echo
 echo "====================================="
-echo "STARTING MYSQL"
+echo "INSTALLING MYSQL"
 echo "====================================="
 echo
 
-sudo systemctl start mysql
-
-sleep 5
-
-if ! systemctl is-active --quiet mysql
+if command -v mysqld >/dev/null 2>&1
 then
-    echo "MYSQL FAILED TO START"
-    exit 1
+    echo "MySQL already installed"
+
+    mysqld --version
+
+    exit 0
 fi
 
+sudo apt-get update
+
+sudo apt-get install -y mysql-server
+
+mysqld --version
+
 echo
 echo "====================================="
-echo "MYSQL STARTED SUCCESSFULLY"
+echo "MYSQL INSTALLED SUCCESSFULLY"
 echo "====================================="
 echo
 
