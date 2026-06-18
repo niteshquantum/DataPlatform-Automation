@@ -5,13 +5,12 @@ pipeline {
     stages {
 
         stage('Set Permissions') {
-            steps {
-                sh '''
-                chmod +x scripts/bash/common/*.sh
-                chmod +x scripts/bash/mysql/*.sh
-                '''
-            }
+        steps {
+            sh '''
+            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+            '''
         }
+    }
 
 
         stage('Validate Python Runtime') {
