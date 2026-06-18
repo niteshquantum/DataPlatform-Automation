@@ -22,11 +22,11 @@ conn = mysql.connector.connect(
 cursor = conn.cursor()
 
 tables = {
-    "customers": "Customers",
-    "sellers": "Sellers",
-    "products": "Products",
-    "orderstable": "Orders",
-    "orderdetails": "OrderDetails"
+    "Customers": "Customers",
+    "Sellers": "Sellers",
+    "Products": "Products",
+    "OrdersTable": "Orders",
+    "OrderDetails": "OrderDetails"
 }
 
 print()
