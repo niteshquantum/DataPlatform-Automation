@@ -4,6 +4,10 @@ setlocal
 
 
 set "ROOT=%CD%"
+if not exist "%ROOT%\config\python.conf" (
+set "ROOT=%~dp0...."
+)
+
 set "CONFIG=%ROOT%\config\python.conf"
 
 if not exist "%CONFIG%" (
@@ -71,6 +75,13 @@ echo Checking mysql-connector-python...
 "%PYTHON_EXE%" -c "import mysql.connector"
 if errorlevel 1 (
 echo mysql-connector-python Missing
+exit /b 1
+)
+
+echo Checking pymongo...
+"%PYTHON_EXE%" -c "import pymongo"
+if errorlevel 1 (
+echo pymongo Missing
 exit /b 1
 )
 

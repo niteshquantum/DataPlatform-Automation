@@ -1,0 +1,40 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Load Data') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\load_data.bat
+                '''
+            }
+        }
+
+        stage('Validate Data') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\validate_data.bat
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo 'MongoDB Load Pipeline Executed Successfully'
+        }
+
+        failure {
+
+            echo 'MongoDB Load Pipeline Failed'
+        }
+    }
+}

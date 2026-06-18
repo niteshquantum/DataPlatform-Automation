@@ -1,0 +1,105 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\common\\validate_python_runtime.bat
+                '''
+            }
+        }
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\install_python_requirements.bat
+                '''
+            }
+        }
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\validate_python_requirements.bat
+                '''
+            }
+        }
+
+        stage('Install Tools') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\common\\install_tools.bat
+                '''
+            }
+        }
+
+        stage('Run Terraform') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\run_mongodb.bat
+                '''
+            }
+        }
+
+        stage('Deploy MongoDB') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\deploy_mongodb.bat
+                '''
+            }
+        }
+
+        stage('Validate Environment') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\validate_environment.bat
+                '''
+            }
+        }
+
+        stage('Validate MongoDB') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\validate_mongodb.bat
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo 'MongoDB Setup Pipeline Executed Successfully'
+        }
+
+        failure {
+
+            echo 'MongoDB Setup Pipeline Failed'
+        }
+
+        always {
+
+            echo 'MongoDB Setup Pipeline Finished'
+        }
+    }
+}

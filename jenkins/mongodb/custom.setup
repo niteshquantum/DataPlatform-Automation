@@ -1,0 +1,50 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Run Terraform') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\run_mongodb.bat
+                '''
+            }
+        }
+
+        stage('Deploy MongoDB') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\deploy_mongodb.bat
+                '''
+            }
+        }
+
+        stage('Validation') {
+
+            steps {
+
+                bat '''
+                scripts\\batch\\mongodb\\validate_data.bat
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo 'MongoDB Setup Pipeline Executed Successfully'
+        }
+
+        failure {
+
+            echo 'MongoDB Setup Pipeline Failed'
+        }
+    }
+}
