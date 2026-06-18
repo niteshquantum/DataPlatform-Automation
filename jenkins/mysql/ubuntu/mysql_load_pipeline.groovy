@@ -20,6 +20,18 @@ pipeline {
             }
         }
 
+        stage('Install Python Requirements') {
+            steps {
+                sh './scripts/bash/install_python_requirements.sh'
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                sh './scripts/bash/validate_python_requirements.sh'
+            }
+        }
+
         stage('Install Tools') {
             steps {
                 sh './scripts/bash/common/install_tools.sh'
