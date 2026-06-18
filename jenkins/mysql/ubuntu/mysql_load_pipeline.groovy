@@ -20,6 +20,12 @@ pipeline {
             }
         }
 
+        stage('Install Tools') {
+            steps {
+                sh './scripts/bash/common/install_tools.sh'
+            }
+        }
+
         stage('Validate Tools') {
             steps {
                 sh './scripts/bash/common/validate_tools.sh'
