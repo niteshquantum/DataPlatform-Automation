@@ -8,17 +8,26 @@ CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mongodb.conf"
 
 MONGODB_PORT=$(grep "^MONGODB_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
 
-MONGODB_HOME="$PROJECT_ROOT/databases/mongodb/server"
-
 echo
 echo "====================================="
 echo "VALIDATING MONGODB"
 echo "====================================="
 echo
 
-"$MONGODB_HOME/bin/mongosh" \
-    --port "$MONGODB_PORT" \
-    --eval "db.adminCommand({ ping: 1 })"
+if command -v mongosh >/dev/null 2>&1
+then
+
+    mongosh \
+        --port "$MONGODB_PORT" \
+        --eval "db.adminCommand({ ping: 1 })"
+
+else
+
+    echo "mongosh not installed"
+
+    exit 1
+
+fi
 
 echo
 echo "====================================="
