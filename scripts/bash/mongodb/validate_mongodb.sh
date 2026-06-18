@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+source "$(dirname "$0")/../common/set_project_root.sh"
+
+CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mongodb.conf"
+
+MONGODB_PORT=$(grep "^MONGODB_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
+
+MONGODB_HOME="$PROJECT_ROOT/databases/mongodb/server"
+
+echo
+echo "====================================="
+echo "VALIDATING MONGODB"
+echo "====================================="
+echo
+
+"$MONGODB_HOME/bin/mongosh" \
+    --port "$MONGODB_PORT" \
+    --eval "db.adminCommand({ ping: 1 })"
+
+echo
+echo "====================================="
+echo "MONGODB VALIDATION SUCCESSFUL"
+echo "====================================="
+echo
+
+exit 0
