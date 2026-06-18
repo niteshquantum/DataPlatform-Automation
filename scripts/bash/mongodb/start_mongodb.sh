@@ -22,6 +22,19 @@ echo "STARTING MONGODB"
 echo "====================================="
 echo
 
+if ss -tulnp | grep -q ":$MONGODB_PORT"
+then
+    echo "MongoDB already running on port $MONGODB_PORT"
+
+    echo
+    echo "====================================="
+    echo "MONGODB STARTED SUCCESSFULLY"
+    echo "====================================="
+    echo
+
+    exit 0
+fi
+
 mkdir -p "$DATA_DIR"
 mkdir -p "$LOG_DIR"
 
