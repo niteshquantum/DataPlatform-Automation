@@ -2,15 +2,27 @@ Write-Host "==================================="
 Write-Host "Starting MongoDB"
 Write-Host "==================================="
 
-try {
+$root = Resolve-Path "$PSScriptRoot......"
 
-    Start-Service MongoDB
+$mongoHome = "$root\databases\mongodb"
 
-    Write-Host "MongoDB Started Successfully"
+$mongodExe = "$mongoHome\server\bin\mongod.exe"
+
+$dataPath = "$mongoHome\data"
+
+$logPath = "$mongoHome\logs\mongodb.log"
+
+if (!(Test-Path $mongodExe)) {
+
+```
+Write-Host "mongod.exe not found"
+
+exit 1
+```
 
 }
-catch {
 
-    Write-Host "MongoDB Service already running or not installed"
+Start-Process `    -FilePath $mongodExe`
+-ArgumentList "--dbpath `"$dataPath`" --logpath `"$logPath`" --bind_ip 127.0.0.1 --port 27018"
 
-}
+Write-Host "MongoDB Started Successfully"
