@@ -2,7 +2,7 @@ Write-Host "==================================="
 Write-Host "Starting MongoDB"
 Write-Host "==================================="
 
-$root = Resolve-Path "$PSScriptRoot......"
+$root = Resolve-Path "$PSScriptRoot\..\..\.."
 
 $mongoHome = "$root\databases\mongodb"
 
@@ -14,11 +14,10 @@ $logPath = "$mongoHome\logs\mongodb.log"
 
 if (!(Test-Path $mongodExe)) {
 
-```
 Write-Host "mongod.exe not found"
 
 exit 1
-```
+
 
 }
 
