@@ -1,0 +1,532 @@
+
+
+==================================================
+FILE : terraform\mongodb\main.tf
+==================================================
+
+terraform {
+required_version = ">= 1.5"
+
+required_providers {
+null = {
+source  = "hashicorp/null"
+version = "~> 3.2"
+}
+}
+}
+
+resource "null_resource" "download_mongodb_windows" {
+
+provisioner "local-exec" {
+
+
+interpreter = ["PowerShell", "-Command"]
+
+command = <<EOT
+
+
+if (!(Test-Path "..\..\databases\mongodb")) {
+New-Item -ItemType Directory -Path "..\..\databases\mongodb" -Force
+}
+
+$ProgressPreference = 'SilentlyContinue'
+
+Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip" -OutFile "..\\..\\databases\\mongodb\\mongodb.zip"
+
+Write-Host "MongoDB ZIP Download Complete"
+
+EOT
+
+}
+}
+
+resource "null_resource" "extract_mongodb_windows" {
+
+depends_on = [
+null_resource.download_mongodb_windows
+]
+
+provisioner "local-exec" {
+
+
+interpreter = ["PowerShell", "-Command"]
+
+command = <<EOT
+
+
+if (Test-Path "..\..\databases\mongodb\server") {
+Remove-Item "..\..\databases\mongodb\server" -Recurse -Force
+}
+
+Expand-Archive -Path "..\..\databases\mongodb\mongodb.zip" -DestinationPath "..\..\databases\mongodb" -Force
+
+$folder = Get-ChildItem "..\..\databases\mongodb" -Directory | Where-Object {
+$_.Name -like "mongodb-*"
+} | Select-Object -First 1
+
+if ($null -eq $folder) {
+throw "MongoDB extraction failed"
+}
+
+Rename-Item $folder.FullName "server" -Force
+
+Write-Host "MongoDB Extraction Complete"
+
+EOT
+
+}
+}
+resource "null_resource" "download_mongosh_windows" {
+
+  depends_on = [
+    null_resource.extract_mongodb_windows
+  ]
+
+  provisioner "local-exec" {
+
+    interpreter = ["PowerShell", "-Command"]
+
+    command = <<EOT
+
+$ProgressPreference = 'SilentlyContinue'
+
+Invoke-WebRequest -Uri "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip" -OutFile "..\\..\\databases\\mongodb\\mongosh.zip"
+
+Write-Host "mongosh ZIP Download Complete"
+
+EOT
+
+  }
+}
+resource "null_resource" "extract_mongosh_windows" {
+
+  depends_on = [
+    null_resource.download_mongosh_windows
+  ]
+
+  provisioner "local-exec" {
+
+    interpreter = ["PowerShell", "-Command"]
+
+    command = <<EOT
+
+if (Test-Path "..\\..\\databases\\mongodb\\mongosh") {
+    Remove-Item "..\\..\\databases\\mongodb\\mongosh" -Recurse -Force
+}
+
+Expand-Archive -Path "..\\..\\databases\\mongodb\\mongosh.zip" -DestinationPath "..\\..\\databases\\mongodb" -Force
+
+$folder = Get-ChildItem "..\\..\\databases\\mongodb" -Directory | Where-Object {
+    $_.Name -like "mongosh-*"
+} | Select-Object -First 1
+
+Rename-Item $folder.FullName "mongosh"
+
+Write-Host "mongosh Extraction Complete"
+
+EOT
+
+  }
+}
+resource "null_resource" "init_mongodb_windows" {
+
+depends_on = [
+null_resource.extract_mongodb_windows
+]
+
+provisioner "local-exec" {
+
+
+interpreter = ["PowerShell", "-Command"]
+
+command = <<EOT
+
+
+if (!(Test-Path "..\..\databases\mongodb\data")) {
+New-Item -ItemType Directory -Path "..\..\databases\mongodb\data" -Force
+}
+
+if (!(Test-Path "..\..\databases\mongodb\logs")) {
+New-Item -ItemType Directory -Path "..\..\databases\mongodb\logs" -Force
+}
+
+if (!(Test-Path "..\..\databases\mongodb\config")) {
+New-Item -ItemType Directory -Path "..\..\databases\mongodb\config" -Force
+}
+
+Write-Host "MongoDB directories created successfully"
+
+EOT
+
+}
+}
+
+
+resource "null_resource" "mongodb_windows" {
+
+depends_on = [
+null_resource.init_mongodb_windows
+]
+
+triggers = {
+mongodb_version = "8.0.12"
+script_version = "2.3"
+mongodb_port = var.mongodb_port
+use_existing_mongodb = tostring(var.use_existing_mongodb)
+}
+
+provisioner "local-exec" {
+
+
+environment = {
+  MONGODB_PORT         = tostring(var.mongodb_port)
+  USE_EXISTING_MONGODB = tostring(var.use_existing_mongodb)
+}
+
+interpreter = [
+  "PowerShell",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File"
+]
+
+command = "${path.module}/../../scripts/powershell/mongodb/install_windows.ps1"
+
+}
+}
+
+
+
+
+==================================================
+FILE : terraform\mongodb\variables.tf
+==================================================
+
+variable "mongodb_port" {
+  description = "MongoDB Port"
+  type        = number
+  default     = 27017
+}
+
+variable "use_existing_mongodb" {
+  description = "Use existing MongoDB installation if available"
+  type        = bool
+  default     = true
+}
+
+
+
+==================================================
+FILE : terraform\mongodb\terraform.tfvars
+==================================================
+
+#################################################
+# MongoDB Configuration
+#################################################
+
+# MongoDB Port
+# Default MongoDB port is 27017
+# Examples:
+# 27018, 27019, 27020
+
+mongodb_port = 27018
+
+
+#################################################
+# Existing MongoDB Handling
+#################################################
+
+# true  = Use existing MongoDB installation
+# false = Create a new MongoDB installation/instance
+
+use_existing_mongodb = false
+
+#################################################
+# Example Configurations
+#################################################
+
+# Example 1:
+# Use existing MongoDB installation
+#
+# mongodb_port = 27017
+# use_existing_mongodb = true
+
+
+# Example 2:
+# Create a new MongoDB instance on port 27018
+#
+# mongodb_port = 27018
+# use_existing_mongodb = false
+
+
+# Example 3:
+# Create another MongoDB instance on port 27019
+#
+# mongodb_port = 27019
+# use_existing_mongodb = false
+
+
+
+==================================================
+FILE : scripts\python\mongodb\db_connection.py
+==================================================
+
+from pymongo import MongoClient
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[3]
+
+CONFIG_FILE = ROOT_DIR / "config" / "mongodb.conf"
+
+def read_config():
+
+
+    config = {}
+
+    with open(CONFIG_FILE) as f:
+
+        for line in f:
+
+            line = line.strip()
+
+            if line and "=" in line:
+
+                key, value = line.split("=", 1)
+
+                config[key.strip()] = value.strip()
+
+    return config
+
+
+def get_db():
+
+
+    config = read_config()
+
+    uri = f"mongodb://{config['MONGODB_HOST']}:{config['MONGODB_PORT']}"
+
+    client = MongoClient(uri)
+
+    db = client[config["MONGODB_DATABASE"]]
+
+    return db
+
+
+
+
+
+==================================================
+FILE : scripts\python\mongodb\load_all.py
+==================================================
+
+import subprocess
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).parent
+
+scripts = [
+"create_collections.py",
+"create_indexes.py",
+"generate_dataset.py",
+"load_data.py",
+"validate_data.py"
+]
+
+for script in scripts:
+
+
+    script_path = BASE_DIR / script
+
+    print(f"Running {script}")
+
+    subprocess.run(
+        [sys.executable, str(script_path)],
+        check=True
+    )
+
+
+print("MongoDB Load Process Completed Successfully")
+
+
+
+
+==================================================
+FILE : scripts\python\mongodb\load_data.py
+==================================================
+
+from pathlib import Path
+import pandas as pd
+from db_connection import get_db
+db = get_db()
+
+ROOT_DIR = Path(__file__).resolve().parents[3]
+
+DATASET_DIR = ROOT_DIR / "datasets" / "mongodb"
+
+collections = [
+"customers",
+"sellers",
+"products",
+"orders",
+"orderdetails"
+]
+
+for collection in collections:
+
+    file_path = DATASET_DIR / f"{collection}.csv"
+    print(file_path)
+
+    df = pd.read_csv(file_path)
+
+    records = df.to_dict("records")
+
+if db[collection].count_documents({}) == 0:
+
+    db[collection].insert_many(records)
+
+    print(f"{collection} data loaded.")
+
+else:
+
+    print(f"{collection} already contains data.")
+
+print("Data loading completed.")
+
+
+
+
+==================================================
+FILE : scripts\python\mongodb\validate_mongodb.py
+==================================================
+
+from pathlib import Path
+import pandas as pd
+from db_connection import get_db
+
+db = get_db()
+
+ROOT_DIR = Path(__file__).resolve().parents[3]
+
+DATASET_DIR = ROOT_DIR / "datasets" / "mongodb"
+
+collections = [
+"customers",
+"sellers",
+"products",
+"orders",
+"orderdetails"
+]
+
+for collection in collections:
+
+    file_path = DATASET_DIR / f"{collection}.csv"
+
+    df = pd.read_csv(file_path)
+
+    records = df.to_dict("records")
+
+if db[collection].count_documents({}) == 0:
+
+    db[collection].insert_many(records)
+
+    print(f"{collection} data loaded.")
+
+else:
+
+    print(f"{collection} already contains data.")
+
+print("Data loading completed.")
+
+
+
+==================================================
+FILE : scripts\python\mongodb\validate_data.py
+==================================================
+
+from db_connection import get_db
+
+db = get_db()
+
+collections = [
+    "customers",
+    "sellers",
+    "products",
+    "orders",
+    "orderdetails"
+]
+
+print("===================================")
+print("MongoDB Data Validation")
+print("===================================")
+
+for collection in collections:
+
+    if collection in db.list_collection_names():
+
+        count = db[collection].count_documents({})
+
+        if count > 0:
+            print(f"{collection}: {count} records found.")
+        else:
+            print(f"{collection}: Collection exists but contains no records.")
+
+    else:
+        print(f"{collection}: Collection does not exist.")
+
+print("===================================")
+print("Validation completed.")
+print("===================================")
+
+
+
+==================================================
+FILE : scripts\python\mongodb\create_collections.py
+==================================================
+
+from db_connection import get_db
+
+db = get_db()
+
+# Collections to create
+collections = [
+    "customers",
+    "sellers",
+    "products",
+    "orders",
+    "orderdetails"
+]
+
+existing = db.list_collection_names()
+
+for collection in collections:
+    if collection not in existing:
+        db.create_collection(collection)
+        print(f"{collection} collection created.")
+    else:
+        print(f"{collection} collection already exists.")
+
+print("Collection creation completed.")
+
+
+
+==================================================
+FILE : scripts\python\mongodb\create_indexes.py
+==================================================
+
+from db_connection import get_db
+
+db = get_db()
+
+db.customers.create_index("customer_id")
+db.sellers.create_index("seller_id")
+db.products.create_index("product_id")
+db.orders.create_index("order_id")
+db.orderdetails.create_index([
+    ("order_id", 1),
+    ("product_id", 1)
+])
+
+print("Indexes created successfully.")
+
+

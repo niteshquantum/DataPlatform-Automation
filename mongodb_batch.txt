@@ -1,0 +1,222 @@
+
+=================================================
+FILE : cleanup_mongodb.bat
+=================================================
+
+@echo off
+
+echo ===================================
+echo Cleaning MongoDB Collections
+echo ===================================
+
+python "%~dp0..\..\python\mongodb\cleanup_collections.py"
+
+pause
+
+=================================================
+FILE : deploy_mongodb.bat
+=================================================
+
+@echo off
+
+echo ===================================
+echo Deploying MongoDB
+echo ===================================
+
+python "%~dp0..\..\python\mongodb\load_all.py"
+
+if errorlevel 1 (
+    echo MongoDB Deployment Failed
+    exit /b 1
+)
+
+echo ===================================
+echo MongoDB Deployment Successful
+echo ===================================
+
+=================================================
+FILE : destroy_mongodb.bat
+=================================================
+
+@echo off
+
+call "%~dp0stop_mongodb.bat"
+
+echo MongoDB stopped.
+
+pause
+
+=================================================
+FILE : initialize_logs.bat
+=================================================
+
+@echo off
+
+if not exist logs mkdir logs
+
+if not exist logs\mongodb_setup.log (
+    type nul > logs\mongodb_setup.log
+)
+
+if not exist logs\mongodb_load.log (
+    type nul > logs\mongodb_load.log
+)
+
+=================================================
+FILE : load_data.bat
+=================================================
+
+@echo off
+
+echo ===================================
+echo Loading MongoDB Data
+echo ===================================
+
+python "%~dp0..\..\python\mongodb\load_all.py"
+
+if errorlevel 1 (
+    echo Data Load Failed
+    exit /b 1
+)
+
+echo Data Load Completed Successfully
+
+=================================================
+FILE : mongodb_load_with_logging.bat
+=================================================
+
+@echo off
+
+call "%~dp0initialize_logs.bat"
+
+echo =================================== >> logs\mongodb_load.log
+echo MongoDB Load Started >> logs\mongodb_load.log
+echo =================================== >> logs\mongodb_load.log
+
+call "%~dp0load_data.bat"
+
+call "%~dp0validate_data.bat"
+
+echo MongoDB Load Completed >> logs\mongodb_load.log
+
+=================================================
+FILE : mongodb_setup_with_logging.bat
+=================================================
+
+@echo off
+
+call "%~dp0initialize_logs.bat"
+
+echo =================================== >> logs\mongodb_setup.log
+echo MongoDB Setup Started >> logs\mongodb_setup.log
+echo =================================== >> logs\mongodb_setup.log
+
+call "%~dp0run_mongodb.bat"
+
+call "%~dp0deploy_mongodb.bat"
+
+call "%~dp0validate_data.bat"
+
+echo MongoDB Setup Completed >> logs\mongodb_setup.log
+
+=================================================
+FILE : run_mongodb.bat
+=================================================
+
+@echo off
+setlocal
+
+set TERRAFORM_EXE=%~dp0..\..\..\tools\terraform\terraform.exe
+
+cd /d "%~dp0..\..\..\terraform\mongodb"
+
+"%TERRAFORM_EXE%" init
+
+if errorlevel 1 (
+    echo Terraform Init Failed
+    exit /b 1
+)
+
+"%TERRAFORM_EXE%" apply -auto-approve
+
+if errorlevel 1 (
+    echo Terraform Apply Failed
+    exit /b 1
+)
+
+echo MongoDB Terraform Completed Successfully
+
+
+
+=================================================
+FILE : start_mongodb.bat
+=================================================
+
+@echo off
+
+powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\mongodb\start_mongodb.ps1"
+
+
+=================================================
+FILE : stop_mongodb.bat
+=================================================
+
+@echo off
+
+powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\mongodb\stop_mongodb.ps1"
+
+pause
+
+=================================================
+FILE : validate_data.bat
+=================================================
+
+@echo off
+REM TODO: Implement data validation script
+REM This script validates the data loaded into MongoDB collections
+
+setlocal enabledelayedexpansion
+
+echo Validating MongoDB data...
+REM TODO: Add data validation logic
+
+
+=================================================
+FILE : validate_environment.bat
+=================================================
+
+@echo off
+
+call "%~dp0validate_port.bat"
+
+if errorlevel 1 exit /b 1
+
+call "%~dp0validate_mongodb.bat"
+
+if errorlevel 1 exit /b 1
+
+call "%~dp0validate_data.bat"
+
+if errorlevel 1 exit /b 1
+
+echo Environment Validation Completed
+
+=================================================
+FILE : validate_mongodb.bat
+=================================================
+
+@echo off
+
+python "%~dp0..\..\python\mongodb\validate_mongodb.py"
+
+pause
+
+=================================================
+FILE : validate_port.bat
+=================================================
+
+@echo off
+
+python "%~dp0..\..\python\mongodb\validate_port.py"
+
+pause

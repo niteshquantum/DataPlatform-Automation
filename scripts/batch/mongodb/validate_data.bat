@@ -1,8 +1,14 @@
 @echo off
-REM TODO: Implement data validation script
-REM This script validates the data loaded into MongoDB collections
 
-setlocal enabledelayedexpansion
+echo ===================================
+echo Validating MongoDB Data
+echo ===================================
 
-echo Validating MongoDB data...
-REM TODO: Add data validation logic
+python "%~dp0..\..\python\mongodb\validate_data.py"
+
+if errorlevel 1 (
+    echo MongoDB Data Validation Failed
+    exit /b 1
+)
+
+echo MongoDB Data Validation Successful

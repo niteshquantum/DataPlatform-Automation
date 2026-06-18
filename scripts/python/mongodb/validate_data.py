@@ -10,24 +10,35 @@ collections = [
     "orderdetails"
 ]
 
+all_valid = True
+
 print("===================================")
 print("MongoDB Data Validation")
 print("===================================")
 
 for collection in collections:
 
-    if collection in db.list_collection_names():
+    if collection not in db.list_collection_names():
 
-        count = db[collection].count_documents({})
+        print(f"[ERROR] {collection} collection missing")
+        all_valid = False
+        continue
 
-        if count > 0:
-            print(f"{collection}: {count} records found.")
-        else:
-            print(f"{collection}: Collection exists but contains no records.")
+    count = db[collection].count_documents({})
+
+    if count == 0:
+
+        print(f"[ERROR] {collection} contains no records")
+        all_valid = False
 
     else:
-        print(f"{collection}: Collection does not exist.")
+
+        print(f"{collection}: {count} records found.")
 
 print("===================================")
-print("Validation completed.")
+
+if not all_valid:
+    raise Exception("MongoDB Data Validation Failed")
+
+print("MongoDB Data Validation Successful")
 print("===================================")

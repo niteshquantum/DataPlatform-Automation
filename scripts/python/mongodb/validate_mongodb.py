@@ -1,37 +1,38 @@
-from pathlib import Path
-import pandas as pd
 from db_connection import get_db
 
 db = get_db()
 
-ROOT_DIR = Path(__file__).resolve().parents[3]
-
-DATASET_DIR = ROOT_DIR / "datasets" / "mongodb"
-
 collections = [
-"customers",
-"sellers",
-"products",
-"orders",
-"orderdetails"
+    "customers",
+    "sellers",
+    "products",
+    "orders",
+    "orderdetails"
 ]
+
+print("===================================")
+print("MongoDB Validation")
+print("===================================")
+
+existing_collections = db.list_collection_names()
+
+all_valid = True
 
 for collection in collections:
 
-    file_path = DATASET_DIR / f"{collection}.csv"
+    if collection not in existing_collections:
 
-    df = pd.read_csv(file_path)
+        print(f"[ERROR] Collection missing: {collection}")
+        all_valid = False
+        continue
 
-    records = df.to_dict("records")
+    count = db[collection].count_documents({})
 
-if db[collection].count_documents({}) == 0:
+    print(f"{collection}: {count} documents")
 
-    db[collection].insert_many(records)
+print("===================================")
 
-    print(f"{collection} data loaded.")
-
+if all_valid:
+    print("MongoDB validation successful.")
 else:
-
-    print(f"{collection} already contains data.")
-
-print("Data loading completed.")
+    raise Exception("MongoDB validation failed.")
