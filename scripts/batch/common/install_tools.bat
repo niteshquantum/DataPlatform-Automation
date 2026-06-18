@@ -32,7 +32,7 @@ echo.
 echo Validating Installed Tools...
 echo.
 
-call scripts\batch\common\validate_tools.bat
+call "%~dp0validate_tools.bat"
 
 if errorlevel 1 (
 echo ERROR: TOOL VALIDATION FAILED

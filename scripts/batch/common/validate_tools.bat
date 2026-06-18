@@ -16,34 +16,20 @@ echo ERROR: TERRAFORM NOT FOUND
 exit /b 1
 )
 
-tools\terraform\terraform.exe version >nul 2>&1
+echo Checking Terraform...
+tools\terraform\terraform.exe version
+echo Checking Liquibase...
+call "%~dp0validate_liquibase.bat"
+if errorlevel 1 exit /b 1
 
-if errorlevel 1 (
-echo ERROR: TERRAFORM EXECUTION FAILED
-exit /b 1
-)
+echo Checking MySQL Driver...
+call "%~dp0validate_mysql_driver.bat"
+if errorlevel 1 exit /b 1
 
 echo TERRAFORM VALIDATED
 
-REM =====================================
-REM LIQUIBASE
-REM =====================================
 
-call scripts\batch\common\validate_liquibase.bat
 
-if errorlevel 1 (
-exit /b 1
-)
-
-REM =====================================
-REM MYSQL JDBC DRIVER
-REM =====================================
-
-call scripts\batch\common\validate_mysql_driver.bat
-
-if errorlevel 1 (
-exit /b 1
-)
 
 echo.
 echo =====================================

@@ -3,3 +3,6 @@ PyYAML
 python-dotenv
 mysql-connector-python
 pandas
+pymongo
+
+

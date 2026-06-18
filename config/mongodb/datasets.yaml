@@ -1,0 +1,15 @@
+datasets:
+  customers:
+    file: datasets/mongodb/customers.csv
+
+  sellers:
+    file: datasets/mongodb/sellers.csv
+
+  products:
+    file: datasets/mongodb/products.csv
+
+  orders:
+    file: datasets/mongodb/orders.csv
+
+  orderdetails:
+    file: datasets/mongodb/orderdetails.csv

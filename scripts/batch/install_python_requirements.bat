@@ -1,10 +1,16 @@
 @echo off
 setlocal
 
-set ROOT=%~dp0....
+set "ROOT=%~dp0..\.."
 set CONFIG=%ROOT%\config\python.conf
 
 set PYTHON_EXE=
+
+if exist "%CONFIG%" (
+for /f "tokens=1,2 delims==" %%A in (%CONFIG%) do (
+if "%%A"=="PYTHON_EXE" set PYTHON_EXE=%%B
+)
+)
 
 for /f "tokens=1,2 delims==" %%A in (%CONFIG%) do (
 if "%%A"=="PYTHON_EXE" set PYTHON_EXE=%%B
@@ -53,7 +59,7 @@ echo =====================================
 echo INSTALLING PYTHON REQUIREMENTS
 echo =====================================
 echo.
-
+pushd "%ROOT%"
 "%PYTHON_EXE%" -m pip install -r requirements.txt
 
 if errorlevel 1 (
@@ -62,6 +68,7 @@ echo INSTALL FAILED
 exit /b 1
 )
 
+popd
 echo.
 echo =====================================
 echo PYTHON REQUIREMENTS INSTALLED
