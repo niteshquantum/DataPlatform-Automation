@@ -13,7 +13,7 @@ conn = get_connection()
 cursor = conn.cursor()
 
 insert_sql = """
-INSERT INTO Orderstable
+INSERT INTO OrdersTable
 (
     OrderID,
     CustomerID,
