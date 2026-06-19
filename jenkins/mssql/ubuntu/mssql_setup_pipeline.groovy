@@ -31,6 +31,12 @@ pipeline {
             }
         }
 
+        stage('Install MSSQL Driver') {
+            steps {
+                sh './scripts/bash/common/install_mssql_driver.sh'
+            }
+        }
+
         stage('Install SQL Server') {
             steps {
                 sh './scripts/bash/mssql/install_mssql.sh'
