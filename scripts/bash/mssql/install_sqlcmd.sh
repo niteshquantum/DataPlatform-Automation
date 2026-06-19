@@ -39,6 +39,8 @@ sudo ACCEPT_EULA=Y apt-get install -y \
 mssql-tools18 \
 unixodbc-dev
 
+sudo ln -sf /opt/mssql-tools18/bin/sqlcmd /usr/local/bin/sqlcmd
+
 echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' \
 | sudo tee /etc/profile.d/mssql-tools.sh > /dev/null
 
