@@ -19,6 +19,18 @@ pipeline {
             }
         }
 
+        stage('Start MongoDB') {
+            steps {
+                sh './scripts/bash/mongodb/start_mongodb.sh'
+            }
+        }
+
+        stage('Validate MongoDB') {
+            steps {
+                sh './scripts/bash/mongodb/validate_mongodb.sh'
+            }
+        }
+
         stage('Load MongoDB Data') {
             steps {
                 sh './scripts/bash/mongodb/load_data.sh'
