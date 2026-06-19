@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="004" author="nitesh">
+
+        <createTable tableName="OrdersTable">
+
+            <column name="OrderID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="CustomerID" type="VARCHAR(10)"/>
+
+            <column name="OrderDate" type="DATE"/>
+
+            <column name="TotalAmount" type="DECIMAL(10,2)"/>
+
+            <column name="Status" type="VARCHAR(20)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="OrdersTable"
+            baseColumnNames="CustomerID"
+            referencedTableName="Customers"
+            referencedColumnNames="CustomerID"
+            constraintName="FK_Orders_Customers"/>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,51 @@
+CustomerID,FirstName,LastName,City,State,JoinDate
+C001,Name1,Surname1,Delhi,Delhi,2024-02-02
+C002,Name2,Surname2,Mumbai,Maharashtra,2024-03-03
+C003,Name3,Surname3,Pune,Maharashtra,2024-04-04
+C004,Name4,Surname4,Bhopal,Madhya Pradesh,2024-05-05
+C005,Name5,Surname5,Indore,Madhya Pradesh,2024-06-06
+C006,Name6,Surname6,Jaipur,Rajasthan,2024-07-07
+C007,Name7,Surname7,Lucknow,Uttar Pradesh,2024-08-08
+C008,Name8,Surname8,Surat,Gujarat,2024-09-09
+C009,Name9,Surname9,Nagpur,Maharashtra,2024-10-10
+C010,Name10,Surname10,Hyderabad,Telangana,2024-11-11
+C011,Name11,Surname11,Delhi,Delhi,2024-12-12
+C012,Name12,Surname12,Mumbai,Maharashtra,2024-01-13
+C013,Name13,Surname13,Pune,Maharashtra,2024-02-14
+C014,Name14,Surname14,Bhopal,Madhya Pradesh,2024-03-15
+C015,Name15,Surname15,Indore,Madhya Pradesh,2024-04-16
+C016,Name16,Surname16,Jaipur,Rajasthan,2024-05-17
+C017,Name17,Surname17,Lucknow,Uttar Pradesh,2024-06-18
+C018,Name18,Surname18,Surat,Gujarat,2024-07-19
+C019,Name19,Surname19,Nagpur,Maharashtra,2024-08-20
+C020,Name20,Surname20,Hyderabad,Telangana,2024-09-21
+C021,Name21,Surname21,Delhi,Delhi,2024-10-22
+C022,Name22,Surname22,Mumbai,Maharashtra,2024-11-23
+C023,Name23,Surname23,Pune,Maharashtra,2024-12-24
+C024,Name24,Surname24,Bhopal,Madhya Pradesh,2024-01-25
+C025,Name25,Surname25,Indore,Madhya Pradesh,2024-02-26
+C026,Name26,Surname26,Jaipur,Rajasthan,2024-03-27
+C027,Name27,Surname27,Lucknow,Uttar Pradesh,2024-04-28
+C028,Name28,Surname28,Surat,Gujarat,2024-05-01
+C029,Name29,Surname29,Nagpur,Maharashtra,2024-06-02
+C030,Name30,Surname30,Hyderabad,Telangana,2024-07-03
+C031,Name31,Surname31,Delhi,Delhi,2024-08-04
+C032,Name32,Surname32,Mumbai,Maharashtra,2024-09-05
+C033,Name33,Surname33,Pune,Maharashtra,2024-10-06
+C034,Name34,Surname34,Bhopal,Madhya Pradesh,2024-11-07
+C035,Name35,Surname35,Indore,Madhya Pradesh,2024-12-08
+C036,Name36,Surname36,Jaipur,Rajasthan,2024-01-09
+C037,Name37,Surname37,Lucknow,Uttar Pradesh,2024-02-10
+C038,Name38,Surname38,Surat,Gujarat,2024-03-11
+C039,Name39,Surname39,Nagpur,Maharashtra,2024-04-12
+C040,Name40,Surname40,Hyderabad,Telangana,2024-05-13
+C041,Name41,Surname41,Delhi,Delhi,2024-06-14
+C042,Name42,Surname42,Mumbai,Maharashtra,2024-07-15
+C043,Name43,Surname43,Pune,Maharashtra,2024-08-16
+C044,Name44,Surname44,Bhopal,Madhya Pradesh,2024-09-17
+C045,Name45,Surname45,Indore,Madhya Pradesh,2024-10-18
+C046,Name46,Surname46,Jaipur,Rajasthan,2024-11-19
+C047,Name47,Surname47,Lucknow,Uttar Pradesh,2024-12-20
+C048,Name48,Surname48,Surat,Gujarat,2024-01-21
+C049,Name49,Surname49,Nagpur,Maharashtra,2024-02-22
+C050,Name50,Surname50,Hyderabad,Telangana,2024-03-23

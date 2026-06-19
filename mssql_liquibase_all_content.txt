@@ -1,0 +1,241 @@
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\001_create_customers.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001" author="nitesh">
+
+        <createTable tableName="Customers">
+
+            <column name="CustomerID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="FirstName" type="VARCHAR(50)"/>
+
+            <column name="LastName" type="VARCHAR(50)"/>
+
+            <column name="City" type="VARCHAR(50)"/>
+
+            <column name="State" type="VARCHAR(50)"/>
+
+            <column name="JoinDate" type="DATE"/>
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\002_create_sellers.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002" author="nitesh">
+
+        <createTable tableName="Sellers">
+
+            <column name="SellerID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="SellerName" type="VARCHAR(100)"/>
+
+            <column name="City" type="VARCHAR(50)"/>
+
+            <column name="Rating" type="DECIMAL(3,2)"/>
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\003_create_products.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003" author="nitesh">
+
+        <createTable tableName="Products">
+
+            <column name="ProductID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="ProductName" type="VARCHAR(100)"/>
+
+            <column name="Category" type="VARCHAR(50)"/>
+
+            <column name="Price" type="DECIMAL(10,2)"/>
+
+            <column name="Stock" type="INT"/>
+
+            <column name="SellerID" type="VARCHAR(10)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="Products"
+            baseColumnNames="SellerID"
+            referencedTableName="Sellers"
+            referencedColumnNames="SellerID"
+            constraintName="FK_Products_Sellers"/>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\004_create_orders.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="004" author="nitesh">
+
+        <createTable tableName="OrdersTable">
+
+            <column name="OrderID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="CustomerID" type="VARCHAR(10)"/>
+
+            <column name="OrderDate" type="DATE"/>
+
+            <column name="TotalAmount" type="DECIMAL(10,2)"/>
+
+            <column name="Status" type="VARCHAR(20)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="OrdersTable"
+            baseColumnNames="CustomerID"
+            referencedTableName="Customers"
+            referencedColumnNames="CustomerID"
+            constraintName="FK_Orders_Customers"/>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\005_create_orderdetails.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="005" author="nitesh">
+
+        <createTable tableName="OrderDetails">
+
+            <column name="OrderDetailID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="OrderID" type="VARCHAR(10)"/>
+
+            <column name="ProductID" type="VARCHAR(10)"/>
+
+            <column name="Quantity" type="INT"/>
+
+            <column name="UnitPrice" type="DECIMAL(10,2)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="OrderDetails"
+            baseColumnNames="OrderID"
+            referencedTableName="OrdersTable"
+            referencedColumnNames="OrderID"
+            constraintName="FK_OrderDetails_Orders"/>
+
+        <addForeignKeyConstraint
+            baseTableName="OrderDetails"
+            baseColumnNames="ProductID"
+            referencedTableName="Products"
+            referencedColumnNames="ProductID"
+            constraintName="FK_OrderDetails_Products"/>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\liquibase\mssql\master.xml
+====================================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001" author="nitesh">
+
+        <createTable tableName="Customers">
+
+            <column name="CustomerID" type="INT">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="CustomerName" type="VARCHAR(255)"/>
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
+
+
+
