@@ -14,7 +14,7 @@ bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/common/install_mssql_driver.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/validate_tools.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/validate_tools.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mssql/install_mssql.sh"
 
