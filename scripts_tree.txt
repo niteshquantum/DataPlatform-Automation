@@ -1,0 +1,92 @@
+Folder PATH listing for volume New Volume
+Volume serial number is 00000272 5E0A:8230
+D:\LIQUIBASE\DATAPLATFORM-AUTOMATION\SCRIPTS
++---bash
+¦   ¦   download_mysql_driver.sh
+¦   ¦   
+¦   +---common
+¦   ¦       install_liquibase.sh
+¦   ¦       install_mysql_driver.sh
+¦   ¦       install_terraform.sh
+¦   ¦       install_tools.sh
+¦   ¦       set_project_root.sh
+¦   ¦       validate_java_runtime.sh
+¦   ¦       validate_python_runtime.sh
+¦   ¦       validate_tools.sh
+¦   ¦       
+¦   +---mysql
+¦           create_database.sh
+¦           deploy_mysql.sh
+¦           load_data.sh
+¦           run_liquibase.sh
+¦           start_mysql.sh
+¦           stop_mysql.sh
+¦           validate_csv.sh
+¦           validate_environment.sh
+¦           validate_loaded_data.sh
+¦           validate_mysql.sh
+¦           validate_port.sh
+¦           
++---batch
+¦   ¦   install_python_requirements.bat
+¦   ¦   validate_python_requirements.bat
+¦   ¦   
+¦   +---common
+¦   ¦       install_liquibase.bat
+¦   ¦       install_mysql_driver.bat
+¦   ¦       install_terraform.bat
+¦   ¦       install_tools.bat
+¦   ¦       setup_liquibase.bat
+¦   ¦       set_project_root.bat
+¦   ¦       validate_java_runtime.bat
+¦   ¦       validate_liquibase.bat
+¦   ¦       validate_mysql_driver.bat
+¦   ¦       validate_python_runtime.bat
+¦   ¦       validate_tools.bat
+¦   ¦       
+¦   +---mysql
+¦           cleanup_mysql.bat
+¦           create_database.bat
+¦           deploy_mysql.bat
+¦           destroy_mysql.bat
+¦           initialize_logs.bat
+¦           load_data.bat
+¦           mysql_load_with_logging.bat
+¦           mysql_setup_with_logging.bat
+¦           run_liquibase.bat
+¦           start_mysql.bat
+¦           stop_mysql.bat
+¦           validate_csv.bat
+¦           validate_environment.bat
+¦           validate_loaded_data.bat
+¦           validate_mysql.bat
+¦           validate_port.bat
+¦           
++---powershell
+¦       download_liquibase.ps1
+¦       download_mysql_driver.ps1
+¦       start_mysql.ps1
+¦       stop_mysql.ps1
+¦       
++---python
+    +---mysql
+        ¦   check_port.py
+        ¦   db_connection.py
+        ¦   load_all.py
+        ¦   load_customers.py
+        ¦   load_orderdetails.py
+        ¦   load_orders.py
+        ¦   load_products.py
+        ¦   load_sellers.py
+        ¦   testcsvschema.py
+        ¦   test_connection.py
+        ¦   truncate_tables.py
+        ¦   validate_csv.py
+        ¦   validate_customers.py
+        ¦   validate_loaded_data.py
+        ¦   validate_mysql.py
+        ¦   validate_port.py
+        ¦   
+        +---__pycache__
+                db_connection.cpython-313.pyc
+                

@@ -1,0 +1,17 @@
+PIPELINE_NAME=SQLSERVER_LOAD
+
+PIPELINE_TYPE=LOAD
+
+DATABASE_PLATFORM=SQLSERVER
+
+INSTANCE_NAME=MSSQLSERVER
+
+DATABASE_NAME=DataManagementDB
+
+LOAD_BATCH=jenkins\sqlserver\scripts\sqlserver_load_pipeline.bat
+
+VALIDATION_BATCH=scripts\batch\sqlserver\validate_data.bat
+
+LOG_FILE=logs\sqlserver_load.log
+
+STATUS=ACTIVE

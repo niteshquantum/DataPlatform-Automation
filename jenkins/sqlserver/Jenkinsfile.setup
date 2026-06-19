@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Initialize') {
+            steps {
+                bat 'jenkins\\sqlserver\\scripts\\sqlserver_setup_pipeline.bat INIT'
+            }
+        }
+
+        stage('Setup Pipeline') {
+            steps {
+                load 'jenkins/sqlserver/sqlserver_setup_pipeline.groovy'
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'SQL Server Setup Pipeline Completed Successfully'
+        }
+
+        failure {
+            echo 'SQL Server Setup Pipeline Failed'
+        }
+
+        always {
+            archiveArtifacts allowEmptyArchive: true,
+                artifacts: 'logs/*.log'
+        }
+    }
+}
