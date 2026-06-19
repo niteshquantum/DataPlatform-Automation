@@ -1,9 +1,7 @@
 pandas
-PyYAML
-python-dotenv
-mysql-connector-python
-pandas
-pymongo
 pyyaml
+python-dotenv
 
-
+mysql-connector-python
+pymongo
+pyodbc
