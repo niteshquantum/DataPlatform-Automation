@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="
+ http://www.liquibase.org/xml/ns/dbchangelog
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003" author="nitesh">
+
+        <createTable tableName="Products">
+
+            <column name="ProductID" type="VARCHAR(10)">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="ProductName" type="VARCHAR(100)"/>
+
+            <column name="Category" type="VARCHAR(50)"/>
+
+            <column name="Price" type="DECIMAL(10,2)"/>
+
+            <column name="Stock" type="INT"/>
+
+            <column name="SellerID" type="VARCHAR(10)"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="Products"
+            baseColumnNames="SellerID"
+            referencedTableName="Sellers"
+            referencedColumnNames="SellerID"
+            constraintName="FK_Products_Sellers"/>
+
+    </changeSet>
+
+</databaseChangeLog>
