@@ -1,0 +1,726 @@
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\check_port.py
+====================================================================================================
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\db_connection.py
+====================================================================================================
+from pathlib import Path
+import mysql.connector
+
+ROOT = Path(__file__).resolve().parents[3]
+
+config_file = ROOT / "config" / "mysql.conf"
+
+config = {}
+
+with open(config_file, "r") as f:
+    for line in f:
+        if "=" in line:
+            key, value = line.strip().split("=", 1)
+            config[key] = value
+
+def get_connection():
+    return mysql.connector.connect(
+        # host="localhost",
+        # host="127.0.0.1",
+        host=config["MYSQL_HOST"],
+        port=int(config["MYSQL_PORT"]),
+        user=config["MYSQL_USER"],
+        password=config["MYSQL_PASSWORD"],
+        database=config["MYSQL_DB"]
+    )
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_all.py
+====================================================================================================
+from pathlib import Path
+import subprocess
+import sys
+
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+scripts = [
+    "truncate_tables.py",
+    "load_customers.py",
+    "load_sellers.py",
+    "load_products.py",
+    "load_orders.py",
+    "load_orderdetails.py"
+]
+
+for script in scripts:
+
+    script_path = Path(__file__).parent / script
+
+    print()
+    print("=" * 50)
+    print(f"RUNNING : {script}")
+    print("=" * 50)
+
+    result = subprocess.run(
+        [sys.executable, str(script_path)],
+        cwd=ROOT
+    )
+
+    if result.returncode != 0:
+        print()
+        print(f"FAILED : {script}")
+        sys.exit(1)
+
+print()
+print("=" * 50)
+print("ALL DATA LOADED SUCCESSFULLY")
+print("=" * 50)
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_customers.py
+====================================================================================================
+from pathlib import Path
+import pandas as pd
+import mysql.connector
+
+from db_connection import get_connection
+
+ROOT = Path(__file__).resolve().parents[3]
+
+csv_file = ROOT / "datasets" / "mysql" / "Customers.csv"
+
+print(f"Loading: {csv_file}")
+
+df = pd.read_csv(csv_file)
+
+conn = get_connection()
+cursor = conn.cursor()
+
+insert_sql = """
+INSERT INTO Customers
+(
+    CustomerID,
+    FirstName,
+    LastName,
+    City,
+    State,
+    JoinDate
+)
+VALUES
+(
+    %s,
+    %s,
+    %s,
+    %s,
+    %s,
+    %s
+)
+"""
+
+for _, row in df.iterrows():
+
+    cursor.execute(
+        insert_sql,
+        (
+            row["CustomerID"],
+            row["FirstName"],
+            row["LastName"],
+            row["City"],
+            row["State"],
+            row["JoinDate"]
+        )
+    )
+
+rows_loaded = len(df)
+
+conn.commit()
+
+print(f"{rows_loaded} rows loaded into Customers")
+
+cursor.close()
+conn.close()
+
+print("Customers Load Successful")
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_orderdetails.py
+====================================================================================================
+from pathlib import Path
+import pandas as pd
+
+from db_connection import get_connection
+
+ROOT = Path(__file__).resolve().parents[3]
+
+csv_file = ROOT / "datasets" / "mysql" / "OrderDetails.csv"
+
+df = pd.read_csv(csv_file)
+
+conn = get_connection()
+cursor = conn.cursor()
+
+insert_sql = """
+INSERT INTO OrderDetails
+(
+    OrderDetailID,
+    OrderID,
+    ProductID,
+    Quantity,
+    UnitPrice
+)
+VALUES
+(
+    %s,
+    %s,
+    %s,
+    %s,
+    %s
+)
+"""
+
+for _, row in df.iterrows():
+
+    cursor.execute(
+        insert_sql,
+        (
+            row["OrderDetailID"],
+            row["OrderID"],
+            row["ProductID"],
+            row["Quantity"],
+            row["UnitPrice"]
+        )
+    )
+
+rows_loaded = len(df)
+
+conn.commit()
+
+print(f"{rows_loaded} rows loaded into OrderDetails")
+
+
+cursor.close()
+conn.close()
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_orders.py
+====================================================================================================
+from pathlib import Path
+import pandas as pd
+
+from db_connection import get_connection
+
+ROOT = Path(__file__).resolve().parents[3]
+
+csv_file = ROOT / "datasets" / "mysql" / "Orders.csv"
+
+df = pd.read_csv(csv_file)
+
+conn = get_connection()
+cursor = conn.cursor()
+
+insert_sql = """
+INSERT INTO OrdersTable
+(
+    OrderID,
+    CustomerID,
+    OrderDate,
+    TotalAmount,
+    Status
+)
+VALUES
+(
+    %s,
+    %s,
+    %s,
+    %s,
+    %s
+)
+"""
+
+for _, row in df.iterrows():
+
+    cursor.execute(
+        insert_sql,
+        (
+            row["OrderID"],
+            row["CustomerID"],
+            row["OrderDate"],
+            row["TotalAmount"],
+            row["Status"]
+        )
+    )
+
+rows_loaded = len(df)
+
+conn.commit()
+
+print(f"{rows_loaded} rows loaded into Orders")
+
+cursor.close()
+conn.close()
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_products.py
+====================================================================================================
+from pathlib import Path
+import pandas as pd
+
+from db_connection import get_connection
+
+ROOT = Path(__file__).resolve().parents[3]
+
+csv_file = ROOT / "datasets" / "mysql" / "Products.csv"
+
+df = pd.read_csv(csv_file)
+
+conn = get_connection()
+cursor = conn.cursor()
+
+insert_sql = """
+INSERT INTO Products
+(
+    ProductID,
+    ProductName,
+    Category,
+    Price,
+    Stock,
+    SellerID
+)
+VALUES
+(
+    %s,
+    %s,
+    %s,
+    %s,
+    %s,
+    %s
+)
+"""
+
+for _, row in df.iterrows():
+
+    cursor.execute(
+        insert_sql,
+        (
+            row["ProductID"],
+            row["ProductName"],
+            row["Category"],
+            row["Price"],
+            row["Stock"],
+            row["SellerID"]
+        )
+    )
+
+rows_loaded = len(df)
+
+conn.commit()
+
+print(f"{rows_loaded} rows loaded into Products")
+
+cursor.close()
+conn.close()
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\load_sellers.py
+====================================================================================================
+from pathlib import Path
+import pandas as pd
+
+from db_connection import get_connection
+
+ROOT = Path(__file__).resolve().parents[3]
+
+csv_file = ROOT / "datasets" / "mysql" / "Sellers.csv"
+
+df = pd.read_csv(csv_file)
+
+conn = get_connection()
+cursor = conn.cursor()
+
+insert_sql = """
+INSERT INTO Sellers
+(
+    SellerID,
+    SellerName,
+    City,
+    Rating
+)
+VALUES
+(
+    %s,
+    %s,
+    %s,
+    %s
+)
+"""
+
+for _, row in df.iterrows():
+
+    cursor.execute(
+        insert_sql,
+        (
+            row["SellerID"],
+            row["SellerName"],
+            row["City"],
+            row["Rating"]
+        )
+    )
+
+rows_loaded = len(df)
+
+conn.commit()
+
+print(f"{rows_loaded} rows loaded into Sellers")
+
+cursor.close()
+conn.close()
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\testcsvschema.py
+====================================================================================================
+import pandas as pd
+
+print(pd.read_csv("datasets/mysql/Customers.csv").columns.tolist())
+print(pd.read_csv("datasets/mysql/Sellers.csv").columns.tolist())
+print(pd.read_csv("datasets/mysql/Products.csv").columns.tolist())
+print(pd.read_csv("datasets/mysql/Orders.csv").columns.tolist())
+print(pd.read_csv("datasets/mysql/OrderDetails.csv").columns.tolist())
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\test_connection.py
+====================================================================================================
+from db_connection import get_connection
+
+conn = get_connection()
+
+print("MySQL Connected Successfully")
+
+conn.close()
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\truncate_tables.py
+====================================================================================================
+from db_connection import get_connection
+
+conn = get_connection()
+cursor = conn.cursor()
+
+cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+cursor.execute("SHOW TABLES")
+
+tables = [row[0] for row in cursor.fetchall()]
+
+skip_tables = [
+    "databasechangelog",
+    "databasechangeloglock"
+]
+
+for table in tables:
+
+    if table.lower() in skip_tables:
+        continue
+
+    cursor.execute(f"TRUNCATE TABLE {table}")
+
+    print(f"Truncated {table}")
+
+cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+conn.commit()
+
+cursor.close()
+conn.close()
+
+print("All Tables Truncated Successfully")
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\validate_csv.py
+====================================================================================================
+from pathlib import Path
+import yaml
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[3]
+
+datasets_file = ROOT / "config" / "mysql" / "datasets.yaml"
+datasets_dir = ROOT / "datasets" / "mysql"
+
+try:
+
+    with open(datasets_file, "r") as f:
+        config = yaml.safe_load(f)
+
+    datasets = config["datasets"]
+
+    print()
+    print("=" * 50)
+    print("CSV VALIDATION")
+    print("=" * 50)
+
+    for table_name, dataset_info in datasets.items():
+
+        csv_file = datasets_dir / dataset_info["file"]
+
+        if dataset_info.get("required", False):
+
+            if not csv_file.exists():
+                raise Exception(
+                    f"Required file missing: {dataset_info['file']}"
+                )
+
+        df = pd.read_csv(csv_file)
+
+        if df.empty:
+            raise Exception(
+                f"CSV file is empty: {dataset_info['file']}"
+            )
+
+        required_columns = dataset_info.get(
+            "required_columns",
+            []
+        )
+
+        missing_columns = [
+            col
+            for col in required_columns
+            if col not in df.columns
+        ]
+
+        if missing_columns:
+            raise Exception(
+                f"{dataset_info['file']} missing columns: "
+                f"{', '.join(missing_columns)}"
+            )
+
+        print(
+            f"[OK] {dataset_info['file']} "
+            f"({len(df)} rows)"
+        )
+
+    print("=" * 50)
+    print("CSV VALIDATION SUCCESS")
+    print("=" * 50)
+
+except Exception as e:
+
+    print()
+    print("=" * 50)
+    print("CSV VALIDATION FAILED")
+    print("=" * 50)
+    print(e)
+    print("=" * 50)
+
+    exit(1)
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\validate_customers.py
+====================================================================================================
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\validate_loaded_data.py
+====================================================================================================
+from pathlib import Path
+import mysql.connector
+
+ROOT = Path(__file__).resolve().parents[3]
+
+config = {}
+
+with open(ROOT / "config" / "mysql.conf") as f:
+    for line in f:
+        if "=" in line:
+            k, v = line.strip().split("=", 1)
+            config[k] = v
+
+conn = mysql.connector.connect(
+    host=config["MYSQL_HOST"],
+    port=int(config["MYSQL_PORT"]),
+    user=config["MYSQL_USER"],
+    password=config["MYSQL_PASSWORD"],
+    database=config["MYSQL_DB"]
+)
+
+cursor = conn.cursor()
+
+tables = {
+    "Customers": "Customers",
+    "Sellers": "Sellers",
+    "Products": "Products",
+    "OrdersTable": "Orders",
+    "OrderDetails": "OrderDetails"
+}
+
+print()
+print("=" * 50)
+print("LOADED DATA SUMMARY")
+print("=" * 50)
+
+for table, display_name in tables.items():
+
+    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+    count = cursor.fetchone()[0]
+
+    print(f"{display_name:<15} {count}")
+
+cursor.close()
+conn.close()
+
+print("=" * 50)
+print("DATA VALIDATION COMPLETED")
+print("=" * 50)
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\validate_mysql.py
+====================================================================================================
+from db_connection import get_connection, config
+
+try:
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DATABASE()")
+    database = cursor.fetchone()[0]
+
+    expected_database = config["MYSQL_DB"]
+
+    if database.lower() != expected_database.lower():
+        raise Exception(
+            f"Expected database '{expected_database}' but connected to '{database}'"
+        )
+
+    cursor.execute("SELECT @@port")
+    port = cursor.fetchone()[0]
+
+    cursor.execute("SELECT VERSION()")
+    version = cursor.fetchone()[0]
+
+    required_tables = {
+        "customers",
+        "sellers",
+        "products",
+        "orderstable",
+        "orderdetails",
+        "databasechangelog",
+        "databasechangeloglock"
+    }
+
+    cursor.execute("""
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+    """)
+
+    existing_tables = {row[0].lower() for row in cursor.fetchall()}
+
+    missing_tables = required_tables - existing_tables
+
+    if missing_tables:
+        raise Exception(
+            f"Missing tables: {', '.join(sorted(missing_tables))}"
+        )
+
+    print()
+    print("=" * 50)
+    print("MYSQL VALIDATION SUCCESS")
+    print("=" * 50)
+    print(f"Database : {database}")
+    print(f"Port     : {port}")
+    print(f"Version  : {version}")
+    print()
+    print("Tables Validated:")
+
+    for table in sorted(required_tables):
+        print(f"[OK] {table}")
+
+    print("=" * 50)
+
+    cursor.close()
+    conn.close()
+
+except Exception as e:
+
+    print()
+    print("=" * 50)
+    print("MYSQL VALIDATION FAILED")
+    print("=" * 50)
+    print(e)
+    print("=" * 50)
+
+    exit(1)
+
+
+
+====================================================================================================
+FILE: F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation\scripts\python\mysql\validate_port.py
+====================================================================================================
+import socket
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+config = {}
+
+with open(ROOT / "config" / "mysql.conf") as f:
+    for line in f:
+        if "=" in line:
+            key, value = line.strip().split("=", 1)
+            config[key] = value
+
+port = int(config["MYSQL_PORT"])
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+result = sock.connect_ex(("127.0.0.1", port))
+
+sock.close()
+
+if result != 0:
+
+    print()
+    print("=" * 50)
+    print("PORT VALIDATION FAILED")
+    print("=" * 50)
+    print(f"Port {port} is not listening")
+    print("=" * 50)
+
+    exit(1)
+
+print()
+print("=" * 50)
+print("PORT VALIDATION SUCCESS")
+print("=" * 50)
+print(f"Configured Port : {port}")
+print("Status          : LISTENING")
+print("=" * 50)
+
+
+
