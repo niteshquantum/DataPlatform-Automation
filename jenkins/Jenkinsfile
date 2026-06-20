@@ -1,0 +1,84 @@
+pipeline {
+
+    agent any
+
+    parameters {
+
+        choice(
+            name: 'DATABASE',
+            choices: ['mysql', 'mongodb'],
+            description: 'Select Database'
+        )
+
+        choice(
+            name: 'ACTION',
+            choices: ['setup', 'load'],
+            description: 'Select Action'
+        )
+    }
+
+    environment {
+        PROJECT_ROOT = 'D:\\QT\\Team_d\\DataPlatform-Automation'
+    }
+
+    stages {
+
+        stage('Execute') {
+
+            steps {
+
+                script {
+
+                    if (params.DATABASE == 'mysql' && params.ACTION == 'setup') {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                        bat 'scripts\\batch\\install_python_requirements.bat'
+                        bat 'scripts\\batch\\common\\install_tools.bat'
+                        bat 'scripts\\batch\\mysql\\deploy_mysql.bat'
+                        bat 'scripts\\batch\\mysql\\create_database.bat'
+                        bat 'scripts\\batch\\mysql\\run_liquibase.bat'
+                        bat 'scripts\\batch\\mysql\\validate_environment.bat'
+                        bat 'scripts\\batch\\mysql\\validate_mysql.bat'
+
+                    }
+
+                    else if (params.DATABASE == 'mysql' && params.ACTION == 'load') {
+
+                        bat 'scripts\\batch\\mysql\\validate_environment.bat'
+                        bat 'scripts\\batch\\mysql\\validate_csv.bat'
+                        bat 'scripts\\batch\\mysql\\load_data.bat'
+                        bat 'scripts\\batch\\mysql\\validate_mysql.bat'
+
+                    }
+
+                    else if (params.DATABASE == 'mongodb' && params.ACTION == 'setup') {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                        bat 'scripts\\batch\\install_python_requirements.bat'
+                        bat 'scripts\\batch\\validate_python_requirements.bat'
+                        bat 'scripts\\batch\\common\\install_tools.bat'
+                        bat 'scripts\\batch\\mongodb\\run_mongodb.bat'
+                        bat 'scripts\\batch\\mongodb\\start_mongodb.bat'
+                        bat 'scripts\\batch\\mongodb\\deploy_mongodb.bat'
+                        bat 'scripts\\batch\\mongodb\\validate_environment.bat'
+                        bat 'scripts\\batch\\mongodb\\validate_mongodb.bat'
+
+                    }
+
+                    else if (params.DATABASE == 'mongodb' && params.ACTION == 'load') {
+
+                        bat 'scripts\\batch\\mongodb\\load_data.bat'
+                        bat 'scripts\\batch\\mongodb\\validate_data.bat'
+                        bat 'mongosh --eval "show dbs"'
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
