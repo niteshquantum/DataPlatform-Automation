@@ -76,13 +76,7 @@ try {
         '''
     }
 
-    stage('Database Creation') {
-
-        bat '''
-        powershell -ExecutionPolicy Bypass ^
-        -File scripts\\powershell\\sqlserver\\create_database.ps1
-        '''
-    }
+   
 
     stage('Run Liquibase') {
 
