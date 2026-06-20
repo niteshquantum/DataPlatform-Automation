@@ -1,6 +1,9 @@
 node {
 
+stage('Checkout Repository') {
 
+    checkout scm
+}
 try {
 
     stage('Repository Audit') {
