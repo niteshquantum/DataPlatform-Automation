@@ -14,10 +14,10 @@ echo ERROR: TERRAFORM INSTALLATION FAILED
 exit /b 1
 )
 
-echo [2/3] Installing MySQL JDBC Driver...
-call "%~dp0install_mysql_driver.bat"
+echo [2/3] Installing SQL Server JDBC Driver...
+call "%~dp0install_sqlserver_driver.bat"
 if errorlevel 1 (
-echo ERROR: MYSQL JDBC DRIVER INSTALLATION FAILED
+echo ERROR: SQL SERVER JDBC DRIVER INSTALLATION FAILED
 exit /b 1
 )
 

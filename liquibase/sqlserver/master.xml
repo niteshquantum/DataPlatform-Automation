@@ -7,9 +7,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
 
-    <include file="001_create_customers.xml"/>
-    <include file="002_create_products.xml"/>
-    <include file="003_create_orders.xml"/>
-    <include file="004_create_orderdetails.xml"/>
+    <include file="liquibase/sqlserver/001_create_customers.xml"/>
+    <include file="liquibase/sqlserver/002_create_products.xml"/>
+    <include file="liquibase/sqlserver/003_create_orders.xml"/>
+    <include file="liquibase/sqlserver/004_create_orderdetails.xml"/>
 
 </databaseChangeLog>

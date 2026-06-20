@@ -224,93 +224,10 @@ PSEOF
   }
 }
 
-# W-5 â€” Create Database
-resource "null_resource" "w5_create_db_windows" {
-  depends_on = [null_resource.w4_start_windows]
-
-  provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
-    on_failure  = continue
-    command     = <<-PSEOF
-if ($env:OS -ne 'Windows_NT') { Write-Host '[W5] Not Windows - skip'; exit 0 }
-
-$root    = Split-Path (Split-Path (Split-Path $PWD.Path))
-$sqlFile = Join-Path $root 'sql\create_database.sql'
-$server  = "localhost,${local.sql_port}"
-$pass    = '${local.sql_sa_password}'
-$db      = '${local.sql_database}'
-
-$sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server' -Recurse -Filter 'sqlcmd.exe' -ErrorAction SilentlyContinue |
-          Select-Object -First 1 | ForEach-Object { $_.FullName }
-if (!$sqlcmd) { throw '[W5] sqlcmd not found' }
-
-Write-Host "[W5] Creating database: $db"
-& $sqlcmd -S $server -U SA -P $pass -i $sqlFile -v DB_NAME=$db
-if ($LASTEXITCODE -ne 0) { throw '[W5] create_database.sql failed' }
-Write-Host '[W5] Database done'
-PSEOF
-  }
-}
-
-# W-6 â€” Create Tables
-resource "null_resource" "w6_create_tables_windows" {
-  depends_on = [null_resource.w5_create_db_windows]
-
-  provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
-    on_failure  = continue
-    command     = <<-PSEOF
-if ($env:OS -ne 'Windows_NT') { Write-Host '[W6] Not Windows - skip'; exit 0 }
-
-$root    = Split-Path (Split-Path (Split-Path $PWD.Path))
-$sqlFile = Join-Path $root 'sql\create_tables.sql'
-$server  = "localhost,${local.sql_port}"
-$pass    = '${local.sql_sa_password}'
-$db      = '${local.sql_database}'
-
-$sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server' -Recurse -Filter 'sqlcmd.exe' -ErrorAction SilentlyContinue |
-          Select-Object -First 1 | ForEach-Object { $_.FullName }
-if (!$sqlcmd) { throw '[W6] sqlcmd not found' }
-
-Write-Host "[W6] Creating tables in $db"
-& $sqlcmd -S $server -U SA -P $pass -d $db -i $sqlFile
-if ($LASTEXITCODE -ne 0) { throw '[W6] create_tables.sql failed' }
-Write-Host '[W6] Tables done'
-PSEOF
-  }
-}
-
-# W-7 â€” Seed Data
-resource "null_resource" "w7_seed_windows" {
-  depends_on = [null_resource.w6_create_tables_windows]
-
-  provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
-    on_failure  = continue
-    command     = <<-PSEOF
-if ($env:OS -ne 'Windows_NT') { Write-Host '[W7] Not Windows - skip'; exit 0 }
-
-$root    = Split-Path (Split-Path (Split-Path $PWD.Path))
-$sqlFile = Join-Path $root 'sql\seed_data.sql'
-$server  = "localhost,${local.sql_port}"
-$pass    = '${local.sql_sa_password}'
-$db      = '${local.sql_database}'
-
-$sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server' -Recurse -Filter 'sqlcmd.exe' -ErrorAction SilentlyContinue |
-          Select-Object -First 1 | ForEach-Object { $_.FullName }
-if (!$sqlcmd) { throw '[W7] sqlcmd not found' }
-
-Write-Host "[W7] Seeding data into $db"
-& $sqlcmd -S $server -U SA -P $pass -d $db -i $sqlFile
-if ($LASTEXITCODE -ne 0) { throw '[W7] seed_data.sql failed' }
-Write-Host '[W7] Seed done'
-PSEOF
-  }
-}
 
 # W-8 â€” Full Verification
 resource "null_resource" "w8_verify_windows" {
-  depends_on = [null_resource.w7_seed_windows]
+  depends_on = [null_resource.w4_start_windows]
 
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]

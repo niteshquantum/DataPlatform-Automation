@@ -84,12 +84,11 @@ try {
         '''
     }
 
-    stage('Table Creation') {
+    stage('Run Liquibase') {
 
-        bat '''
-        powershell -ExecutionPolicy Bypass ^
-        -File scripts\\powershell\\sqlserver\\create_tables.ps1
-        '''
+    bat '''
+    call scripts\\batch\\sqlserver\\run_liquibase.bat
+    '''
     }
 
     stage('Validation') {

@@ -1,5 +1,6 @@
 @echo off
-REM TODO: Validate SQL Server instance DMSQL health and connection state.
-REM Should connect to DataManagementDB and confirm availability on port 1533.
+setlocal
 
-echo Validating SQL Server instance
+powershell -ExecutionPolicy Bypass ^ -File scripts\powershell\sqlserver\validate_sqlserver.ps1
+
+exit /b %ERRORLEVEL%

@@ -36,10 +36,10 @@ exit /b 1
 )
 
 REM =====================================
-REM MYSQL JDBC DRIVER
+REM SQL SERVER JDBC DRIVER
 REM =====================================
 
-call scripts\batch\common\validate_mysql_driver.bat
+call scripts\batch\common\validate_sqlserver_driver.bat
 
 if errorlevel 1 (
 exit /b 1

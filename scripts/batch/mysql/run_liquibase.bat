@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 echo.
 echo =====================================
-echo RUNNING LIQUIBASE
+echo RUNNING SQL SERVER LIQUIBASE
 echo =====================================
 echo.
 
@@ -12,30 +12,8 @@ REM PROJECT ROOT
 REM =====================================
 
 set "ROOT=%CD%"
-set "CONFIG_FILE=%ROOT%\config\mysql.conf"
-
-REM =====================================
-REM VALIDATE CONFIG
-REM =====================================
-
-if not exist "%CONFIG_FILE%" (
-echo ERROR: CONFIG FILE NOT FOUND
-echo Expected: %CONFIG_FILE%
-exit /b 1
-)
-
-REM =====================================
-REM READ CONFIG
-REM =====================================
-
-for /f "tokens=1,2 delims==" %%A in (%CONFIG_FILE%) do (
-if /I "%%A"=="MYSQL_HOST" set "MYSQL_HOST=%%B"
-if /I "%%A"=="MYSQL_PORT" set "MYSQL_PORT=%%B"
-if /I "%%A"=="MYSQL_DB" set "MYSQL_DB=%%B"
-if /I "%%A"=="MYSQL_USER" set "MYSQL_USER=%%B"
-if /I "%%A"=="MYSQL_PASSWORD" set "MYSQL_PASSWORD=%%B"
-if /I "%%A"=="MYSQL_DRIVER_VERSION" set "MYSQL_DRIVER_VERSION=%%B"
-)
+set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
+set "PROP_FILE=%ROOT%\liquibase\sqlserver\liquibase.properties"
 
 REM =====================================
 REM VALIDATE LIQUIBASE
@@ -48,78 +26,46 @@ exit /b 1
 )
 
 REM =====================================
-REM VALIDATE JDBC DRIVER
+REM VALIDATE FILES
 REM =====================================
 
-call scripts\batch\common\validate_mysql_driver.bat
-
-if errorlevel 1 (
+if not exist "%LB_BAT%" (
+echo ERROR: LIQUIBASE NOT FOUND
+echo Expected: %LB_BAT%
 exit /b 1
 )
 
-REM =====================================
-REM PATHS
-REM =====================================
-
-set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
-
-set "DRIVER=%ROOT%\tools\drivers\mysql-connector-j-%MYSQL_DRIVER_VERSION%.jar"
-
-if not exist "%DRIVER%" (
-echo ERROR: JDBC DRIVER NOT FOUND
-echo Expected: %DRIVER%
+if not exist "%PROP_FILE%" (
+echo ERROR: LIQUIBASE PROPERTIES NOT FOUND
+echo Expected: %PROP_FILE%
 exit /b 1
 )
 
-set "CHANGELOG=liquibase/mysql/master.xml"
-
-if not exist "%CHANGELOG%" (
-echo ERROR: CHANGELOG NOT FOUND
-echo Expected: %CHANGELOG%
+if not exist "liquibase\sqlserver\master.xml" (
+echo ERROR: MASTER CHANGELOG NOT FOUND
 exit /b 1
 )
 
-echo Database : %MYSQL_DB%
-echo Host     : %MYSQL_HOST%
-echo Port     : %MYSQL_PORT%
-echo User     : %MYSQL_USER%
-echo Driver   : %DRIVER%
 echo.
-
-echo JAVA_HOME : %JAVA_HOME%
+echo Liquibase Home : %LB_BAT%
+echo Properties     : %PROP_FILE%
 echo.
 
 java -version
 
 if errorlevel 1 (
-echo ERROR: JAVA EXECUTION FAILED
+echo ERROR: JAVA NOT AVAILABLE
 exit /b 1
 )
 
 echo.
-
-REM =====================================
-REM PASSWORD OPTION
-REM =====================================
-
-set "PASSWORD_OPTION="
-
-if defined MYSQL_PASSWORD (
-set "PASSWORD_OPTION=--password=%MYSQL_PASSWORD%"
-)
-
-REM =====================================
-REM RUN LIQUIBASE
-REM =====================================
+echo =====================================
+echo EXECUTING LIQUIBASE UPDATE
+echo =====================================
+echo.
 
 call "%LB_BAT%" ^
---classpath="%DRIVER%" ^
---driver=com.mysql.cj.jdbc.Driver ^
---search-path="%ROOT%" ^
---changeLogFile="%CHANGELOG%" ^
---url="jdbc:mysql://%MYSQL_HOST%:%MYSQL_PORT%/%MYSQL_DB%" ^
---username=%MYSQL_USER% ^
-%PASSWORD_OPTION% ^
+--defaults-file="%PROP_FILE%" ^
 update
 
 if errorlevel 1 (
