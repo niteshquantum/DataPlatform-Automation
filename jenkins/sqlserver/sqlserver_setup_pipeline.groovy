@@ -1,57 +1,109 @@
 node {
 
-    try {
 
-        stage('Terraform Apply') {
+try {
 
-            bat '''
-            cd terraform\\sqlserver
+    stage('Repository Audit') {
 
-            if exist terraform.tfstate (
-                terraform apply -auto-approve
-            ) else (
-                terraform init
-                terraform apply -auto-approve
-            )
-            '''
-        }
+        bat '''
+        echo =====================================
+        echo WORKSPACE
+        echo =====================================
+        echo %WORKSPACE%
 
-        stage('SQL Server Validation') {
+        echo =====================================
+        echo ROOT
+        echo =====================================
+        dir
 
-            bat '''
-            call scripts\\batch\\sqlserver\\validate_environment.bat
-            '''
-        }
+        echo =====================================
+        echo TERRAFORM
+        echo =====================================
+        dir terraform
 
-        stage('Database Creation') {
+        echo =====================================
+        echo SQLSERVER
+        echo =====================================
+        dir terraform\\sqlserver
 
-            bat '''
-            powershell -ExecutionPolicy Bypass ^
-            -File scripts\\powershell\\sqlserver\\create_database.ps1
-            '''
-        }
+        if not exist terraform\\sqlserver\\main.tf (
+            echo [FAIL] terraform\\sqlserver\\main.tf missing
+            exit /b 1
+        )
 
-        stage('Table Creation') {
+        if not exist terraform\\sqlserver\\variables.tf (
+            echo [FAIL] terraform\\sqlserver\\variables.tf missing
+            exit /b 1
+        )
 
-            bat '''
-            powershell -ExecutionPolicy Bypass ^
-            -File scripts\\powershell\\sqlserver\\create_tables.ps1
-            '''
-        }
+        if not exist terraform\\sqlserver\\terraform.tfvars (
+            echo [FAIL] terraform\\sqlserver\\terraform.tfvars missing
+            exit /b 1
+        )
 
-        stage('Validation') {
+        if not exist config\\sqlserver.conf (
+            echo [FAIL] config\\sqlserver.conf missing
+            exit /b 1
+        )
 
-            bat '''
-            call scripts\\batch\\sqlserver\\validate_sqlserver.bat
-            '''
-        }
-
-        currentBuild.result = 'SUCCESS'
+        echo [PASS] Repository validation successful
+        '''
     }
-    catch(Exception ex) {
 
-        currentBuild.result = 'FAILURE'
+    stage('Terraform Apply') {
 
-        throw ex
+        bat '''
+        pushd terraform\\sqlserver
+
+        if exist terraform.tfstate (
+            terraform apply -auto-approve
+        ) else (
+            terraform init
+            terraform apply -auto-approve
+        )
+
+        popd
+        '''
     }
+
+    stage('SQL Server Validation') {
+
+        bat '''
+        call scripts\\batch\\sqlserver\\validate_environment.bat
+        '''
+    }
+
+    stage('Database Creation') {
+
+        bat '''
+        powershell -ExecutionPolicy Bypass ^
+        -File scripts\\powershell\\sqlserver\\create_database.ps1
+        '''
+    }
+
+    stage('Table Creation') {
+
+        bat '''
+        powershell -ExecutionPolicy Bypass ^
+        -File scripts\\powershell\\sqlserver\\create_tables.ps1
+        '''
+    }
+
+    stage('Validation') {
+
+        bat '''
+        call scripts\\batch\\sqlserver\\validate_sqlserver.bat
+        '''
+    }
+
+    currentBuild.result = 'SUCCESS'
+}
+catch(Exception ex) {
+
+    currentBuild.result = 'FAILURE'
+
+    throw ex
+}
+
+
 }
