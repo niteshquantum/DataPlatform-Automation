@@ -53,6 +53,13 @@ try {
         '''
     }
 
+    stage('Install Tools') {
+
+    bat '''
+    call scripts\\batch\\common\\install_tools.bat
+    '''
+    }
+
     stage('Terraform Apply') {
 
         bat '''
