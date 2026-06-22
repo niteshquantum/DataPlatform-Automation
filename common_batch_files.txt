@@ -1,0 +1,222 @@
+====================================================================================================
+FILE: scripts\batch\common\install_tools.bat
+====================================================================================================
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo INSTALLING TOOLS
+echo =====================================
+echo.
+
+echo [1/3] Installing Terraform...
+call "%~dp0install_terraform.bat"
+if errorlevel 1 (
+echo ERROR: TERRAFORM INSTALLATION FAILED
+exit /b 1
+)
+
+echo [2/3] Installing MySQL JDBC Driver...
+call "%~dp0install_mysql_driver.bat"
+if errorlevel 1 (
+echo ERROR: MYSQL JDBC DRIVER INSTALLATION FAILED
+exit /b 1
+)
+
+echo [3/3] Installing Liquibase...
+call "%~dp0install_liquibase.bat"
+if errorlevel 1 (
+echo ERROR: LIQUIBASE INSTALLATION FAILED
+exit /b 1
+)
+
+echo.
+echo Validating Installed Tools...
+echo.
+
+call "%~dp0validate_tools.bat"
+
+if errorlevel 1 (
+echo ERROR: TOOL VALIDATION FAILED
+exit /b 1
+)
+
+echo.
+echo =====================================
+echo TOOLS INSTALLED SUCCESSFULLY
+echo =====================================
+echo.
+
+exit /b 0
+
+
+
+====================================================================================================
+FILE: scripts\batch\common\validate_tools.bat
+====================================================================================================
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo VALIDATING TOOLS
+echo =====================================
+echo.
+
+REM =====================================
+REM TERRAFORM
+REM =====================================
+
+if not exist tools\terraform\terraform.exe (
+echo ERROR: TERRAFORM NOT FOUND
+exit /b 1
+)
+
+echo Checking Terraform...
+tools\terraform\terraform.exe version
+echo Checking Liquibase...
+call "%~dp0validate_liquibase.bat"
+if errorlevel 1 exit /b 1
+
+echo Checking MySQL Driver...
+call "%~dp0validate_mysql_driver.bat"
+if errorlevel 1 exit /b 1
+
+echo TERRAFORM VALIDATED
+
+
+
+
+echo.
+echo =====================================
+echo TOOLS VALIDATED SUCCESSFULLY
+echo =====================================
+echo.
+
+exit /b 0
+
+
+
+====================================================================================================
+FILE: scripts\batch\common\install_liquibase.bat
+====================================================================================================
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo INSTALLING LIQUIBASE
+echo =====================================
+echo.
+
+powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\download_liquibase.ps1"
+
+if errorlevel 1 (
+    echo.
+    echo ERROR: LIQUIBASE INSTALLATION FAILED
+    exit /b 1
+)
+
+echo.
+echo LIQUIBASE INSTALLATION SUCCESSFUL
+echo.
+
+exit /b 0
+
+
+
+====================================================================================================
+FILE: scripts\batch\common\install_terraform.bat
+====================================================================================================
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo INSTALLING TERRAFORM
+echo =====================================
+echo.
+
+set "ROOT=%CD%"
+set "TF_DIR=%ROOT%\tools\terraform"
+set "TF_ZIP=%ROOT%\tools\terraform.zip"
+
+if not exist "%ROOT%\tools" (
+mkdir "%ROOT%\tools"
+)
+
+if not exist "%TF_DIR%" (
+mkdir "%TF_DIR%"
+)
+
+if exist "%TF_DIR%\terraform.exe" (
+echo Terraform already installed.
+echo Skipping download...
+exit /b 0
+)
+
+echo Downloading Terraform...
+
+powershell -Command "Invoke-WebRequest -Uri 'https://releases.hashicorp.com/terraform/1.13.0/terraform_1.13.0_windows_amd64.zip' -OutFile '%TF_ZIP%'"
+
+if errorlevel 1 (
+echo ERROR: TERRAFORM DOWNLOAD FAILED
+exit /b 1
+)
+
+if not exist "%TF_ZIP%" (
+echo ERROR: TERRAFORM ZIP NOT FOUND
+exit /b 1
+)
+
+echo Extracting Terraform...
+
+powershell -Command "Expand-Archive '%TF_ZIP%' -DestinationPath '%TF_DIR%' -Force"
+
+if errorlevel 1 (
+echo ERROR: TERRAFORM EXTRACTION FAILED
+exit /b 1
+)
+
+del "%TF_ZIP%" >nul 2>&1
+
+if not exist "%TF_DIR%\terraform.exe" (
+echo ERROR: TERRAFORM INSTALLATION VALIDATION FAILED
+exit /b 1
+)
+
+echo Terraform Installed Successfully.
+
+exit /b 0
+
+
+
+====================================================================================================
+FILE: scripts\batch\common\install_mysql_driver.bat
+====================================================================================================
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo INSTALLING MYSQL DRIVER
+echo =====================================
+echo.
+
+powershell -ExecutionPolicy Bypass -File "%~dp0..\..\powershell\download_mysql_driver.ps1"
+
+if errorlevel 1 (
+echo.
+echo ERROR: MYSQL DRIVER INSTALLATION FAILED
+exit /b 1
+)
+
+echo.
+echo MYSQL DRIVER INSTALLATION SUCCESSFUL
+echo.
+
+exit /b 0
+
+
+

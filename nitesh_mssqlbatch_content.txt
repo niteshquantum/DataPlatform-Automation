@@ -1,0 +1,228 @@
+========================================================================================================================
+FILE: scripts\batch\mssql\create_database.bat
+========================================================================================================================
+
+@echo off
+setlocal EnableDelayedExpansion
+
+echo.
+echo =====================================
+echo CREATE DATABASE
+echo =====================================
+echo.
+
+set "ROOT=%CD%"
+set "CONFIG_FILE=%ROOT%\config\mssql.conf"
+
+for /f "tokens=1,2 delims==" %%A in (%CONFIG_FILE%) do (
+if /I "%%A"=="MSSQL_HOST" set "MSSQL_HOST=%%B"
+if /I "%%A"=="MSSQL_PORT" set "MSSQL_PORT=%%B"
+if /I "%%A"=="MSSQL_DB" set "MSSQL_DB=%%B"
+if /I "%%A"=="MSSQL_USER" set "MSSQL_USER=%%B"
+if /I "%%A"=="MSSQL_PASSWORD" set "MSSQL_PASSWORD=%%B"
+)
+
+sqlcmd ^
+-S %MSSQL_HOST%,%MSSQL_PORT% ^
+-U %MSSQL_USER% ^
+-P %MSSQL_PASSWORD% ^
+-C ^
+-Q "IF DB_ID('%MSSQL_DB%') IS NULL CREATE DATABASE [%MSSQL_DB%]"
+
+if errorlevel 1 (
+echo DATABASE CREATION FAILED
+exit /b 1
+)
+
+echo DATABASE READY : %MSSQL_DB%
+
+exit /b 0
+
+
+
+========================================================================================================================
+FILE: scripts\batch\mssql\load_data.bat
+========================================================================================================================
+
+@echo off
+
+echo.
+echo =====================================
+echo MSSQL DATA LOAD
+echo =====================================
+echo.
+
+python scripts\python\mssql\load_all.py
+
+if errorlevel 1 (
+echo DATA LOAD FAILED
+exit /b 1
+)
+
+echo DATA LOAD SUCCESSFUL
+
+exit /b 0
+
+
+
+========================================================================================================================
+FILE: scripts\batch\mssql\run_liquibase.bat
+========================================================================================================================
+
+@echo off
+setlocal EnableDelayedExpansion
+
+echo.
+echo =====================================
+echo RUNNING LIQUIBASE
+echo =====================================
+echo.
+
+set "ROOT=%CD%"
+set "CONFIG_FILE=%ROOT%\config\windows\mssql.conf"
+
+if not exist "%CONFIG_FILE%" (
+echo ERROR: CONFIG FILE NOT FOUND
+echo Expected: %CONFIG_FILE%
+exit /b 1
+)
+
+for /f "tokens=1,2 delims==" %%A in (%CONFIG_FILE%) do (
+if /I "%%A"=="MSSQL_HOST" set "MSSQL_HOST=%%B"
+if /I "%%A"=="MSSQL_PORT" set "MSSQL_PORT=%%B"
+if /I "%%A"=="MSSQL_DB" set "MSSQL_DB=%%B"
+if /I "%%A"=="MSSQL_USER" set "MSSQL_USER=%%B"
+if /I "%%A"=="MSSQL_PASSWORD" set "MSSQL_PASSWORD=%%B"
+if /I "%%A"=="MSSQL_DRIVER_VERSION" set "MSSQL_DRIVER_VERSION=%%B"
+)
+
+call scripts\batch\common\validate_liquibase.bat
+if errorlevel 1 exit /b 1
+
+call scripts\batch\common\validate_mssql_driver.bat
+if errorlevel 1 exit /b 1
+
+set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
+
+set "DRIVER=%ROOT%\tools\drivers\mssql-jdbc-%MSSQL_DRIVER_VERSION%.jre11.jar"
+
+set "CHANGELOG=liquibase\mssql\master.xml"
+
+call "%LB_BAT%" ^
+--classpath="%DRIVER%" ^
+--driver=com.microsoft.sqlserver.jdbc.SQLServerDriver ^
+--search-path="%ROOT%" ^
+--changeLogFile="%CHANGELOG%" ^
+--url="jdbc:sqlserver://%MSSQL_HOST%:%MSSQL_PORT%;databaseName=%MSSQL_DB%;encrypt=true;trustServerCertificate=true" ^
+--username=%MSSQL_USER% ^
+--password=%MSSQL_PASSWORD% ^
+update
+
+if errorlevel 1 (
+echo LIQUIBASE UPDATE FAILED
+exit /b 1
+)
+
+echo.
+echo =====================================
+echo LIQUIBASE UPDATE COMPLETED
+echo =====================================
+echo.
+
+exit /b 0
+
+
+
+========================================================================================================================
+FILE: scripts\batch\mssql\validate_environment.bat
+========================================================================================================================
+
+@echo off
+setlocal
+
+echo.
+echo =====================================
+echo ENVIRONMENT VALIDATION STARTED
+echo =====================================
+echo.
+
+echo [1/5] Validating Python Runtime...
+call scripts\batch\common\validate_python_runtime.bat
+if errorlevel 1 exit /b 1
+
+echo [2/5] Validating Python Requirements...
+call scripts\batch\validate_python_requirements.bat
+if errorlevel 1 exit /b 1
+
+echo [3/5] Validating Tools...
+call scripts\batch\common\validate_tools.bat
+if errorlevel 1 exit /b 1
+
+echo [4/5] Validating MSSQL...
+call scripts\batch\mssql\validate_mssql.bat
+if errorlevel 1 exit /b 1
+
+echo [5/5] Environment Validation Complete
+
+echo.
+echo =====================================
+echo ENVIRONMENT VALIDATION SUCCESSFUL
+echo =====================================
+echo.
+
+exit /b 0
+
+
+
+========================================================================================================================
+FILE: scripts\batch\mssql\validate_loaded_data.bat
+========================================================================================================================
+
+@echo off
+
+echo.
+echo =====================================
+echo VALIDATING LOADED DATA
+echo =====================================
+echo.
+
+python scripts\python\mssql\validate_loaded_data.py
+
+if errorlevel 1 (
+echo LOADED DATA VALIDATION FAILED
+exit /b 1
+)
+
+echo LOADED DATA VALIDATION SUCCESSFUL
+
+exit /b 0
+
+
+
+========================================================================================================================
+FILE: scripts\batch\mssql\validate_mssql.bat
+========================================================================================================================
+
+@echo off
+
+echo.
+echo =====================================
+echo VALIDATING MSSQL
+echo =====================================
+echo.
+
+python scripts\python\mssql\validate_mssql.py
+
+if errorlevel 1 (
+echo MSSQL VALIDATION FAILED
+exit /b 1
+)
+
+echo.
+echo MSSQL VALIDATION SUCCESSFUL
+echo.
+
+exit /b 0
+
+
+
