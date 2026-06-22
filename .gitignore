@@ -5,25 +5,18 @@
 # =====================================================
 
 **/.terraform/
-
 *.tfstate
 *.tfstate.*
-
 .terraform.lock.hcl
 
 # =====================================================
 
-# Database Binaries
+# Database Files
 
 # =====================================================
 
 databases/*
-
 !databases/.gitkeep
-!databases/mysql/
-databases/mysql/*
-
-!databases/mysql/.gitkeep
 
 # =====================================================
 
@@ -32,11 +25,7 @@ databases/mysql/*
 # =====================================================
 
 tools/*
-
 !tools/.gitkeep
-!tools/drivers/
-!tools/liquibase/
-!tools/terraform/
 
 tools/drivers/*
 tools/liquibase/*
@@ -61,12 +50,14 @@ logs/
 
 # =====================================================
 
-**pycache**/
+**/**pycache**/
 *.pyc
+*.pyo
+*.pyd
 
 # =====================================================
 
-# IDE / Editor
+# IDE
 
 # =====================================================
 
@@ -75,7 +66,7 @@ logs/
 
 # =====================================================
 
-# Operating System Files
+# OS
 
 # =====================================================
 

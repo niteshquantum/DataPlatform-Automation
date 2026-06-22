@@ -1,5 +1,6 @@
 pipeline {
 
+   
     agent any
 
     stages {
@@ -28,15 +29,15 @@ pipeline {
             }
         }
 
-        stage('Install Tools') {
+        stage('Install Common Tools') {
             steps {
                 bat 'scripts\\batch\\common\\install_tools.bat'
             }
         }
 
-        stage('Install MSSQL Driver') {
+        stage('Install MSSQL Tools') {
             steps {
-                bat 'scripts\\batch\\common\\install_mssql_driver.bat'
+                bat 'scripts\\batch\\mssql\\install_mssql_tools.bat'
             }
         }
 
@@ -91,4 +92,6 @@ pipeline {
             echo 'MSSQL SETUP PIPELINE COMPLETED'
         }
     }
+   
+
 }

@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal
 
 echo.
 echo =====================================
@@ -36,6 +36,8 @@ set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
 set "DRIVER=%ROOT%\tools\drivers\mssql-jdbc-%MSSQL_DRIVER_VERSION%.jre11.jar"
 
 set "CHANGELOG=liquibase\mssql\master.xml"
+
+
 
 call "%LB_BAT%" ^
 --classpath="%DRIVER%" ^
