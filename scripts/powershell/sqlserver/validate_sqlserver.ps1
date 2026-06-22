@@ -129,8 +129,28 @@ try {
     # --------------------------------------------------------
 
     $Service = Get-Service `
-        -Name $ServiceName `
+    -Name $ServiceName `
+    -ErrorAction SilentlyContinue
+
+if (-not $Service) {
+
+    Write-Host ""
+    Write-Host "Expected Instance : $InstanceName"
+    Write-Host "Configured Port   : $Port"
+
+    $Detected = Get-Service "MSSQL*" `
         -ErrorAction SilentlyContinue
+
+    if ($Detected) {
+
+        Write-Host ""
+        Write-Host "Detected SQL Instances:"
+
+        $Detected |
+        Select Name, Status |
+        Format-Table
+    }
+}
 
     Test-Check `
         "Service '$ServiceName' Running" `

@@ -111,6 +111,8 @@ PSEOF
   }
 }
 
+
+
 # W-3 â€” Silent install
 resource "null_resource" "w3_install_windows" {
   depends_on = [null_resource.w2_download_windows]
@@ -237,7 +239,7 @@ if ($env:OS -ne 'Windows_NT') { Write-Host '[W8] Not Windows - skip'; exit 0 }
 
 $instance = '${local.sql_instance}'
 $port     = '${local.sql_port}'
-$pass     = '${local.sql_sa_password}'
+$saPassword = '${local.sql_sa_password}'
 $db       = '${local.sql_database}'
 $server   = "localhost,$port"
 $svcName  = if ($instance -eq 'MSSQLSERVER') { 'MSSQLSERVER' } else { "MSSQL`$$instance" }
@@ -245,10 +247,15 @@ $svcName  = if ($instance -eq 'MSSQLSERVER') { 'MSSQLSERVER' } else { "MSSQL`$$i
 $sqlcmd = Get-ChildItem 'C:\Program Files\Microsoft SQL Server' -Recurse -Filter 'sqlcmd.exe' -ErrorAction SilentlyContinue |
           Select-Object -First 1 | ForEach-Object { $_.FullName }
 
-$pass = $true
+$allPassed = $true
 function chk($label, $ok) {
-  if ($ok) { Write-Host "  [PASS] $label" }
-  else { Write-Host "  [FAIL] $label"; $script:pass = $false }
+  if ($ok) {
+      Write-Host "  [PASS] $label"
+  }
+  else {
+      Write-Host "  [FAIL] $label"
+      $script:allPassed = $false
+  }
 }
 
 Write-Host ''
@@ -266,10 +273,10 @@ chk "Windows Auth connection" ($LASTEXITCODE -eq 0)
 $cnt = & $sqlcmd -S "localhost" -E -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name='DataManagementDB'" 2>&1 | Where-Object {$_ -match "[0-9]"} | Select-Object -First 1
 chk "Database DataManagementDB exists" ($cnt -match "[1-9]")
 
-$r = & $sqlcmd -S $server -U SA -P $pass -d $db -Q 'SET NOCOUNT ON; SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE=''BASE TABLE''' 2>&1
+$r = & $sqlcmd -S $server -U SA -P $saPassword -d $db -Q 'SET NOCOUNT ON; SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE=''BASE TABLE''' 2>&1
 chk 'Tables exist' ($r -match '[1-9]')
 
-$r = & $sqlcmd -S $server -U SA -P $pass -d $db -Q 'SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Customers' 2>&1
+$r = & $sqlcmd -S $server -U SA -P $saPassword -d $db -Q 'SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Customers' 2>&1
 chk 'Seed data (Customers)' ($r -match '[1-9]')
 
 & $sqlcmd -S "localhost" -E -d "DataManagementDB" -Q 'SELECT COUNT(*) FROM dbo.Orders o JOIN dbo.Customers c ON o.CustomerID=c.CustomerID' 2>&1 | Out-Null

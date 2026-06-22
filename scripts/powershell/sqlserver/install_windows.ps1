@@ -6,4 +6,13 @@ Database Name: DataManagementDB
 Port: 1533
 #>
 
+
+
 Write-Host 'Placeholder: SQL Server Express 2025 installation script'
+
+$ExistingInstance = Get-Service "MSSQL*" `
+    -ErrorAction SilentlyContinue
+
+if ($ExistingInstance) {
+    throw "Existing SQL Server installation detected."
+}
