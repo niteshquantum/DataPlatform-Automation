@@ -197,6 +197,33 @@ if (!$svc) { throw "[W4] Service '$svcName' not found" }
 Write-Host "[W4] Restarting service: $svcName"
 Restart-Service $svcName -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 5
+ ##-----------------------------------------
+$sqlcmd = Get-Command sqlcmd -ErrorAction SilentlyContinue
+
+$retry = 0
+
+while ($retry -lt 24) {
+
+    & sqlcmd `
+      -S "localhost,$port" `
+      -U SA `
+      -P "${local.sql_sa_password}" `
+      -Q "SELECT 1" `
+      > $null 2>&1
+
+    if ($LASTEXITCODE -eq 0) {
+
+        Write-Host "[W4] SQL Server accepting connections"
+        break
+    }
+
+    Start-Sleep -Seconds 5
+    $retry++
+}
+
+if ($LASTEXITCODE -ne 0) {
+    throw "[W4] SQL Server never became ready"
+}
 
 # Wait for Running
 $timeout = 90; $elapsed = 0
