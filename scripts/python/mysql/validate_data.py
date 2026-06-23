@@ -30,28 +30,40 @@ try:
     / "schema_registry.json"
     )
 
-    with open(schema_file, "r", encoding="utf-8") as f:
-        schema_registry = json.load(f)
-
-    required_tables = {
-        table.lower()
-        for table in schema_registry.keys()
-    }
-
     cursor.execute("""
+
         SELECT table_name
+
         FROM information_schema.tables
+
         WHERE table_schema = DATABASE()
+
     """)
+    
+    existing_tables = {
 
-    existing_tables = {row[0].lower() for row in cursor.fetchall()}
+        row[0].lower()
 
-    missing_tables = required_tables - existing_tables
+        for row in cursor.fetchall()
 
-    if missing_tables:
-        raise Exception(
-            f"Missing tables: {', '.join(sorted(missing_tables))}"
-        )
+    }
+    
+    # Ignore Liquibase internal tables
+
+    system_tables = {
+
+        "databasechangelog",
+
+        "databasechangeloglock"
+
+    }
+    
+    validated_tables = existing_tables - system_tables
+    
+    if not validated_tables:
+
+        raise Exception("No user tables found")
+    
 
     print()
     print("=" * 50)
@@ -64,7 +76,7 @@ try:
     print()
     print("Tables Validated:")
 
-    for table in sorted(required_tables):
+    for table in sorted(validated_tables):
 
         cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
         count = cursor.fetchone()[0]

@@ -22,6 +22,13 @@ pipeline {
             }
         }
 
+
+         stage('Start MySQL Service') {
+            steps {
+                bat 'scripts\\batch\\mysql\\start_mysql.bat'
+            }
+        }
+
         stage('Validate MySQL') {
             steps {
                 bat 'scripts\\batch\\mysql\\validate_mysql.bat'

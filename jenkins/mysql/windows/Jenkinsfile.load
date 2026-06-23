@@ -4,7 +4,7 @@ pipeline {
 agent any
 
 environment {
-    PROJECT_ROOT = 'D:\\QT\\Team_d\\DataPlatform-Automation'
+    PROJECT_ROOT = 'F:\Quantumatrix\Projects\DataEng\DataPlatform-Automation'
 }
 
 stages {
