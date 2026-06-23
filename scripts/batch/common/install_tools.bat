@@ -27,6 +27,13 @@ if errorlevel 1 (
 echo ERROR: LIQUIBASE INSTALLATION FAILED
 exit /b 1
 )
+echo [3/3] Validating Liquibase...
+call "%~dp0validate_liquibase.bat"
+if errorlevel 1 (
+echo ERROR: LIQUIBASE validation FAILED
+exit /b 1
+)
+
 
 echo.
 echo Validating Installed Tools...

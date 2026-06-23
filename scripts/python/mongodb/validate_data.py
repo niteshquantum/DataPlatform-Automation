@@ -6,6 +6,8 @@ db = get_db()
 
 all_valid = True
 
+all_valid = True
+
 print("===================================")
 print("MongoDB Data Validation")
 print("===================================")
@@ -41,7 +43,6 @@ for collection in collections:
     else:
 
         print(f"{collection}: {count} records found.")
-
 
 print("===================================")
 

@@ -6,49 +6,34 @@
 
 **/.terraform/
 
+# Terraform state files
+
 *.tfstate
 *.tfstate.*
+
+# Terraform dependency lock file
 
 .terraform.lock.hcl
 
 # =====================================================
 
-# Database Binaries
+# Database Files
 
 # =====================================================
 
-databases/*
+# MySQL server files downloaded/generated locally
 
-!databases/.gitkeep
-!databases/mysql/
-databases/mysql/*
+databases/
 
-!databases/mysql/.gitkeep
-
-
-!databases/.gitkeep
-databases/mongodb/**
-!databases/mongodb/.gitkeep
 # =====================================================
 
 # Tools
 
 # =====================================================
 
-tools/*
+# Downloaded tools (auto-installed by scripts)
 
-!tools/.gitkeep
-!tools/drivers/
-!tools/liquibase/
-!tools/terraform/
-
-tools/drivers/*
-tools/liquibase/*
-tools/terraform/*
-
-!tools/drivers/.gitkeep
-!tools/liquibase/.gitkeep
-!tools/terraform/.gitkeep
+tools/
 
 # =====================================================
 
@@ -65,12 +50,16 @@ logs/
 
 # =====================================================
 
+# Python cache files
+
 **pycache**/
 *.pyc
+*.pyo
+*.pyd
 
 # =====================================================
 
-# IDE / Editor
+# IDE
 
 # =====================================================
 
@@ -79,7 +68,7 @@ logs/
 
 # =====================================================
 
-# Operating System Files
+# OS
 
 # =====================================================
 
