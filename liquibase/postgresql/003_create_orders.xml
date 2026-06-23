@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-orders" author="automation">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="public" tableName="orders"/>
+            </not>
+        </preConditions>
+
+        <createTable schemaName="public" tableName="orders">
+
+            <column name="order_id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="customer_id" type="INTEGER"/>
+
+            <column name="product_id" type="INTEGER"/>
+
+            <column name="quantity" type="INTEGER"/>
+
+            <column name="order_date" type="DATE"/>
+
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="orders"
+            baseColumnNames="customer_id"
+            constraintName="fk_orders_customers"
+            referencedTableName="customers"
+            referencedColumnNames="customer_id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="orders"
+            baseColumnNames="product_id"
+            constraintName="fk_orders_products"
+            referencedTableName="products"
+            referencedColumnNames="product_id"/>
+
+    </changeSet>
+
+</databaseChangeLog>

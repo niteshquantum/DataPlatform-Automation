@@ -1,0 +1,70 @@
+pipeline {
+
+    agent any
+
+    environment {
+        PIPELINE_TYPE = "POSTGRESQL_SETUP"
+        DATABASE      = "POSTGRESQL"
+    }
+
+    stages {
+
+        stage('Repository Audit') {
+            steps {
+                bat 'dir'
+            }
+        }
+
+        stage('Validate Python Runtime') {
+            steps {
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+            }
+        }
+
+        stage('Install Python Requirements') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\install_python_requirements.bat'
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\validate_python_requirements.bat'
+            }
+        }
+
+        stage('Validate Java Runtime') {
+            steps {
+                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+            }
+        }
+
+        stage('Install Tools') {
+            steps {
+                bat 'scripts\\batch\\common\\install_tools.bat'
+            }
+        }
+
+        stage('Deploy PostgreSQL') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\deploy_postgresql.bat'
+            }
+        }
+
+        stage('Validate PostgreSQL') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'PostgreSQL Setup Pipeline Completed Successfully'
+        }
+        failure {
+            echo 'PostgreSQL Setup Pipeline Failed'
+        }
+    }
+}

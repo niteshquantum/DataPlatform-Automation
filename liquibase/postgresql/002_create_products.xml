@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002-create-products" author="automation">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists schemaName="public" tableName="products"/>
+            </not>
+        </preConditions>
+
+        <createTable schemaName="public" tableName="products">
+
+            <column name="product_id" type="SERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="product_name" type="VARCHAR(255)"/>
+
+            <column name="category" type="VARCHAR(100)"/>
+
+            <column name="price" type="NUMERIC(12,2)"/>
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

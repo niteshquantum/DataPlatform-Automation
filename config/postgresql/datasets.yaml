@@ -1,0 +1,35 @@
+datasets:
+
+  Customers:
+
+    file: Customers.csv
+
+    required_columns:
+
+      - customer_id
+      - customer_name
+      - email
+      - city
+
+  Products:
+
+    file: Products.csv
+
+    required_columns:
+
+      - product_id
+      - product_name
+      - category
+      - price
+
+  Orders:
+
+    file: Orders.csv
+
+    required_columns:
+
+      - order_id
+      - customer_id
+      - product_id
+      - quantity
+      - order_date
