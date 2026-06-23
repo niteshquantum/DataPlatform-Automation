@@ -21,7 +21,27 @@ exit 1
 
 }
 
-Start-Process -FilePath $mongodExe `
--ArgumentList "--dbpath `"$dataPath`" --logpath `"$logPath`" --bind_ip 127.0.0.1 --port 27018"
+$arguments = @(
 
+    "--dbpath", $dataPath,
+
+    "--logpath", $logPath,
+
+    "--bind_ip", "127.0.0.1",
+
+    "--port", "27018"
+
+)
+ 
+Start-Process `
+
+    -FilePath "cmd.exe" `
+
+    -ArgumentList "/c start `"`" `"$mongodExe`" $($arguments -join ' ')" `
+
+    -WindowStyle Hidden
+ 
+Start-Sleep -Seconds 5
+ 
 Write-Host "MongoDB Started Successfully"
+ 

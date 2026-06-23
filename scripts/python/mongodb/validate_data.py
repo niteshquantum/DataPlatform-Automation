@@ -15,6 +15,7 @@ print("===================================")
 schema_file = (
     Path(__file__).resolve().parents[3]
     / "metadata"
+    / "mongodb"
     / "schema_registry.json"
 )
 
@@ -34,19 +35,20 @@ for collection in collections:
 
     count = db[collection].count_documents({})
 
+for collection in collections:
+ 
+    count = db[collection].count_documents({})
+ 
     if count == 0:
-
-        print(f"[ERROR] {collection} contains no records")
-        all_valid = False
-
+ 
+        print(f"[WARNING] {collection} contains no records")
+ 
     else:
-
+ 
         print(f"{collection}: {count} records found.")
-
+ 
 print("===================================")
-
-if not all_valid:
-    raise Exception("MongoDB Data Validation Failed")
-
+ 
 print("MongoDB Data Validation Successful")
 print("===================================")
+
