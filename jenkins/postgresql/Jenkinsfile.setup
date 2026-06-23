@@ -41,7 +41,8 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                bat 'scripts\\batch\\common\\install_tools.bat'
+              bat 'scripts\\batch\\postgresql\\install_tools.bat'
+
             }
         }
 
