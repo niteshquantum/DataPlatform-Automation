@@ -15,7 +15,6 @@ print("===================================")
 schema_file = (
     Path(__file__).resolve().parents[3]
     / "metadata"
-    / "mongodb"
     / "schema_registry.json"
 )
 

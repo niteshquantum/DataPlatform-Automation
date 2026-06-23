@@ -9,6 +9,7 @@ scripts = [
 "create_indexes.py",
 "generate_dataset.py",
 "load_data.py",
+"schema_detector.py",
 "validate_data.py"
 ]
 
