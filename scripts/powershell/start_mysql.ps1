@@ -11,15 +11,29 @@ ForEach-Object { ($_ -split "=")[1].Trim() }
 $baseDir = "$ROOT\databases\mysql\server"
 $dataDir = "$ROOT\databases\mysql\data"
 
+# =====================================
+# Stop old MySQL service
+# =====================================
+
+$service = Get-Service -Name "MySQL" -ErrorAction SilentlyContinue
+
+if ($service -and $service.Status -eq "Running") {
+
+    Write-Host "Stopping old MySQL service..."
+
+    Stop-Service -Name "MySQL" -Force
+
+    Set-Service -Name "MySQL" -StartupType Disabled
+}
+
 if (!(Test-Path "$baseDir\bin\mysqld.exe")) {
 
     throw "mysqld.exe not found. Run deploy_mysql.bat first."
 
-
 }
 
-Start-Process -FilePath "$baseDir\bin\mysqld.exe" -ArgumentList "--port=$port --basedir=$baseDir --datadir=$dataDir"
-
+Start-Process -FilePath "$baseDir\bin\mysqld.exe" `
+-ArgumentList "--port=$port --basedir=$baseDir --datadir=$dataDir"
 $Started = $false
 
 for ($i = 1; $i -le 30; $i++) {

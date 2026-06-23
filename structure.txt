@@ -1,0 +1,442 @@
+Folder PATH listing for volume drive
+Volume serial number is 00000015 2062:F504
+G:.
+¦   .env
+¦   .env.example
+¦   .gitignore
+¦   ARCHITECTURE_REVIEW.md
+¦   babel.json
+¦   EXECUTION_FLOW.md
+¦   full_structure.txt
+¦   install_mysql.txt
+¦   mongodb_automation_dump.txt
+¦   mongodb_batch.txt
+¦   mongodb_core.txt
+¦   mssql_liquibase_all_content.txt
+¦   mysql_db_connection.txt
+¦   mysql_python_all_content.txt
+¦   mysql_setup_pipeline.txt
+¦   README.md
+¦   REPOSITORY_TREE.md
+¦   requirements.txt
+¦   run_liquibase.txt
+¦   structure.txt
+¦   
++---.vscode
+¦       settings.json
+¦       
++---archive
+¦       brand table.csv
+¦       category table.csv
+¦       
++---config
+¦   ¦   metadata_schema.json
+¦   ¦   mongodb.conf
+¦   ¦   mysql.conf
+¦   ¦   python.conf
+¦   ¦   
+¦   +---mongodb
+¦   ¦       datasets.yaml
+¦   ¦       
+¦   +---mysql
+¦   ¦       datasets.yaml
+¦   ¦       
+¦   +---ubuntu
+¦   ¦       mongodb.conf
+¦   ¦       mssql.conf
+¦   ¦       mysql.config
+¦   ¦       
+¦   +---windows
+¦           mongodb.conf
+¦           
++---databases
+¦   ¦   .gitkeep
+¦   ¦   
+¦   +---mongodb
+¦       ¦   mongodb.zip
+¦       ¦   mongosh.zip
+¦       ¦   
+¦       +---config
+¦       +---data
+¦       ¦   ¦   collection-0-18052365763693731427.wt
+¦       ¦   ¦   collection-2-18052365763693731427.wt
+¦       ¦   ¦   collection-4-18052365763693731427.wt
+¦       ¦   ¦   collection-7-18052365763693731427.wt
+¦       ¦   ¦   collection-9-18052365763693731427.wt
+¦       ¦   ¦   index-1-18052365763693731427.wt
+¦       ¦   ¦   index-10-18052365763693731427.wt
+¦       ¦   ¦   index-3-18052365763693731427.wt
+¦       ¦   ¦   index-5-18052365763693731427.wt
+¦       ¦   ¦   index-6-18052365763693731427.wt
+¦       ¦   ¦   index-8-18052365763693731427.wt
+¦       ¦   ¦   mongod.lock
+¦       ¦   ¦   sizeStorer.wt
+¦       ¦   ¦   storage.bson
+¦       ¦   ¦   WiredTiger
+¦       ¦   ¦   WiredTiger.lock
+¦       ¦   ¦   WiredTiger.turtle
+¦       ¦   ¦   WiredTiger.wt
+¦       ¦   ¦   WiredTigerHS.wt
+¦       ¦   ¦   _mdb_catalog.wt
+¦       ¦   ¦   
+¦       ¦   +---diagnostic.data
+¦       ¦   ¦       metrics.2026-06-21T09-47-15Z-00000
+¦       ¦   ¦       
+¦       ¦   +---journal
+¦       ¦           WiredTigerLog.0000000001
+¦       ¦           WiredTigerPreplog.0000000001
+¦       ¦           
+¦       +---logs
+¦       ¦       mongodb.log
+¦       ¦       
+¦       +---mongosh
+¦       ¦   ¦   .sbom.json
+¦       ¦   ¦   LICENSE-crypt-library
+¦       ¦   ¦   LICENSE-mongosh
+¦       ¦   ¦   mongosh.1.gz
+¦       ¦   ¦   README
+¦       ¦   ¦   THIRD_PARTY_NOTICES
+¦       ¦   ¦   
+¦       ¦   +---bin
+¦       ¦           mongosh.exe
+¦       ¦           mongosh_crypt_v1.dll
+¦       ¦           
+¦       +---server
+¦           ¦   LICENSE-Community.txt
+¦           ¦   MPL-2
+¦           ¦   README
+¦           ¦   THIRD-PARTY-NOTICES
+¦           ¦   
+¦           +---bin
+¦                   Install-Compass.ps1
+¦                   mongod.exe
+¦                   mongod.pdb
+¦                   mongos.exe
+¦                   mongos.pdb
+¦                   vc_redist.x64.exe
+¦                   
++---datasets
+¦   +---mongodb
+¦   ¦       customers.csv
+¦   ¦       orderdetails.csv
+¦   ¦       orders.csv
+¦   ¦       products.csv
+¦   ¦       sellers.csv
+¦   ¦       
+¦   +---mssql
+¦   ¦       customers.csv
+¦   ¦       orderdetails.csv
+¦   ¦       orders.csv
+¦   ¦       products.csv
+¦   ¦       sellers.csv
+¦   ¦       
+¦   +---mysql
+¦           Customers.csv
+¦           OrderDetails.csv
+¦           Orders.csv
+¦           Products.csv
+¦           Sellers.csv
+¦           
++---docs
+¦       README.md
+¦       
++---failed
++---incoming
+¦       brand table.csv
+¦       
++---jenkins
+¦   ¦   Jenkinsfile
+¦   ¦   
+¦   +---mongodb
+¦   ¦   ¦   custom.load
+¦   ¦   ¦   custom.setup
+¦   ¦   ¦   Jenkinsfile.load
+¦   ¦   ¦   Jenkinsfile.setup
+¦   ¦   ¦   
+¦   ¦   +---scripts
+¦   ¦   ¦       mongodb_load_pipeline.bat
+¦   ¦   ¦       mongodb_setup_pipeline.bat
+¦   ¦   ¦       
+¦   ¦   +---ubuntu
+¦   ¦           mongodb_load_pipeline.groovy
+¦   ¦           mongodb_setup_pipeline.groovy
+¦   ¦           
+¦   +---mssql
+¦   ¦   +---ubuntu
+¦   ¦           mssql_load_pipeline.groovy
+¦   ¦           mssql_setup_pipeline.groovy
+¦   ¦           
+¦   +---mysql
+¦   ¦   +---ubuntu
+¦   ¦   ¦       mysql_load_pipeline.groovy
+¦   ¦   ¦       mysql_setup_pipeline.groovy
+¦   ¦   ¦       
+¦   ¦   +---windows
+¦   ¦       ¦   custom.load
+¦   ¦       ¦   custom.setup
+¦   ¦       ¦   Jenkinsfile.load
+¦   ¦       ¦   Jenkinsfile.setup
+¦   ¦       ¦   mysql_load_pipeline.groovy
+¦   ¦       ¦   mysql_setup_pipeline.groovy
+¦   ¦       ¦   
+¦   ¦       +---localwork
+¦   ¦       ¦       mysql_load_pipeline.groovy
+¦   ¦       ¦       mysql_setup_pipeline.groovy
+¦   ¦       ¦       
+¦   ¦       +---scripts
+¦   ¦               mysql_load_pipeline.bat
+¦   ¦               mysql_setup_pipeline.bat
+¦   ¦               
+¦   +---testing
+¦           python_debug_pipeline.groovy
+¦           tools_debug_pipeline.groovy
+¦           
++---liquibase
+¦   +---failed
+¦   ¦       brand table_create.xml
+¦   ¦       customers_create.xml
+¦   ¦       
+¦   +---generated
+¦   +---mssql
+¦   ¦       001_create_customers.xml
+¦   ¦       002_create_sellers.xml
+¦   ¦       003_create_products.xml
+¦   ¦       004_create_orders.xml
+¦   ¦       005_create_orderdetails.xml
+¦   ¦       master.xml
+¦   ¦       
+¦   +---mysql
+¦           001_create_customers.xml
+¦           002_create_sellers.xml
+¦           003_create_products.xml
+¦           004_create_orders.xml
+¦           005_create_orderdetails.xml
+¦           liquibase.properties
+¦           master.xml
+¦           
++---metadata
+¦   ¦   data_load_history.jsonl
+¦   ¦   liquibase_execution_history.jsonl
+¦   ¦   schema_changes.json
+¦   ¦   schema_registry.json
+¦   ¦   schema_versions.json
+¦   ¦   
+¦   +---current_schema
+¦           brand table.json
+¦           customers.json
+¦           
++---scripts
+¦   ¦   data_loader.py
+¦   ¦   data_loader_mongodb.py
+¦   ¦   liquibase_generator.py
+¦   ¦   metadata_manager.py
+¦   ¦   run_liquibase.py
+¦   ¦   schema_detector.py
+¦   ¦   schema_diff.py
+¦   ¦   version_manager.py
+¦   ¦   
+¦   +---bash
+¦   ¦   ¦   download_mysql_driver.sh
+¦   ¦   ¦   install_python_requirements.sh
+¦   ¦   ¦   validate_python_requirements.sh
+¦   ¦   ¦   
+¦   ¦   +---common
+¦   ¦   ¦       install_liquibase.sh
+¦   ¦   ¦       install_mssql_driver.sh
+¦   ¦   ¦       install_mysql_driver.sh
+¦   ¦   ¦       install_python_requirements.sh
+¦   ¦   ¦       install_terraform.sh
+¦   ¦   ¦       install_tools.sh
+¦   ¦   ¦       set_project_root.sh
+¦   ¦   ¦       validate_java_runtime.sh
+¦   ¦   ¦       validate_python_runtime.sh
+¦   ¦   ¦       validate_tools.sh
+¦   ¦   ¦       
+¦   ¦   +---mongodb
+¦   ¦   ¦       install_mongodb.sh
+¦   ¦   ¦       install_mongosh.sh
+¦   ¦   ¦       load_data.sh
+¦   ¦   ¦       mongodb_load_pipeline.sh
+¦   ¦   ¦       mongodb_setup_pipeline.sh
+¦   ¦   ¦       start_mongodb.sh
+¦   ¦   ¦       stop_mongodb.sh
+¦   ¦   ¦       validate_loaded_data.sh
+¦   ¦   ¦       validate_mongodb.sh
+¦   ¦   ¦       
+¦   ¦   +---mssql
+¦   ¦   ¦       create_database.sh
+¦   ¦   ¦       install_mssql.sh
+¦   ¦   ¦       install_sqlcmd.sh
+¦   ¦   ¦       load_data.sh
+¦   ¦   ¦       mssql_load_pipeline.sh
+¦   ¦   ¦       mssql_setup_pipeline.sh
+¦   ¦   ¦       run_liquibase.sh
+¦   ¦   ¦       start_mssql.sh
+¦   ¦   ¦       validate_environment.sh
+¦   ¦   ¦       validate_loaded_data.sh
+¦   ¦   ¦       validate_mssql.sh
+¦   ¦   ¦       validate_tools.sh
+¦   ¦   ¦       
+¦   ¦   +---mysql
+¦   ¦           create_database.sh
+¦   ¦           deploy_mysql.sh
+¦   ¦           install_mysql.sh
+¦   ¦           load_data.sh
+¦   ¦           mysql_load_pipeline.sh
+¦   ¦           mysql_setup_pipeline.sh
+¦   ¦           run_liquibase.sh
+¦   ¦           start_mysql.sh
+¦   ¦           stop_mysql.sh
+¦   ¦           validate_csv.sh
+¦   ¦           validate_environment.sh
+¦   ¦           validate_loaded_data.sh
+¦   ¦           validate_mysql.sh
+¦   ¦           validate_port.sh
+¦   ¦           
+¦   +---batch
+¦   ¦   ¦   install_python_requirements.bat
+¦   ¦   ¦   validate_python_requirements.bat
+¦   ¦   ¦   
+¦   ¦   +---common
+¦   ¦   ¦       install_liquibase.bat
+¦   ¦   ¦       install_mysql_driver.bat
+¦   ¦   ¦       install_terraform.bat
+¦   ¦   ¦       install_tools.bat
+¦   ¦   ¦       setup_liquibase.bat
+¦   ¦   ¦       set_project_root.bat
+¦   ¦   ¦       validate_java_runtime.bat
+¦   ¦   ¦       validate_liquibase.bat
+¦   ¦   ¦       validate_mysql_driver.bat
+¦   ¦   ¦       validate_python_runtime.bat
+¦   ¦   ¦       validate_tools.bat
+¦   ¦   ¦       
+¦   ¦   +---mongodb
+¦   ¦   ¦       cleanup_mongodb.bat
+¦   ¦   ¦       deploy_mongodb.bat
+¦   ¦   ¦       destroy_mongodb.bat
+¦   ¦   ¦       initialize_logs.bat
+¦   ¦   ¦       load_data.bat
+¦   ¦   ¦       mongodb_load_with_logging.bat
+¦   ¦   ¦       mongodb_setup_with_logging.bat
+¦   ¦   ¦       run_mongodb.bat
+¦   ¦   ¦       start_mongodb.bat
+¦   ¦   ¦       stop_mongodb.bat
+¦   ¦   ¦       validate_data.bat
+¦   ¦   ¦       validate_environment.bat
+¦   ¦   ¦       validate_mongodb.bat
+¦   ¦   ¦       validate_port.bat
+¦   ¦   ¦       
+¦   ¦   +---mysql
+¦   ¦           cleanup_mysql.bat
+¦   ¦           create_database.bat
+¦   ¦           deploy_mysql.bat
+¦   ¦           destroy_mysql.bat
+¦   ¦           initialize_logs.bat
+¦   ¦           load_data.bat
+¦   ¦           mysql_load_with_logging.bat
+¦   ¦           mysql_setup_with_logging.bat
+¦   ¦           run_liquibase.bat
+¦   ¦           start_mysql.bat
+¦   ¦           stop_mysql.bat
+¦   ¦           validate_csv.bat
+¦   ¦           validate_environment.bat
+¦   ¦           validate_loaded_data.bat
+¦   ¦           validate_mysql.bat
+¦   ¦           validate_port.bat
+¦   ¦           
+¦   +---powershell
+¦   ¦   ¦   download_liquibase.ps1
+¦   ¦   ¦   download_mysql_driver.ps1
+¦   ¦   ¦   start_mysql.ps1
+¦   ¦   ¦   stop_mysql.ps1
+¦   ¦   ¦   
+¦   ¦   +---mongodb
+¦   ¦           install_windows.ps1
+¦   ¦           start_mongodb.ps1
+¦   ¦           stop_mongodb.ps1
+¦   ¦           
+¦   +---python
+¦       +---mongodb
+¦       ¦   ¦   cleanup_collections.py
+¦       ¦   ¦   create_collections.py
+¦       ¦   ¦   create_indexes.py
+¦       ¦   ¦   db_connection.py
+¦       ¦   ¦   generate_dataset.py
+¦       ¦   ¦   load_all.py
+¦       ¦   ¦   load_data.py
+¦       ¦   ¦   test_connection.py
+¦       ¦   ¦   validate_data.py
+¦       ¦   ¦   validate_mongodb.py
+¦       ¦   ¦   validate_port.py
+¦       ¦   ¦   
+¦       ¦   +---__pycache__
+¦       ¦           db_connection.cpython-312.pyc
+¦       ¦           
+¦       +---mssql
+¦       ¦       db_connection.py
+¦       ¦       load_all.py
+¦       ¦       load_customers.py
+¦       ¦       load_data.py
+¦       ¦       load_orderdetails.py
+¦       ¦       load_orders.py
+¦       ¦       load_products.py
+¦       ¦       load_sellers.py
+¦       ¦       truncate_tables.py
+¦       ¦       validate_loaded_data.py
+¦       ¦       validate_mssql.py
+¦       ¦       validate_port.py
+¦       ¦       
+¦       +---mysql
+¦               check_port.py
+¦               db_connection.py
+¦               load_all.py
+¦               load_customers.py
+¦               load_orderdetails.py
+¦               load_orders.py
+¦               load_products.py
+¦               load_sellers.py
+¦               testcsvschema.py
+¦               test_connection.py
+¦               truncate_tables.py
+¦               validate_csv.py
+¦               validate_customers.py
+¦               validate_loaded_data.py
+¦               validate_mysql.py
+¦               validate_port.py
+¦               
++---terraform
+¦   +---mongodb
+¦   ¦   ¦   .terraform.lock.hcl
+¦   ¦   ¦   main.tf
+¦   ¦   ¦   terraform.tfstate
+¦   ¦   ¦   terraform.tfvars
+¦   ¦   ¦   variables.tf
+¦   ¦   ¦   
+¦   ¦   +---.terraform
+¦   ¦       +---providers
+¦   ¦           +---registry.terraform.io
+¦   ¦               +---hashicorp
+¦   ¦                   +---null
+¦   ¦                       +---3.3.0
+¦   ¦                           +---windows_amd64
+¦   ¦                                   LICENSE.txt
+¦   ¦                                   terraform-provider-null_v3.3.0_x5.exe
+¦   ¦                                   
+¦   +---mysql
+¦           .terraform.lock.hcl
+¦           main.tf
+¦           
++---tools
+    ¦   .gitkeep
+    ¦   
+    +---drivers
+    ¦       .gitkeep
+    ¦       
+    +---liquibase
+    ¦       .gitkeep
+    ¦       
+    +---terraform
+            .gitkeep
+            LICENSE.txt
+            terraform.exe
+            

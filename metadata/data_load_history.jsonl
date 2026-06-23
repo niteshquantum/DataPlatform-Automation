@@ -1,0 +1,6 @@
+{"timestamp": "2026-06-21T15:17:20.144029", "file": "brand table.csv", "collection": "brand table", "rows_inserted": 221, "status": "SUCCESS"}
+{"timestamp": "2026-06-21T15:22:57.843705", "file": "brand table.csv", "collection": "brand table", "rows_inserted": 221, "status": "SUCCESS"}
+{"timestamp": "2026-06-21T15:22:57.924754", "file": "category table.csv", "collection": "category table", "rows_inserted": 56, "status": "SUCCESS"}
+{"timestamp": "2026-06-22T15:11:55.536421", "file": "mongodb_product_experience_and_seo.json", "collection": "mongodb_product_experience_and_seo", "rows_inserted": 105000, "status": "SUCCESS"}
+{"timestamp": "2026-06-22T16:33:12.929847", "file": "mongodb_checkout_cart_events.json", "collection": "mongodb_checkout_cart_events", "rows_inserted": 80000, "status": "SUCCESS"}
+{"timestamp": "2026-06-22T16:33:22.614743", "file": "mongodb_order_returns_analytics.json", "collection": "mongodb_order_returns_analytics", "rows_inserted": 12000, "status": "SUCCESS"}

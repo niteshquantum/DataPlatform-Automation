@@ -1,15 +1,36 @@
 pipeline {
 
+
 agent any
 
 stages {
+
+    stage('Start MongoDB') {
+
+        steps {
+
+            bat '''
+            scripts\\batch\\mongodb\\run_mongodb.bat
+            '''
+        }
+    }
+
+    stage('Detect Schema') {
+
+        steps {
+
+            bat '''
+            python scripts\\schema_detector.py mongodb
+            '''
+        }
+    }
 
     stage('Load Data') {
 
         steps {
 
             bat '''
-            scripts\\batch\\mongodb\\load_data.bat
+            python scripts\\data_loader_mongodb.py
             '''
         }
     }

@@ -1,0 +1,14 @@
+{
+  "columns": [
+    "Brand_ID",
+    "Brand_Name",
+    "Parent_Company",
+    "Brand_Origin_Country",
+    "Brand_Established_Year",
+    "Brand_Tier",
+    "Brand_Status",
+    "Brand_Support_Email",
+    "Brand_Support_Phone",
+    "Brand_Website_URL"
+  ]
+}

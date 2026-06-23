@@ -7,7 +7,7 @@ echo MYSQL DATA LOAD
 echo =====================================
 echo.
 
-python scripts\python\mysql\load_all.py
+python python scripts\data_loader.py mysql
 
 if errorlevel 1 (
     echo.

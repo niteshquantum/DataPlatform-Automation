@@ -1,0 +1,51 @@
+{
+  "customers": [
+    "CustomerID",
+    "FirstName",
+    "LastName",
+    "City",
+    "State",
+    "JoinDate",
+    "email",
+    "phone"
+  ],
+  "brand table": [
+    "Brand_ID",
+    "Brand_Name",
+    "Parent_Company",
+    "Brand_Origin_Country",
+    "Brand_Established_Year",
+    "Brand_Tier",
+    "Brand_Status",
+    "Brand_Support_Email",
+    "Brand_Support_Phone",
+    "Brand_Website_URL"
+  ],
+  "mongodb_product_experience_and_seo": [
+    "Product_ID",
+    "Base_Price",
+    "Retail_Price",
+    "Discount_Percentage",
+    "Currency",
+    "Tax_Class",
+    "Meta_Title",
+    "Meta_Description",
+    "URL_Slug",
+    "Canonical_URL",
+    "Keywords_Array",
+    "Index_Status",
+    "Map_Sitemap_Priority",
+    "Live_Primary_Image_URL",
+    "Live_Thumbnail_URL",
+    "Live_Mobile_Image_URL",
+    "Gallery_URLs_Array",
+    "Video_Embed_URL",
+    "Alt_Text_String",
+    "Product_Badges_Array",
+    "Avg_Rating",
+    "Total_Reviews_Count",
+    "Return_Rate_Percentage",
+    "Low_Stock_Alert_Triggered",
+    "FAQ_JSON_Object"
+  ]
+}

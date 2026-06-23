@@ -6,7 +6,7 @@ echo VALIDATING MYSQL
 echo =====================================
 echo.
 
-python scripts\python\mysql\validate_mysql.py
+python scripts\python\mysql\validate_data.py
 
 if errorlevel 1 (
     echo.

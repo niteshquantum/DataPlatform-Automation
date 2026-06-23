@@ -25,6 +25,10 @@ databases/mysql/*
 
 !databases/mysql/.gitkeep
 
+
+!databases/.gitkeep
+databases/mongodb/**
+!databases/mongodb/.gitkeep
 # =====================================================
 
 # Tools
@@ -81,3 +85,56 @@ logs/
 
 Thumbs.db
 .DS_Store
+
+#=======================================================
+
+# Incoming Files
+
+#=======================================================
+incoming/mongodb/*
+!incoming/mongodb/.gitkeep
+
+archive/mongodb/*
+!archive/mongodb/.gitkeep
+
+failed/mongodb/*
+!failed/mongodb/.gitkeep
+
+metadata/mongodb/*
+!metadata/mongodb/.gitkeep
+
+incoming/mysql/*
+!incoming/mysql/.gitkeep
+
+archive/mysql/*
+!archive/mysql/.gitkeep
+
+failed/mysql/*
+!failed/mysql/.gitkeep
+
+metadata/mysql/*
+!metadata/mysql/.gitkeep
+
+incoming/postgresql/*
+!incoming/postgresql/.gitkeep
+
+archive/postgresql/*
+!archive/postgresql/.gitkeep
+
+failed/postgresql/*
+!failed/postgresql/.gitkeep
+
+metadata/postgresql/*
+!metadata/postgresql/.gitkeep
+
+incoming/mssql/*
+!incoming/mssql/.gitkeep
+
+archive/mssql/*
+!archive/mssql/.gitkeep
+
+failed/mssql/*
+!failed/mssql/.gitkeep
+
+metadata/mssql/*
+!metadata/mssql/.gitkeep

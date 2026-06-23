@@ -17,14 +17,13 @@ stages {
         }
     }
 
-    stage('Validate CSV') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\mysql\\validate_csv.bat'
-            }
+    stage('Detect Schema') {
+    steps {
+        dir("${PROJECT_ROOT}") {
+            bat 'python scripts\\schema_detector.py mysql'
         }
     }
-
+}
     stage('Load Data') {
         steps {
             dir("${PROJECT_ROOT}") {
