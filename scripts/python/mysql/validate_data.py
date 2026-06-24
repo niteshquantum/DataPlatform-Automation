@@ -79,10 +79,10 @@ try:
     for table in sorted(validated_tables):
         
         print("validate_tables: ",table)
-        # cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
-        # count = cursor.fetchone()[0]
+        cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
+        count = cursor.fetchone()[0]
 
-        # print(f"[OK] {table} : {count} rows")
+        print(f"[OK] {table} : {count} rows")
 
     print("=" * 50)
 
