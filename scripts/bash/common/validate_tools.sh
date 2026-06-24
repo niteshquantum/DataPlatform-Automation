@@ -22,7 +22,7 @@ then
     exit 1
 fi
 
-MYSQL_DRIVER_VERSION=$(grep "^MYSQL_DRIVER_VERSION=" "$PROJECT_ROOT/config/ubuntu/mysql.conf" | cut -d'=' -f2)
+MYSQL_DRIVER_VERSION=$(grep "^MYSQL_DRIVER_VERSION=" "$PROJECT_ROOT/config/ubuntu/mysql.config" | cut -d'=' -f2)
 
 if [ ! -f "$PROJECT_ROOT/tools/drivers/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar" ]
 then
