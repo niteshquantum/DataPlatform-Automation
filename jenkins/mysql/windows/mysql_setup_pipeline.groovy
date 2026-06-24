@@ -12,13 +12,13 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                bat 'scripts\\batch\\install_python_requirements.bat'
+                bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\validate_python_requirements.bat'
+                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
             }
         }
 
