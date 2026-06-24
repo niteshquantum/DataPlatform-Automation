@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 liquibase_dir = ROOT / "liquibase"
 mysql_dir = liquibase_dir / "mysql"
-master_xml = liquibase_dir / "master.xml"
+master_xml = mysql_dir / "master.xml"
 
 # Namespace
 NS = "http://www.liquibase.org/xml/ns/dbchangelog"
