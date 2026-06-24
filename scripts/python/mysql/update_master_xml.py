@@ -36,7 +36,7 @@ xml_files = sorted(mysql_dir.glob("*.xml"))
 
 for xml_file in xml_files:
 
-    relative_path = f"mysql/{xml_file.name}"
+    relative_path = xml_file.name
 
     if relative_path in existing_includes:
         continue
