@@ -10,7 +10,7 @@ echo "CREATE DATABASE"
 echo "====================================="
 echo
 
-CONFIG_FILE="$PROJECT_ROOT/config/mysql.conf"
+CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.config"
 
 MYSQL_HOST=$(grep "^MYSQL_HOST=" "$CONFIG_FILE" | cut -d'=' -f2)
 MYSQL_PORT=$(grep "^MYSQL_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
