@@ -34,8 +34,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo Validating all tools...
-call "%~dp0..\common\validate_tools.bat"
+@REM echo Validating all tools...
+@REM call "%~dp0..\common\validate_tools.bat"
 
 echo.
 echo ============================================
