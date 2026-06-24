@@ -1,0 +1,584 @@
+# Pipeline Dependency Graph
+
+## Jenkins Violations
+
+| File | Violation |
+| --- | --- |
+| jenkins/Jenkinsfile | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/Jenkinsfile.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/Jenkinsfile.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/custom.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/custom.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/scripts/mongodb_setup_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mysql/windows/Jenkinsfile.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/Jenkinsfile.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/custom.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/custom.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/Jenkinsfile.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/Jenkinsfile.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/custom.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/custom.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/postgresql/scripts/postgresql_load_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/scripts/postgresql_setup_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/postgresql/windows/Jenkinsfile.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/Jenkinsfile.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/custom.load | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/custom.setup | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/localwork/postgresql_load_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/localwork/postgresql_setup_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/postgresql_load_pipeline.groovy | Pipeline naming violation; target names are setup_pipeline.groovy and load_pipeline.groovy. |
+| jenkins/postgresql/windows/scripts/postgresql_load_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/postgresql/windows/scripts/postgresql_setup_pipeline.bat | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/testing/python_debug_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/testing/python_debug_pipeline.groovy | Disallowed cleanup/destroy/validation/debug Jenkins pipeline category. |
+| jenkins/testing/tools_debug_pipeline.groovy | Non-target Jenkins artifact; target permits only setup/load pipeline groovy files under db/os folders. |
+| jenkins/testing/tools_debug_pipeline.groovy | Disallowed cleanup/destroy/validation/debug Jenkins pipeline category. |
+
+## Setup vs Load Taxonomy Violations
+
+| File | Violation |
+| --- | --- |
+| scripts/bash/download_mysql_driver.sh | Name mixes setup and load semantics; classify explicitly before moving. |
+| scripts/batch/mongodb/cleanup_mongodb.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/mongodb/destroy_mongodb.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/mssql/destroy_mssql_environment.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/mysql/cleanup_mysql.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/mysql/destroy_mysql.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/postgresql/cleanup_postgresql.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/batch/postgresql/destroy_postgresql.bat | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/powershell/download_mssql_driver.ps1 | Name mixes setup and load semantics; classify explicitly before moving. |
+| scripts/powershell/download_mysql_driver.ps1 | Name mixes setup and load semantics; classify explicitly before moving. |
+| scripts/powershell/download_postgresql_driver copy.ps1 | Name mixes setup and load semantics; classify explicitly before moving. |
+| scripts/powershell/postgresql/remove_postgresql.ps1 | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+| scripts/python/mongodb/cleanup_collections.py | Cleanup/destroy/remove script is outside setup/load target taxonomy. |
+
+## Static Pipeline Edges
+
+| Source | Target |
+| --- | --- |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | scripts/batch/mongodb/load_data.bat |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | scripts/batch/mongodb/validate_data.bat |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | scripts/batch/mssql/load_data.bat |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | scripts/batch/mysql/load_data.bat |
+| jenkins/mongodb/scripts/mongodb_load_pipeline.bat | scripts/batch/postgresql/load_data.bat |
+| jenkins/mongodb/scripts/mongodb_setup_pipeline.bat | scripts/batch/mongodb/deploy_mongodb.bat |
+| jenkins/mongodb/scripts/mongodb_setup_pipeline.bat | scripts/batch/mongodb/run_mongodb.bat |
+| jenkins/mongodb/scripts/mongodb_setup_pipeline.bat | scripts/batch/mongodb/validate_data.bat |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | scripts/bash/common/install_python_requirements.sh |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | scripts/bash/mongodb/load_data.sh |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | scripts/bash/mongodb/start_mongodb.sh |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | scripts/bash/mongodb/validate_loaded_data.sh |
+| jenkins/mongodb/ubuntu/mongodb_load_pipeline.groovy | scripts/bash/mongodb/validate_mongodb.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/common/install_python_requirements.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/mongodb/install_mongodb.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/mongodb/install_mongosh.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/mongodb/start_mongodb.sh |
+| jenkins/mongodb/ubuntu/mongodb_setup_pipeline.groovy | scripts/bash/mongodb/validate_mongodb.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/common/install_tools.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/install_python_requirements.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/mssql/load_data.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/mssql/validate_loaded_data.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/mssql/validate_mssql.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/mssql/validate_tools.sh |
+| jenkins/mssql/ubuntu/mssql_load_pipeline.groovy | scripts/bash/validate_python_requirements.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/common/install_mssql_driver.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/common/install_tools.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/common/validate_java_runtime.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/create_database.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/install_mssql.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/install_sqlcmd.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/run_liquibase.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/start_mssql.sh |
+| jenkins/mssql/ubuntu/mssql_setup_pipeline.groovy | scripts/bash/mssql/validate_environment.sh |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/common/validate_tools.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mongodb/load_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mssql/load_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mssql/validate_csv.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mssql/validate_loaded_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mssql/validate_mssql.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mysql/load_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mysql/validate_csv.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/mysql/validate_loaded_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/postgresql/load_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/postgresql/validate_csv.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/postgresql/validate_loaded_data.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mssql/windows/mssql_load_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/common/install_tools.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/common/validate_java_runtime.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/install_python_requirements.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/create_database.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/deploy_mssql.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/install_mssql_tools.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/run_liquibase.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/start_mssql.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/validate_environment.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mssql/validate_mssql.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mysql/create_database.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mysql/run_liquibase.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/mysql/validate_environment.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/create_database.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/install_python_requirements.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/install_tools.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/run_liquibase.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mssql/windows/mssql_setup_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/common/install_tools.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/common/validate_tools.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/install_python_requirements.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/mysql/load_data.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/mysql/validate_loaded_data.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/mysql/validate_mysql.sh |
+| jenkins/mysql/ubuntu/mysql_load_pipeline.groovy | scripts/bash/validate_python_requirements.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/common/install_tools.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/common/validate_java_runtime.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/mysql/create_database.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/mysql/install_mysql.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/mysql/run_liquibase.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/mysql/start_mysql.sh |
+| jenkins/mysql/ubuntu/mysql_setup_pipeline.groovy | scripts/bash/mysql/validate_environment.sh |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/common/validate_tools.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mongodb/load_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mssql/load_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mssql/validate_csv.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mssql/validate_loaded_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mysql/load_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_csv.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_loaded_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_mysql.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/postgresql/load_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_csv.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_loaded_data.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mysql/windows/localwork/mysql_load_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/common/install_tools.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/common/validate_java_runtime.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/install_python_requirements.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mssql/create_database.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mssql/run_liquibase.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mssql/validate_environment.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/create_database.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/deploy_mysql.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/run_liquibase.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/start_mysql.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/validate_environment.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/mysql/validate_mysql.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/create_database.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/install_python_requirements.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/install_tools.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/run_liquibase.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mysql/windows/localwork/mysql_setup_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/common/validate_tools.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mongodb/load_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mssql/load_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mssql/validate_csv.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mssql/validate_loaded_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mysql/load_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mysql/start_mysql.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_csv.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_loaded_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/mysql/validate_mysql.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/postgresql/load_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_csv.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_loaded_data.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mysql/windows/mysql_load_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/common/install_tools.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/common/validate_java_runtime.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/install_python_requirements.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mssql/create_database.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mssql/run_liquibase.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mssql/validate_environment.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/create_database.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/deploy_mysql.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/run_liquibase.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/start_mysql.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/validate_environment.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/mysql/validate_mysql.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/create_database.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/install_python_requirements.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/install_tools.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/run_liquibase.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/mysql/windows/mysql_setup_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mongodb/load_data.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mssql/load_data.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mssql/validate_csv.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mssql/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mysql/load_data.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mysql/validate_csv.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/mysql/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/postgresql/load_data.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/postgresql/validate_csv.bat |
+| jenkins/mysql/windows/scripts/mysql_load_pipeline.bat | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mongodb/initialize_logs.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mssql/create_database.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mssql/run_liquibase.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mssql/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mysql/create_database.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mysql/deploy_mysql.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mysql/initialize_logs.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mysql/run_liquibase.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/mysql/validate_environment.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/postgresql/create_database.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/postgresql/initialize_logs.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/postgresql/run_liquibase.bat |
+| jenkins/mysql/windows/scripts/mysql_setup_pipeline.bat | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mongodb/load_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mongodb/validate_environment.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mssql/load_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mssql/validate_environment.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mssql/validate_loaded_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mysql/load_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mysql/validate_environment.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/mysql/validate_loaded_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/postgresql/load_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/postgresql/validate_environment.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/postgresql/validate_loaded_data.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/batch/postgresql/validate_postgresql.bat |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/python/mongodb/generate_dataset.py |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/python/mysql/testcsvschema.py |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/python/postgresql/generate_dataset.py |
+| jenkins/postgresql/postgresql_load_pipeline.groovy | scripts/python/postgresql/testcsvschema.py |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/common/install_liquibase.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/common/validate_java_runtime.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/mssql/create_database.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/mssql/run_liquibase.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/mysql/create_database.sh |
+| jenkins/postgresql/postgresql_setup_pipeline.groovy | scripts/bash/mysql/run_liquibase.sh |
+| jenkins/postgresql/scripts/postgresql_load_pipeline.bat | scripts/batch/postgresql/postgresql_load_with_logging.bat |
+| jenkins/postgresql/scripts/postgresql_setup_pipeline.bat | scripts/batch/postgresql/postgresql_setup_with_logging.bat |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mongodb/load_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mongodb/validate_loaded_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mssql/load_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mssql/validate_environment.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mssql/validate_loaded_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mysql/load_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mysql/validate_environment.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/bash/mysql/validate_loaded_data.sh |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/python/mongodb/generate_dataset.py |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/python/mysql/testcsvschema.py |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/python/postgresql/generate_dataset.py |
+| jenkins/postgresql/ubuntu/postgresql_load_pipeline.groovy | scripts/python/postgresql/testcsvschema.py |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | scripts/bash/common/install_tools.sh |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | scripts/bash/common/validate_java_runtime.sh |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | scripts/bash/common/validate_python_runtime.sh |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | scripts/bash/install_python_requirements.sh |
+| jenkins/postgresql/ubuntu/postgresql_setup_pipeline.groovy | scripts/bash/validate_python_requirements.sh |
+| jenkins/testing/python_debug_pipeline.groovy | config/python.conf |
+| jenkins/testing/python_debug_pipeline.groovy | scripts/batch/common/validate_python_runtime.bat |
+| jenkins/testing/python_debug_pipeline.groovy | scripts/batch/install_python_requirements.bat |
+| jenkins/testing/python_debug_pipeline.groovy | scripts/batch/postgresql/install_python_requirements.bat |
+| jenkins/testing/python_debug_pipeline.groovy | scripts/batch/postgresql/validate_python_requirements.bat |
+| jenkins/testing/python_debug_pipeline.groovy | scripts/batch/validate_python_requirements.bat |
+| jenkins/testing/tools_debug_pipeline.groovy | scripts/batch/common/install_tools.bat |
+| jenkins/testing/tools_debug_pipeline.groovy | scripts/batch/common/validate_tools.bat |
+| jenkins/testing/tools_debug_pipeline.groovy | scripts/batch/postgresql/install_tools.bat |
+| scripts/bash/common/install_liquibase.sh | config/mysql.conf |
+| scripts/bash/common/install_liquibase.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/install_mssql_driver.sh | config/ubuntu/mssql.conf |
+| scripts/bash/common/install_mssql_driver.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/install_mysql_driver.sh | config/mysql.conf |
+| scripts/bash/common/install_mysql_driver.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/install_terraform.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/install_tools.sh | scripts/bash/common/install_liquibase.sh |
+| scripts/bash/common/install_tools.sh | scripts/bash/common/install_mysql_driver.sh |
+| scripts/bash/common/install_tools.sh | scripts/bash/common/install_terraform.sh |
+| scripts/bash/common/install_tools.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/validate_java_runtime.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/validate_python_runtime.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/common/validate_tools.sh | config/mysql.conf |
+| scripts/bash/common/validate_tools.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/install_mongodb.sh | config/ubuntu/mongodb.conf |
+| scripts/bash/mongodb/install_mongodb.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/install_mongosh.sh | config/ubuntu/mongodb.conf |
+| scripts/bash/mongodb/install_mongosh.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/load_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/load_data.sh | scripts/python/mongodb/load_all.py |
+| scripts/bash/mongodb/mongodb_load_pipeline.sh | scripts/bash/common/install_python_requirements.sh |
+| scripts/bash/mongodb/mongodb_load_pipeline.sh | scripts/bash/mongodb/load_data.sh |
+| scripts/bash/mongodb/mongodb_load_pipeline.sh | scripts/bash/mongodb/validate_loaded_data.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/common/install_python_requirements.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/common/validate_python_runtime.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/mongodb/install_mongodb.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/mongodb/install_mongosh.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/mongodb/start_mongodb.sh |
+| scripts/bash/mongodb/mongodb_setup_pipeline.sh | scripts/bash/mongodb/validate_mongodb.sh |
+| scripts/bash/mongodb/start_mongodb.sh | config/ubuntu/mongodb.conf |
+| scripts/bash/mongodb/start_mongodb.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/stop_mongodb.sh | config/ubuntu/mongodb.conf |
+| scripts/bash/mongodb/stop_mongodb.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/validate_loaded_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mongodb/validate_loaded_data.sh | scripts/python/mongodb/validate_data.py |
+| scripts/bash/mongodb/validate_mongodb.sh | config/ubuntu/mongodb.conf |
+| scripts/bash/mongodb/validate_mongodb.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/create_database.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/create_database.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/install_mssql.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/install_mssql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/install_sqlcmd.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/load_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/load_data.sh | scripts/python/mssql/load_all.py |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/common/validate_python_runtime.sh |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/mssql/load_data.sh |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/mssql/validate_loaded_data.sh |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/mssql/validate_mssql.sh |
+| scripts/bash/mssql/mssql_load_pipeline.sh | scripts/bash/mssql/validate_tools.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/install_liquibase.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/install_mssql_driver.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/install_terraform.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/validate_java_runtime.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/common/validate_python_runtime.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/create_database.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/install_mssql.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/install_sqlcmd.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/run_liquibase.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/start_mssql.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/validate_environment.sh |
+| scripts/bash/mssql/mssql_setup_pipeline.sh | scripts/bash/mssql/validate_tools.sh |
+| scripts/bash/mssql/run_liquibase.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/run_liquibase.sh | liquibase/mssql/master.xml |
+| scripts/bash/mssql/run_liquibase.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/start_mssql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/validate_environment.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/validate_environment.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/validate_loaded_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/validate_loaded_data.sh | scripts/python/mssql/validate_loaded_data.py |
+| scripts/bash/mssql/validate_mssql.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/validate_mssql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mssql/validate_tools.sh | config/ubuntu/mssql.conf |
+| scripts/bash/mssql/validate_tools.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/create_database.sh | config/mysql.conf |
+| scripts/bash/mysql/create_database.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/install_mysql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/load_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/load_data.sh | scripts/bash/mssql/run_liquibase.sh |
+| scripts/bash/mysql/load_data.sh | scripts/bash/mysql/run_liquibase.sh |
+| scripts/bash/mysql/load_data.sh | scripts/data_loader.py |
+| scripts/bash/mysql/load_data.sh | scripts/python/mongodb/validate_data.py |
+| scripts/bash/mysql/load_data.sh | scripts/python/mysql/generate_liquibase_xml.py |
+| scripts/bash/mysql/load_data.sh | scripts/python/mysql/update_master_xml.py |
+| scripts/bash/mysql/load_data.sh | scripts/python/mysql/validate_data.py |
+| scripts/bash/mysql/load_data.sh | scripts/python/postgresql/validate_data.py |
+| scripts/bash/mysql/load_data.sh | scripts/schema_detector.py |
+| scripts/bash/mysql/mysql_load_pipeline.sh | scripts/bash/mysql/load_data.sh |
+| scripts/bash/mysql/mysql_load_pipeline.sh | scripts/bash/mysql/validate_loaded_data.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/install_liquibase.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/install_mysql_driver.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/install_terraform.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/validate_java_runtime.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/validate_python_runtime.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/common/validate_tools.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/mysql/create_database.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/mysql/install_mysql.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/mysql/run_liquibase.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/mysql/start_mysql.sh |
+| scripts/bash/mysql/mysql_setup_pipeline.sh | scripts/bash/mysql/validate_environment.sh |
+| scripts/bash/mysql/run_liquibase.sh | config/mysql.conf |
+| scripts/bash/mysql/run_liquibase.sh | liquibase/mysql/master.xml |
+| scripts/bash/mysql/run_liquibase.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/start_mysql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/common/validate_java_runtime.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/common/validate_python_runtime.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/common/validate_tools.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/mysql/validate_mysql.sh |
+| scripts/bash/mysql/validate_environment.sh | scripts/bash/mysql/validate_port.sh |
+| scripts/bash/mysql/validate_loaded_data.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/validate_loaded_data.sh | scripts/python/mssql/validate_loaded_data.py |
+| scripts/bash/mysql/validate_loaded_data.sh | scripts/python/mysql/validate_loaded_data.py |
+| scripts/bash/mysql/validate_loaded_data.sh | scripts/python/postgresql/validate_loaded_data.py |
+| scripts/bash/mysql/validate_mysql.sh | config/mysql.conf |
+| scripts/bash/mysql/validate_mysql.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/mysql/validate_port.sh | config/mysql.conf |
+| scripts/bash/mysql/validate_port.sh | scripts/bash/common/set_project_root.sh |
+| scripts/bash/validate_python_requirements.sh | scripts/bash/common/set_project_root.sh |
+| scripts/batch/common/install_liquibase.bat | scripts/powershell/download_liquibase.ps1 |
+| scripts/batch/common/install_mssql_driver.bat | scripts/powershell/download_mssql_driver.ps1 |
+| scripts/batch/common/install_mysql_driver.bat | scripts/powershell/download_mysql_driver.ps1 |
+| scripts/batch/common/install_postgresql_driver.bat | scripts/powershell/download_postgresql_driver copy.ps1 |
+| scripts/batch/common/set_project_root.bat | config/mysql.conf |
+| scripts/batch/common/setup_liquibase.bat | liquibase/mysql/liquibase.properties |
+| scripts/batch/common/setup_liquibase.bat | liquibase/postgresql/liquibase.properties |
+| scripts/batch/common/setup_liquibase.bat | tools/liquibase/examples/json/liquibase.properties |
+| scripts/batch/common/setup_liquibase.bat | tools/liquibase/examples/xml/liquibase.properties |
+| scripts/batch/common/setup_liquibase.bat | tools/liquibase/examples/yaml/liquibase.properties |
+| scripts/batch/common/setup_liquibase.bat | tools/liquibase/liquibase.bat |
+| scripts/batch/common/validate_liquibase.bat | config/mysql.conf |
+| scripts/batch/common/validate_liquibase.bat | tools/liquibase/liquibase.bat |
+| scripts/batch/common/validate_mssql_driver.bat | config/windows/mssql.conf |
+| scripts/batch/common/validate_mysql_driver.bat | config/mysql.conf |
+| scripts/batch/common/validate_python_runtime.bat | config/python.conf |
+| scripts/batch/install_python_requirements.bat | config/python.conf |
+| scripts/batch/mongodb/cleanup_mongodb.bat | scripts/python/mongodb/cleanup_collections.py |
+| scripts/batch/mongodb/deploy_mongodb.bat | scripts/python/mongodb/load_all.py |
+| scripts/batch/mongodb/deploy_mongodb.bat | scripts/python/mssql/load_all.py |
+| scripts/batch/mongodb/deploy_mongodb.bat | scripts/python/mysql/load_all.py |
+| scripts/batch/mongodb/deploy_mongodb.bat | scripts/python/postgresql/load_all.py |
+| scripts/batch/mongodb/load_data.bat | scripts/python/mongodb/load_all.py |
+| scripts/batch/mongodb/load_data.bat | scripts/python/mssql/load_all.py |
+| scripts/batch/mongodb/load_data.bat | scripts/python/mysql/load_all.py |
+| scripts/batch/mongodb/load_data.bat | scripts/python/postgresql/load_all.py |
+| scripts/batch/mongodb/start_mongodb.bat | scripts/powershell/mongodb/start_mongodb.ps1 |
+| scripts/batch/mongodb/stop_mongodb.bat | scripts/powershell/mongodb/stop_mongodb.ps1 |
+| scripts/batch/mongodb/validate_data.bat | scripts/python/mongodb/validate_data.py |
+| scripts/batch/mongodb/validate_data.bat | scripts/python/mysql/validate_data.py |
+| scripts/batch/mongodb/validate_data.bat | scripts/python/postgresql/validate_data.py |
+| scripts/batch/mongodb/validate_mongodb.bat | scripts/python/mongodb/validate_mongodb.py |
+| scripts/batch/mongodb/validate_port.bat | scripts/python/mongodb/validate_port.py |
+| scripts/batch/mongodb/validate_port.bat | scripts/python/mssql/validate_port.py |
+| scripts/batch/mongodb/validate_port.bat | scripts/python/mysql/validate_port.py |
+| scripts/batch/mongodb/validate_port.bat | scripts/python/postgresql/validate_port.py |
+| scripts/batch/mssql/clean_mssql_data.bat | config/ubuntu/mssql.conf |
+| scripts/batch/mssql/clean_mssql_data.bat | config/windows/mssql.conf |
+| scripts/batch/mssql/create_database.bat | config/ubuntu/mssql.conf |
+| scripts/batch/mssql/create_database.bat | config/windows/mssql.conf |
+| scripts/batch/mssql/destroy_mssql_environment.bat | scripts/batch/mssql/clean_mssql_data.bat |
+| scripts/batch/mssql/install_mssql.bat | scripts/powershell/install_mssql.ps1 |
+| scripts/batch/mssql/install_mssql_driver.bat | scripts/powershell/download_mssql_driver.ps1 |
+| scripts/batch/mssql/load_data.bat | scripts/python/mongodb/load_all.py |
+| scripts/batch/mssql/load_data.bat | scripts/python/mssql/load_all.py |
+| scripts/batch/mssql/load_data.bat | scripts/python/mysql/load_all.py |
+| scripts/batch/mssql/load_data.bat | scripts/python/postgresql/load_all.py |
+| scripts/batch/mssql/run_liquibase.bat | config/ubuntu/mssql.conf |
+| scripts/batch/mssql/run_liquibase.bat | config/windows/mssql.conf |
+| scripts/batch/mssql/run_liquibase.bat | liquibase/mssql/master.xml |
+| scripts/batch/mssql/run_liquibase.bat | scripts/batch/common/validate_liquibase.bat |
+| scripts/batch/mssql/run_liquibase.bat | scripts/batch/common/validate_mssql_driver.bat |
+| scripts/batch/mssql/run_liquibase.bat | tools/liquibase/liquibase.bat |
+| scripts/batch/mssql/start_mssql.bat | config/windows/mssql.conf |
+| scripts/batch/mssql/validate_csv.bat | scripts/python/mssql/validate_csv.py |
+| scripts/batch/mssql/validate_csv.bat | scripts/python/mysql/validate_csv.py |
+| scripts/batch/mssql/validate_csv.bat | scripts/python/postgresql/validate_csv.py |
+| scripts/batch/mssql/validate_environment.bat | scripts/batch/common/validate_python_runtime.bat |
+| scripts/batch/mssql/validate_environment.bat | scripts/batch/common/validate_tools.bat |
+| scripts/batch/mssql/validate_environment.bat | scripts/batch/mssql/validate_mssql.bat |
+| scripts/batch/mssql/validate_environment.bat | scripts/batch/postgresql/validate_python_requirements.bat |
+| scripts/batch/mssql/validate_environment.bat | scripts/batch/validate_python_requirements.bat |
+| scripts/batch/mssql/validate_loaded_data.bat | scripts/python/mssql/validate_loaded_data.py |
+| scripts/batch/mssql/validate_loaded_data.bat | scripts/python/mysql/validate_loaded_data.py |
+| scripts/batch/mssql/validate_loaded_data.bat | scripts/python/postgresql/validate_loaded_data.py |
+| scripts/batch/mssql/validate_mssql.bat | scripts/python/mssql/validate_mssql.py |
+| scripts/batch/mssql/validate_mssql_tools.bat | config/windows/mssql.conf |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/batch/mongodb/validate_environment.bat |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/batch/mssql/validate_environment.bat |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/batch/mysql/validate_environment.bat |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/batch/postgresql/validate_environment.bat |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/python/mssql/truncate_tables.py |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/python/mysql/truncate_tables.py |
+| scripts/batch/mysql/cleanup_mysql.bat | scripts/python/postgresql/truncate_tables.py |
+| scripts/batch/mysql/create_database.bat | config/mysql.conf |
+| scripts/batch/mysql/destroy_mysql.bat | scripts/batch/mysql/stop_mysql.bat |
+| scripts/batch/mysql/load_data.bat | scripts/data_loader.py |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mongodb/initialize_logs.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mongodb/load_data.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mongodb/validate_environment.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mssql/load_data.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mssql/validate_environment.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mysql/initialize_logs.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mysql/load_data.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/mysql/validate_environment.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/postgresql/initialize_logs.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/postgresql/load_data.bat |
+| scripts/batch/mysql/mysql_load_with_logging.bat | scripts/batch/postgresql/validate_environment.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/mongodb/initialize_logs.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/mongodb/validate_environment.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/mssql/validate_environment.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/mysql/initialize_logs.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/mysql/validate_environment.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/postgresql/initialize_logs.bat |
+| scripts/batch/mysql/mysql_setup_with_logging.bat | scripts/batch/postgresql/validate_environment.bat |
+| scripts/batch/mysql/run_liquibase.bat | config/mysql.conf |
+| scripts/batch/mysql/run_liquibase.bat | liquibase/mysql/master.xml |
+| scripts/batch/mysql/run_liquibase.bat | scripts/batch/common/validate_liquibase.bat |
+| scripts/batch/mysql/run_liquibase.bat | scripts/batch/common/validate_mysql_driver.bat |
+| scripts/batch/mysql/run_liquibase.bat | tools/liquibase/liquibase.bat |
+| scripts/batch/mysql/start_mysql.bat | scripts/powershell/start_mysql.ps1 |
+| scripts/batch/mysql/stop_mysql.bat | scripts/powershell/stop_mysql.ps1 |
+| scripts/batch/mysql/validate_csv.bat | scripts/python/mssql/validate_csv.py |
+| scripts/batch/mysql/validate_csv.bat | scripts/python/mysql/validate_csv.py |
+| scripts/batch/mysql/validate_csv.bat | scripts/python/postgresql/validate_csv.py |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/common/validate_python_runtime.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/common/validate_tools.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/mongodb/validate_port.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/mysql/validate_mysql.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/mysql/validate_port.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/postgresql/validate_port.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/postgresql/validate_python_requirements.bat |
+| scripts/batch/mysql/validate_environment.bat | scripts/batch/validate_python_requirements.bat |
+| scripts/batch/mysql/validate_loaded_data.bat | scripts/python/mssql/validate_loaded_data.py |
+| scripts/batch/mysql/validate_loaded_data.bat | scripts/python/mysql/validate_loaded_data.py |
+| scripts/batch/mysql/validate_loaded_data.bat | scripts/python/postgresql/validate_loaded_data.py |
+| scripts/batch/mysql/validate_mysql.bat | scripts/python/mongodb/validate_data.py |
+| scripts/batch/mysql/validate_mysql.bat | scripts/python/mysql/validate_data.py |
+| scripts/batch/mysql/validate_mysql.bat | scripts/python/postgresql/validate_data.py |
+| scripts/batch/mysql/validate_port.bat | scripts/python/mongodb/validate_port.py |
+| scripts/batch/mysql/validate_port.bat | scripts/python/mssql/validate_port.py |
+| scripts/batch/mysql/validate_port.bat | scripts/python/mysql/validate_port.py |
+| scripts/batch/mysql/validate_port.bat | scripts/python/postgresql/validate_port.py |
+| scripts/batch/postgresql/create_database.bat | scripts/python/postgresql/create_database.py |
+| scripts/batch/postgresql/deploy_postgresql.bat | scripts/powershell/mongodb/install_windows.ps1 |
+| scripts/batch/postgresql/deploy_postgresql.bat | scripts/powershell/postgresql/install_windows.ps1 |
+| scripts/batch/postgresql/deploy_postgresql.bat | scripts/powershell/postgresql/start_postgresql.ps1 |
+| scripts/batch/postgresql/destroy_postgresql.bat | scripts/powershell/postgresql/remove_postgresql.ps1 |
+| scripts/batch/postgresql/install_tools.bat | scripts/batch/common/install_liquibase.bat |
+| scripts/batch/postgresql/install_tools.bat | scripts/batch/common/install_postgresql_driver.bat |
+| scripts/batch/postgresql/install_tools.bat | scripts/batch/common/install_terraform.bat |
+| scripts/batch/postgresql/install_tools.bat | scripts/batch/common/validate_liquibase.bat |
+| scripts/batch/postgresql/install_tools.bat | scripts/batch/common/validate_tools.bat |
+| scripts/batch/postgresql/load_data.bat | scripts/python/mongodb/generate_dataset.py |
+| scripts/batch/postgresql/load_data.bat | scripts/python/mongodb/load_all.py |
+| scripts/batch/postgresql/load_data.bat | scripts/python/mssql/load_all.py |
+| scripts/batch/postgresql/load_data.bat | scripts/python/mysql/load_all.py |
+| scripts/batch/postgresql/load_data.bat | scripts/python/postgresql/generate_dataset.py |
+| scripts/batch/postgresql/load_data.bat | scripts/python/postgresql/load_all.py |
+
+## Expected Dependency Shape
+
+- jenkins/{db}/{os}/setup_pipeline.groovy -> Terraform -> install/start/create database -> Liquibase where applicable -> setup validation.
+- jenkins/{db}/{os}/load_pipeline.groovy -> validate CSV/data -> Python load modules -> loaded-data validation.
+- MongoDB setup/load should not call Liquibase.
+- Cleanup/destroy/debug pipelines are out of target production structure.
