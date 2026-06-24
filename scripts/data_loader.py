@@ -13,7 +13,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-
+import platform
 try:
     import mysql.connector
 except ImportError:
@@ -344,20 +344,32 @@ def load_and_insert_file(conn, db_type, path):
     return inserted
 
 
+
+
 def get_config_for_db(db_type):
     root = Path(__file__).resolve().parent.parent
+
     if db_type == 'mysql':
-        return load_config(root / 'config' / 'mysql.conf')
+
+        if platform.system() == "Windows":
+            return load_config(root / 'config' / 'mysql.conf')
+
+        return load_config(
+            root / 'config' / 'ubuntu' / 'mysql.config'
+        )
+
     if db_type == 'postgresql':
         config = load_config(root / 'config' / 'postgres.conf')
         if not config:
             config = load_config(root / 'config' / 'ubuntu' / 'postgres.conf')
         return config
+
     if db_type == 'mssql':
         config = load_config(root / 'config' / 'ubuntu' / 'mssql.conf')
         if not config:
             config = load_config(root / 'config' / 'mssql.conf')
         return config
+
     return {}
 
 
