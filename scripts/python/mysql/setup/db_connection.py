@@ -2,7 +2,7 @@ from pathlib import Path
 import platform
 import mysql.connector
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 if platform.system() == "Windows":
     config_file = ROOT / "config" / "windows" / "mysql.conf"

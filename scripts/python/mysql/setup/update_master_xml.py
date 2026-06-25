@@ -1,7 +1,7 @@
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 liquibase_dir = ROOT / "liquibase"
 mysql_dir = liquibase_dir / "mysql"

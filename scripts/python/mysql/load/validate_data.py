@@ -24,7 +24,7 @@ try:
     version = cursor.fetchone()[0]
 
     schema_file = (
-    Path(__file__).resolve().parents[3]
+    Path(__file__).resolve().parents[4]
     / "metadata"
     / "mysql"
     / "schema_registry.json"
