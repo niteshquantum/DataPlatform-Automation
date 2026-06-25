@@ -321,8 +321,24 @@ def move_file(source_path, dest_dir):
     source_path.rename(target)
     return target
 
+def truncate_table(conn, db_type, table_name):
 
-def load_and_insert_file(conn, db_type, path):
+    quoted_table = quote_name(table_name, db_type)
+
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute(f"TRUNCATE TABLE {quoted_table}")
+
+        conn.commit()
+
+        logger.info(f"Truncated table {table_name}")
+
+    finally:
+
+        cursor.close()
+def load_and_insert_file(conn, db_type, path, load_mode="skip"):
     table_name = (
     path.stem
     .strip()
@@ -340,12 +356,19 @@ def load_and_insert_file(conn, db_type, path):
         logger.warning(f"No rows found in file {path.name}")
         return 0
 
-    file_columns = list({key for row in rows for key in row.keys() if key is not None})
+    file_columns = []
+
+    for row in rows:
+        for key in row.keys():
+            if key is not None and key not in file_columns:
+                file_columns.append(key)
     if not file_columns:
         logger.warning(f"No columns detected in file {path.name}")
         return 0
 
     existing_columns = get_table_columns(conn, db_type, table_name)
+    if existing_columns and load_mode == "reload":
+        truncate_table(conn, db_type, table_name)
     if not existing_columns:
         create_table(conn, db_type, table_name, file_columns)
         existing_columns = file_columns
@@ -396,7 +419,7 @@ def main():
     logger.info('Starting generic data loader...')
 
     project_root = Path(__file__).resolve().parent.parent
-
+    load_mode = os.environ.get("LOAD_MODE", "skip").lower()
     db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
 
     global HISTORY_FILE
@@ -436,14 +459,24 @@ def main():
 
     for path in data_files:
         # Skip already processed files
-        if is_file_already_processed(path.name):
-            logger.info(f"{path.name} already processed. Skipping.")
-            continue
+        if load_mode == "skip":
+
+            if is_file_already_processed(path.name):
+                logger.info(f"{path.name} already processed. Skipping.")
+                continue
+
+        elif load_mode == "force":
+        
+            logger.info(f"{path.name} will be reloaded (FORCE mode).")
+        
+        elif load_mode == "reload":
+
+            logger.info(f"{path.name} will be reloaded (RELOAD mode).")
         timestamp = datetime.now().isoformat()
         rows_inserted = 0
         status = 'FAILED'
         try:
-            rows_inserted = load_and_insert_file(conn, db_type, path)
+            rows_inserted = load_and_insert_file(conn,db_type,path,load_mode)
             status = 'SUCCESS'
             logger.info(
                 f"Loaded {rows_inserted} rows from {path.name}"
