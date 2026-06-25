@@ -61,42 +61,34 @@ foreach ($BinPath in $SystemBinPaths) {
     }
 }
 
-# ---- If not found anywhere, run installer ----
+# ---- If not found anywhere, download ZIP (portable - no system install) ----
 if (!$SystemBin) {
-    Write-Log "PostgreSQL not found - running installer..."
+    Write-Log "PostgreSQL not found - downloading portable ZIP..."
 
-    $InstallerDir  = Join-Path $ProjectRoot "databases\postgresql\installer"
-    $InstallerFile = Join-Path $InstallerDir "postgresql-installer.exe"
+    $ZipDir  = Join-Path $ProjectRoot "databases\postgresql\zip"
+    $ZipFile = Join-Path $ZipDir "postgresql-binaries.zip"
+    $ExtDir  = Join-Path $ZipDir "extracted"
+    $ZipUrl  = "https://get.enterprisedb.com/postgresql/postgresql-17.5-1-windows-x64-binaries.zip"
 
-    if (!(Test-Path $InstallerFile)) {
-        Write-Log "Downloading installer..."
-        New-Item -ItemType Directory -Path $InstallerDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
+
+    if (!(Test-Path $ZipFile)) {
+        Write-Log "Downloading ZIP from EnterpriseDB..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest `
-            -Uri "https://get.enterprisedb.com/postgresql/postgresql-17.5-1-windows-x64.exe" `
-            -OutFile $InstallerFile -TimeoutSec 600
-        Write-Log "Download complete"
+        Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipFile -UseBasicParsing -TimeoutSec 600
+        Write-Log "Download complete: $ZipFile"
+    } else {
+        Write-Log "ZIP already cached - skipping download"
     }
 
-    $Process = Start-Process -FilePath $InstallerFile `
-        -ArgumentList @("--mode","unattended","--superpassword",$AdminPassword,"--serverport",$ExpectedPort.ToString()) `
-        -Wait -PassThru
+    Write-Log "Extracting ZIP..."
+    if (Test-Path $ExtDir) { Remove-Item $ExtDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $ExtDir -Force | Out-Null
+    Expand-Archive -Path $ZipFile -DestinationPath $ExtDir -Force
+    Write-Log "Extraction complete"
 
-    if ($Process.ExitCode -ne 0) {
-        throw "Installer failed with exit code: $($Process.ExitCode)"
-    }
-
-    Start-Sleep -Seconds 15
-
-    foreach ($BinPath in $SystemBinPaths) {
-        if (Test-Path (Join-Path $BinPath "pg_ctl.exe")) {
-            $SystemBin = $BinPath
-            Write-Log "Installer placed binaries at: $SystemBin"
-            break
-        }
-    }
-
-    if (!$SystemBin) { throw "Binaries not found after installation" }
+    $SystemBin = Join-Path $ExtDir "pgsql\bin"
+    Write-Log "Using extracted binaries: $SystemBin"
 }
 
 # ---- Copy binaries to project folder ----
