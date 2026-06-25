@@ -7,17 +7,12 @@ liquibase_dir = ROOT / "liquibase"
 mysql_dir = liquibase_dir / "mysql"
 master_xml = mysql_dir / "master.xml"
 
-# Namespace
 NS = "http://www.liquibase.org/xml/ns/dbchangelog"
 ET.register_namespace("", NS)
 
 # Create master.xml if it doesn't exist
 if not master_xml.exists():
-
-    root = ET.Element(
-        f"{{{NS}}}databaseChangeLog"
-    )
-
+    root = ET.Element(f"{{{NS}}}databaseChangeLog")
     tree = ET.ElementTree(root)
     tree.write(master_xml, encoding="utf-8", xml_declaration=True)
 
@@ -26,13 +21,10 @@ tree = ET.parse(master_xml)
 root = tree.getroot()
 
 # Existing include files
-existing_includes = set()
-
-for elem in root.findall(f"{{{NS}}}include"):
-    existing_includes.add(elem.attrib["file"])
-
-# Scan all xml files
-xml_files = sorted(mysql_dir.glob("*.xml"))
+existing_includes = {
+    elem.attrib["file"]
+    for elem in root.findall(f"{{{NS}}}include")
+}
 
 # Scan all XML files except master.xml
 xml_files = sorted(
@@ -53,7 +45,12 @@ for xml_file in xml_files:
     )
 
     include_elem.set("file", relative_path)
-    include_elem.set("relativeToChangelogFile", "true")
+
+    # IMPORTANT
+    include_elem.set(
+        "relativeToChangelogFile",
+        "true"
+    )
 
     print(f"Added {relative_path}")
 
