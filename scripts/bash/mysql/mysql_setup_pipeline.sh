@@ -1,3 +1,9 @@
+#!/bin/bash
+
+set -e
+
+source "$(dirname "$0")/../common/set_project_root.sh"
+
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/install_python_requirements.sh"
@@ -17,3 +23,11 @@ bash "$PROJECT_ROOT/scripts/bash/mysql/setup/create_database.sh"
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/run_liquibase.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_environment.sh"
+
+echo
+echo "====================================="
+echo "MYSQL SETUP SUCCESSFUL"
+echo "====================================="
+echo
+
+exit 0
