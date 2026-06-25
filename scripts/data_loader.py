@@ -115,12 +115,16 @@ def get_database_connection(db_type, config):
 
 
 def quote_name(name, db_type):
+
     if db_type == 'mysql':
-        return '"' + name.replace('"', '""') + '"'
+        return '`' + name.replace('`', '``') + '`'
+
     if db_type == 'postgresql':
         return '"' + name.replace('"', '""') + '"'
+
     if db_type == 'mssql':
-        return '"' + name.replace('"', '""') + '"'
+        return '[' + name.replace(']', ']]') + ']'
+
     return name
 
 
