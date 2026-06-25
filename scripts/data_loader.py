@@ -232,10 +232,24 @@ def insert_rows(conn, db_type, table_name, actual_columns, rows):
 
 def read_csv_file(path):
     rows = []
+
     with open(path, 'r', encoding='utf-8-sig', newline='') as f:
+
         reader = csv.DictReader(f)
+
+        # NEW
+        reader.fieldnames = [
+            h.replace('\ufeff', '').strip()
+            for h in reader.fieldnames
+        ]
+
         for row in reader:
-            rows.append({k: (v if v != '' else None) for k, v in row.items()})
+            rows.append({
+                k.replace('\ufeff', '').strip():
+                (v if v != '' else None)
+                for k, v in row.items()
+            })
+
     return rows
 
 
