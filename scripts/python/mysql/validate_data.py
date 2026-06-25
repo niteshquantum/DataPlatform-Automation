@@ -31,34 +31,26 @@ try:
     )
 
     cursor.execute("""
-
         SELECT table_name
-
         FROM information_schema.tables
-
         WHERE table_schema = DATABASE()
-
     """)
     
     existing_tables = {
-
-        row[0].lower()
-
+        row[0]
         for row in cursor.fetchall()
-
     }
     
-    # Ignore Liquibase internal tables
-
     system_tables = {
-
         "databasechangelog",
-
         "databasechangeloglock"
-
     }
     
-    validated_tables = existing_tables - system_tables
+    validated_tables = {
+        table
+        for table in existing_tables
+        if table.lower() not in system_tables
+    }
     
     if not validated_tables:
 
