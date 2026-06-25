@@ -2,60 +2,75 @@ pipeline {
 
     agent any
 
-    stages {
+    environment {
+        PROJECT_ROOT = 'D:\\QT\\qtproject\\DataPlatform-Automation'
+    }
 
-        
+    stages {
 
         stage('Validate Python Runtime') {
             steps {
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                }
             }
         }
 
         stage('Install Python Requirements') {
             steps {
-                bat 'scripts\\batch\\postgresql\\install_python_requirements.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\postgresql\\install_python_requirements.bat'
+                }
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\postgresql\\validate_python_requirements.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\postgresql\\validate_python_requirements.bat'
+                }
             }
         }
 
         stage('Validate Java Runtime') {
             steps {
-                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                }
             }
         }
 
         stage('Install Tools') {
             steps {
-              bat 'scripts\\batch\\postgresql\\install_tools.bat'
-
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\postgresql\\install_tools.bat'
+                }
             }
         }
 
         stage('Validate Tools') {
             steps {
-              bat 'scripts\\batch\\common\\tools.bat'
-
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\common\\tools.bat'
+                }
             }
         }
 
         stage('Deploy PostgreSQL') {
             steps {
-                bat 'scripts\\batch\\postgresql\\deploy_postgresql.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\postgresql\\deploy_postgresql.bat'
+                }
             }
         }
 
         stage('Validate PostgreSQL') {
             steps {
-                bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
+                dir("${PROJECT_ROOT}") {
+                    bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
+                }
             }
         }
-
     }
 
     post {
@@ -64,6 +79,9 @@ pipeline {
         }
         failure {
             echo 'PostgreSQL Setup Pipeline Failed'
+        }
+        always {
+            echo 'PostgreSQL Setup Pipeline Finished'
         }
     }
 }

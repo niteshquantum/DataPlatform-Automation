@@ -1,77 +1,57 @@
-$ErrorActionPreference = "Stop"
+@echo off
+setlocal
 
-function Write-Log {
-    param([string]$Message)
-    Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
-}
+echo ===================================
+echo DEPLOY POSTGRESQL
+echo ===================================
 
-function Get-ProjectRoot {
-    $Root = Split-Path $PSScriptRoot -Parent
-    $Root = Split-Path $Root -Parent
-    return $Root
-}
+call "%~dp0initialize_logs.bat"
 
-$ProjectRoot = Get-ProjectRoot
+echo.
+echo [1/5] Installing / Validating PostgreSQL...
+powershell -ExecutionPolicy Bypass ^
+-File "%~dp0..\..\powershell\postgresql\install_windows.ps1"
+if errorlevel 1 (
+    echo FAILED: PostgreSQL installation failed
+    exit /b 1
+)
 
-Write-Log "Project Root: $ProjectRoot"
+echo.
+echo [2/5] Starting PostgreSQL service...
+powershell -ExecutionPolicy Bypass ^
+-File "%~dp0..\..\powershell\postgresql\start_postgresql.ps1"
+if errorlevel 1 (
+    echo FAILED: PostgreSQL service start failed
+    exit /b 1
+)
 
-# Read driver version from config
-$ConfigFile = Join-Path $ProjectRoot "config\postgresql.conf"
-$Config = @{}
-if (Test-Path $ConfigFile) {
-    Get-Content $ConfigFile | ForEach-Object {
-        if ($_ -match "^([^#=]+)=(.*)$") {
-            $Config[$Matches[1].Trim()] = $Matches[2].Trim()
-        }
-    }
-}
+echo.
+echo [3/5] Creating database...
+call "%~dp0create_database.bat"
+if errorlevel 1 (
+    echo FAILED: Database creation failed
+    exit /b 1
+)
 
-$DriverVersion = $Config["POSTGRESQL_DRIVER_VERSION"]
-if (!$DriverVersion) { $DriverVersion = "42.7.3" }
+echo.
+echo [4/5] Installing PostgreSQL JDBC Driver...
+powershell -ExecutionPolicy Bypass ^
+-File "%~dp0..\..\powershell\download_postgresql_driver.ps1"
+if errorlevel 1 (
+    echo FAILED: PostgreSQL JDBC driver download failed
+    exit /b 1
+)
 
-$DriversDir = Join-Path $ProjectRoot "tools\drivers"
-$DriverFile = Join-Path $DriversDir "postgresql-$DriverVersion.jar"
+echo.
+echo [5/5] Running Liquibase migrations...
+call "%~dp0run_liquibase.bat"
+if errorlevel 1 (
+    echo FAILED: Liquibase failed
+    exit /b 1
+)
 
-# Check if already downloaded
-if (Test-Path $DriverFile) {
-    Write-Log "PostgreSQL JDBC driver already present: $DriverFile"
-    exit 0
-}
-
-# Also check for any postgresql jar (version-independent)
-$ExistingJar = Get-ChildItem -Path $DriversDir -Filter "postgresql*.jar" -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($ExistingJar) {
-    Write-Log "PostgreSQL JDBC driver already present: $($ExistingJar.FullName)"
-    exit 0
-}
-
-if (!(Test-Path $DriversDir)) {
-    New-Item -ItemType Directory -Path $DriversDir -Force | Out-Null
-}
-
-$DownloadUrl = "https://jdbc.postgresql.org/download/postgresql-$DriverVersion.jar"
-
-Write-Log "Downloading PostgreSQL JDBC driver v$DriverVersion..."
-Write-Log "URL: $DownloadUrl"
-
-try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-    Invoke-WebRequest `
-        -Uri     $DownloadUrl `
-        -OutFile $DriverFile `
-        -TimeoutSec 120
-
-    Write-Log "Driver downloaded: $DriverFile"
-
-} catch {
-
-    Write-Log "Download failed: $_"
-    Write-Log ""
-    Write-Log "MANUAL ACTION:"
-    Write-Log "Download from: $DownloadUrl"
-    Write-Log "Save to: $DriverFile"
-    exit 1
-}
-
-Write-Log "PostgreSQL JDBC driver installation complete"
+echo.
+echo ===================================
+echo DEPLOYMENT SUCCESSFUL
+echo ===================================
+exit /b 0
