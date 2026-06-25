@@ -53,7 +53,8 @@ echo "-------------------------------------"
 echo
 echo "LOAD MODE : ${LOAD_MODE:-skip}"
 export LOAD_MODE=${LOAD_MODE}
-python3 scripts/python/common/data_loader.py mysql
+
+python3 scripts/data_loader.py mysql
 
 echo
 echo "-------------------------------------"
