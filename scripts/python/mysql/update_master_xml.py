@@ -12,7 +12,18 @@ ET.register_namespace("", NS)
 
 # Create master.xml if it doesn't exist
 if not master_xml.exists():
-    root = ET.Element(f"{{{NS}}}databaseChangeLog")
+
+    root = ET.Element(
+        "databaseChangeLog",
+        {
+            "xmlns": "http://www.liquibase.org/xml/ns/dbchangelog",
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "xsi:schemaLocation":
+                "http://www.liquibase.org/xml/ns/dbchangelog "
+                "https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        }
+    )
+
     tree = ET.ElementTree(root)
     tree.write(master_xml, encoding="utf-8", xml_declaration=True)
 
