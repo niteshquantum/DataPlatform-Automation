@@ -25,6 +25,14 @@ pipeline {
             }
         }
 
+        stage('Install PostgreSQL') {
+            steps {
+                dir("${WORKSPACE}") {
+                    powershell '.\\scripts\\powershell\\postgresql\\install_windows.ps1'
+                }
+            }
+        }
+
         stage('Start PostgreSQL') {
             steps {
                 dir("${WORKSPACE}") {
