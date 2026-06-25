@@ -4,8 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 
-schema_file = ROOT / "metadata" / "mysql" / "schema_registry.json"
-liquibase_dir = ROOT / "liquibase" / "mysql"
+schema_file = ROOT / "metadata" / "mssql" / "schema_registry.json"
+liquibase_dir = ROOT / "liquibase" / "mssql"
 
 liquibase_dir.mkdir(parents=True, exist_ok=True)
 
