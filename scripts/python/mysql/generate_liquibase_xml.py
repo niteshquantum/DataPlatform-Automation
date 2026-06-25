@@ -12,7 +12,10 @@ liquibase_dir.mkdir(parents=True, exist_ok=True)
 with open(schema_file, "r", encoding="utf-8") as f:
     schema_registry = json.load(f)
 
-existing_files = list(liquibase_dir.glob("*.xml"))
+existing_files = [
+    f for f in liquibase_dir.glob("*.xml")
+    if f.name != "master.xml"
+]
 
 existing_tables = set()
 
@@ -30,10 +33,6 @@ next_number = len(existing_files) + 1
 for table_name, columns in schema_registry.items():
 
     table_name = table_name.lower()
-
-    if table_name in existing_tables:
-        print(f"Skipping {table_name} (already exists)")
-        continue
 
     change_id = f"{next_number:03d}"
     filename = f"{change_id}_create_{table_name}.xml"
@@ -60,7 +59,13 @@ for table_name, columns in schema_registry.items():
 
     <changeSet id="{change_id}" author="tanisha">
 
-        <createTable tableName="{table_name}">
+    <preConditions onFail="MARK_RAN">
+        <not>
+            <tableExists tableName="{table_name}"/>
+        </not>
+    </preConditions>
+
+    <createTable tableName="{table_name}">
 {column_xml}
         </createTable>
 
