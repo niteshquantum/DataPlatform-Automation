@@ -1,22 +1,25 @@
 from pathlib import Path
+import platform
 import mysql.connector
 
 ROOT = Path(__file__).resolve().parents[3]
 
-config_file = ROOT / "config" / "mysql.conf"
+if platform.system() == "Windows":
+    config_file = ROOT / "config" / "windows" / "mysql.conf"
+else:
+    config_file = ROOT / "config" / "ubuntu" / "mysql.conf"
 
 config = {}
 
-with open(config_file, "r") as f:
+with open(config_file) as f:
     for line in f:
         if "=" in line:
-            key, value = line.strip().split("=", 1)
-            config[key] = value
+            k, v = line.strip().split("=", 1)
+            config[k] = v
+
 
 def get_connection():
     return mysql.connector.connect(
-        # host="localhost",
-        # host="127.0.0.1",
         host=config["MYSQL_HOST"],
         port=int(config["MYSQL_PORT"]),
         user=config["MYSQL_USER"],
