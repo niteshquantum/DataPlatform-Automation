@@ -12,7 +12,7 @@ echo
 
 python3 --version
 
-pip3 install -r "$PROJECT_ROOT/requirements/mysql.txt"
+python3 -m pip install --break-system-packages -r "$PROJECT_ROOT/requirements/mysql.txt"
 
 echo
 echo "====================================="
