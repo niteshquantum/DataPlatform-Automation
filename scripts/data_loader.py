@@ -5,7 +5,7 @@ Generic Data Loader
 Automatically loads CSV and JSON files from incoming/ into the database using
 dynamic schema detection and parameterized inserts.
 """
-
+import hashlib
 import csv
 import json
 import logging
@@ -272,19 +272,29 @@ def read_json_file(path):
             return [item if isinstance(item, dict) else {} for item in data]
         return []
 
+def get_file_hash(file_path):
 
+    sha256 = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+
+    return sha256.hexdigest()
 def write_history(record):
     path = Path(HISTORY_FILE)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(record) + '\n')
 
-def is_file_already_processed(file_name):
+def is_file_already_processed(file_path):
     """
     Check if file has already been successfully processed.
     """
     history_path = Path(HISTORY_FILE)
-
+    file_hash = get_file_hash(file_path)
+    file_name = file_path.name
     if not history_path.exists():
         return False
 
@@ -301,8 +311,8 @@ def is_file_already_processed(file_name):
 
                     if (
                         record.get('file') == file_name
-                        and record.get('status') == 'SUCCESS'
-                    ):
+                        and record.get('sha256') == file_hash
+                        and record.get('status') == 'SUCCESS'):
                         return True
 
                 except json.JSONDecodeError:
@@ -320,6 +330,25 @@ def move_file(source_path, dest_dir):
     target = dest_dir / source_path.name
     source_path.rename(target)
     return target
+def write_error_log(file_name, error, failed_dir, db_type):
+
+    failed_dir = Path(failed_dir)
+    failed_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = failed_dir / f"{file_name}.error.log"
+
+    with open(log_file, "w", encoding="utf-8") as f:
+
+        f.write("=" * 60 + "\n")
+        f.write("DATA LOAD ERROR\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Timestamp : {datetime.now().isoformat()}\n")
+        f.write(f"Database  : {db_type}\n")
+        f.write(f"File      : {file_name}\n")
+        f.write(f"Error     : {str(error)}\n")
+        f.write("=" * 60 + "\n")
+
+    logger.info(f"Created error log: {log_file}")
 
 def truncate_table(conn, db_type, table_name):
 
@@ -461,7 +490,7 @@ def main():
         # Skip already processed files
         if load_mode == "skip":
 
-            if is_file_already_processed(path.name):
+            if is_file_already_processed(path):
                 logger.info(f"{path.name} already processed. Skipping.")
                 continue
 
@@ -473,21 +502,49 @@ def main():
 
             logger.info(f"{path.name} will be reloaded (RELOAD mode).")
         timestamp = datetime.now().isoformat()
+        file_hash = get_file_hash(path)
+        
         rows_inserted = 0
         status = 'FAILED'
         try:
-            rows_inserted = load_and_insert_file(conn,db_type,path,load_mode)
+            
+            rows_inserted = load_and_insert_file(
+                conn,
+                db_type,
+                path,
+                load_mode
+            )
+            
             status = 'SUCCESS'
+            
+            move_file(path, archive_dir)
+            
+            logger.info(
+                f"Moved {path.name} to archive/"
+            )
+            
             logger.info(
                 f"Loaded {rows_inserted} rows from {path.name}"
             )
         except Exception as exc:
-            logger.error(f'Error loading file {path.name}: {exc}')
+        
+            logger.error(
+                f'Error loading file {path.name}: {exc}'
+            )
+        
+            write_error_log(
+                path.name,
+                exc,
+                failed_dir,
+                db_type
+            )
+        
             move_file(path, failed_dir)
         finally:
             record = {
                 'timestamp': timestamp,
                 'file': path.name,
+                'sha256': file_hash,
                 'table': (
                     path.stem
                     .strip()
