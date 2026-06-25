@@ -24,38 +24,20 @@ try:
     version = cursor.fetchone()[0]
 
     schema_file = (
-    Path(__file__).resolve().parents[3]
-    / "metadata"
-    / "mysql"
-    / "schema_registry.json"
+        Path(__file__).resolve().parents[3]
+        / "metadata"
+        / "mysql"
+        / "schema_registry.json"
     )
 
-    cursor.execute("""
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE()
-    """)
-    
-    existing_tables = {
-        row[0]
-        for row in cursor.fetchall()
-    }
-    
-    system_tables = {
-        "databasechangelog",
-        "databasechangeloglock"
-    }
-    
-    validated_tables = {
-        table
-        for table in existing_tables
-        if table.lower() not in system_tables
-    }
-    
-    if not validated_tables:
+    # Load schema registry
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema_registry = json.load(f)
 
-        raise Exception("No user tables found")
-    
+    validated_tables = set(schema_registry.keys())
+
+    if not validated_tables:
+        raise Exception("No user tables found in schema_registry.json")
 
     print()
     print("=" * 50)
@@ -69,8 +51,23 @@ try:
     print("Tables Validated:")
 
     for table in sorted(validated_tables):
-        
-        print("validate_tables: ",table)
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            AND table_name = %s
+            """,
+            (table,)
+        )
+
+        if cursor.fetchone()[0] == 0:
+            print(f"[SKIPPED] {table} : table does not exist")
+            continue
+
+        print("validate_tables:", table)
+
         cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
         count = cursor.fetchone()[0]
 
