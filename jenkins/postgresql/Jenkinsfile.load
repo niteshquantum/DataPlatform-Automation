@@ -1,96 +1,88 @@
 pipeline {
 
-agent any
+    agent any
 
-environment {
-    PROJECT_ROOT = 'D:\\QT\\qtproject\\DataPlatform-Automation'
-    PIPELINE_TYPE = 'POSTGRESQL_LOAD'
-    DATABASE = 'POSTGRESQL'
-}
+    environment {
+        PIPELINE_TYPE = 'POSTGRESQL_LOAD'
+        DATABASE      = 'POSTGRESQL'
+    }
 
-stages {
+    stages {
 
-    stage('Repository Audit') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'dir'
+        stage('Repository Audit') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'dir'
+                }
+            }
+        }
+
+        stage('Validate Environment') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\validate_environment.bat'
+                }
+            }
+        }
+
+        stage('Start PostgreSQL') {
+            steps {
+                dir("${WORKSPACE}") {
+                    powershell '.\\scripts\\powershell\\postgresql\\start_postgresql.ps1'
+                }
+            }
+        }
+
+        stage('Generate Datasets') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'python scripts\\python\\postgresql\\generate_dataset.py'
+                }
+            }
+        }
+
+        stage('Validate CSV Schema') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'python scripts\\python\\postgresql\\testcsvschema.py'
+                }
+            }
+        }
+
+        stage('Load Data') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\load_data.bat'
+                }
+            }
+        }
+
+        stage('Validate Loaded Data') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\validate_loaded_data.bat'
+                }
+            }
+        }
+
+        stage('Validate PostgreSQL') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
+                }
             }
         }
     }
 
-    stage('Validate Environment') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\postgresql\\validate_environment.bat'
-            }
+    post {
+        success {
+            echo 'PostgreSQL Load Pipeline Completed Successfully'
+        }
+        failure {
+            echo 'PostgreSQL Load Pipeline Failed'
+        }
+        always {
+            echo 'PostgreSQL Load Pipeline Finished'
         }
     }
-
-    stage('Start PostgreSQL') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                powershell '.\\scripts\\powershell\\postgresql\\start_postgresql.ps1'
-            }
-        }
-    }
-
-    stage('Generate Datasets') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'python scripts\\python\\postgresql\\generate_dataset.py'
-            }
-        }
-    }
-
-    stage('Validate CSV Schema') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'python scripts\\python\\postgresql\\testcsvschema.py'
-            }
-        }
-    }
-
-    stage('Load Data') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\postgresql\\load_data.bat'
-            }
-        }
-    }
-
-    stage('Validate Loaded Data') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\postgresql\\validate_loaded_data.bat'
-            }
-        }
-    }
-
-    stage('Validate PostgreSQL') {
-        steps {
-            dir("${PROJECT_ROOT}") {
-                bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
-            }
-        }
-    }
-
-}
-
-post {
-
-    success {
-        echo 'PostgreSQL Load Pipeline Completed Successfully'
-    }
-
-    failure {
-        echo 'PostgreSQL Load Pipeline Failed'
-    }
-
-    always {
-        echo 'PostgreSQL Load Pipeline Finished'
-    }
-
-}
-
-
 }

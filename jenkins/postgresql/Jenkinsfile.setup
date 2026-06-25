@@ -2,15 +2,11 @@ pipeline {
 
     agent any
 
-    environment {
-        PROJECT_ROOT = 'D:\\QT\\qtproject\\DataPlatform-Automation'
-    }
-
     stages {
 
         stage('Validate Python Runtime') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\common\\validate_python_runtime.bat'
                 }
             }
@@ -18,7 +14,7 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\postgresql\\install_python_requirements.bat'
                 }
             }
@@ -26,7 +22,7 @@ pipeline {
 
         stage('Validate Python Requirements') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\postgresql\\validate_python_requirements.bat'
                 }
             }
@@ -34,7 +30,7 @@ pipeline {
 
         stage('Validate Java Runtime') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\common\\validate_java_runtime.bat'
                 }
             }
@@ -42,7 +38,7 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\postgresql\\install_tools.bat'
                 }
             }
@@ -50,7 +46,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\common\\tools.bat'
                 }
             }
@@ -58,7 +54,7 @@ pipeline {
 
         stage('Deploy PostgreSQL') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\postgresql\\deploy_postgresql.bat'
                 }
             }
@@ -66,7 +62,7 @@ pipeline {
 
         stage('Validate PostgreSQL') {
             steps {
-                dir("${PROJECT_ROOT}") {
+                dir("${WORKSPACE}") {
                     bat 'scripts\\batch\\postgresql\\validate_postgresql.bat'
                 }
             }
