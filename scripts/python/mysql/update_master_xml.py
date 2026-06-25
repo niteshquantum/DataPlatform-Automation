@@ -34,6 +34,12 @@ for elem in root.findall(f"{{{NS}}}include"):
 # Scan all xml files
 xml_files = sorted(mysql_dir.glob("*.xml"))
 
+# Scan all XML files except master.xml
+xml_files = sorted(
+    f for f in mysql_dir.glob("*.xml")
+    if f.name != "master.xml"
+)
+
 for xml_file in xml_files:
 
     relative_path = xml_file.name
@@ -47,6 +53,7 @@ for xml_file in xml_files:
     )
 
     include_elem.set("file", relative_path)
+    include_elem.set("relativeToChangelogFile", "true")
 
     print(f"Added {relative_path}")
 
