@@ -45,6 +45,11 @@ pipeline {
     }
 }
 
+stage('Run Liquibase') {
+    steps {
+        sh 'scripts/bash/postgresql/run_liquibase.sh'
+    }
+}
         stage('Generate Datasets') {
             steps {
                 sh 'python3 scripts/python/postgresql/generate_dataset.py'
