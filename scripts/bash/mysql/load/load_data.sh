@@ -26,7 +26,7 @@ echo "GENERATING LIQUIBASE XML"
 echo "-------------------------------------"
 echo
 
-python3 scripts/python/mysql/setup/generate_liquibase_xml.py
+python3 -m scripts.python.mysql.setup.generate_liquibase_xml
 
 echo
 echo "-------------------------------------"
@@ -34,7 +34,7 @@ echo "UPDATING MASTER XML"
 echo "-------------------------------------"
 echo
 
-python3 scripts/python/mysql/setup/update_master_xml.py
+python3 -m scripts.python.mysql.setup.update_master_xml
 
 echo
 echo "-------------------------------------"
@@ -50,7 +50,7 @@ echo "LOADING DATA"
 echo "-------------------------------------"
 echo
 
-python3 scripts/python/mysql/load/load_data.py
+python3 -m scripts.python.mysql.load.load_data
 
 echo
 echo "-------------------------------------"
@@ -58,7 +58,9 @@ echo "VALIDATING DATA"
 echo "-------------------------------------"
 echo
 
-python3 scripts/python/mysql/load/validate_data.py
+cd "$PROJECT_ROOT"
+
+python3 -m scripts.python.mysql.load.validate_data
 
 echo
 echo "====================================="
