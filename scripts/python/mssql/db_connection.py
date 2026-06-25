@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 config = {}
 
-#with open(ROOT / "config" / "ubuntu" / "mssql.conf") as f:
-with open(ROOT / "config" / "windows" / "mssql.conf") as f:
+with open(ROOT / "config" / "ubuntu" / "mssql.conf") as f:
+#with open(ROOT / "config" / "windows" / "mssql.conf") as f:
     for line in f:
         if "=" in line:
             k, v = line.strip().split("=", 1)
