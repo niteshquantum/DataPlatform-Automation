@@ -51,6 +51,7 @@ echo "-------------------------------------"
 echo "LOADING DATA"
 echo "-------------------------------------"
 echo
+echo "LOAD MODE : ${LOAD_MODE:-skip}"
 export LOAD_MODE=${LOAD_MODE}
 python3 scripts/python/common/data_loader.py mysql
 
