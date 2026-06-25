@@ -187,3 +187,70 @@ post {
 }
 
  
+=======================
+pipeline {
+
+agent any
+
+environment {
+    PROJECT_ROOT = "${WORKSPACE}"
+}
+
+stages {
+
+    stage('Checkout') {
+        steps {
+            git branch: 'main',
+                url: 'https://github.com/niteshquantum/DataPlatform-Automation.git'
+        }
+    }
+
+    stage('Set Permissions') {
+        steps {
+            dir("${PROJECT_ROOT}") {
+                sh '''
+                pwd
+                ls -la
+                chmod +x scripts/bash/common/*.sh
+                chmod +x scripts/bash/mysql/*.sh
+                '''
+            }
+        }
+    }
+
+   stage('Validate MySQL') {
+    steps {
+        dir("${PROJECT_ROOT}") {
+            sh './scripts/bash/mysql/validate_mysql.sh'
+        }
+    }
+}
+
+    stage('Load Data') {
+        steps {
+            dir("${PROJECT_ROOT}") {
+                sh './scripts/bash/mysql/load_data.sh'
+            }
+        }
+    }
+
+    
+}
+
+post {
+
+    success {
+        echo 'UBUNTU MYSQL LOAD SUCCESSFUL'
+    }
+
+    failure {
+        echo 'UBUNTU MYSQL LOAD FAILED'
+    }
+
+    always {
+        echo 'UBUNTU MYSQL LOAD PIPELINE COMPLETED'
+    }
+}
+
+
+}
