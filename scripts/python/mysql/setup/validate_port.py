@@ -1,21 +1,15 @@
 import socket
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+from scripts.python.common.config_loader import load_database_config
 
-config = {}
+config = load_database_config("mysql")
 
-with open(ROOT / "config" / "windows" / "mysql.conf") as f:
-    for line in f:
-        if "=" in line:
-            key, value = line.strip().split("=", 1)
-            config[key] = value
-
+host = config["MYSQL_HOST"]
 port = int(config["MYSQL_PORT"])
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-result = sock.connect_ex(("127.0.0.1", port))
+result = sock.connect_ex((host, port))
 
 sock.close()
 
@@ -34,6 +28,7 @@ print()
 print("=" * 50)
 print("PORT VALIDATION SUCCESS")
 print("=" * 50)
+print(f"Configured Host : {host}")
 print(f"Configured Port : {port}")
 print("Status          : LISTENING")
 print("=" * 50)

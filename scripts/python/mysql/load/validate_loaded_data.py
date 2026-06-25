@@ -1,22 +1,8 @@
-from pathlib import Path
 import mysql.connector
 
-ROOT = Path(__file__).resolve().parents[4]
+from scripts.python.common.config_loader import load_database_config
 
-config = {}
-
-config_file = ROOT / "config" / "windows" / "mysql.conf"
-
-with open(config_file, encoding="utf-8") as f:
-    for line in f:
-        line = line.strip()
-
-        if not line or line.startswith("#"):
-            continue
-
-        if "=" in line:
-            key, value = line.split("=", 1)
-            config[key.strip()] = value.strip()
+config = load_database_config("mysql")
 
 conn = mysql.connector.connect(
     host=config["MYSQL_HOST"],
@@ -49,6 +35,7 @@ for table, display_name in tables.items():
 
 cursor.close()
 conn.close()
+
 print("=" * 50)
 print("DATA VALIDATION COMPLETED")
 print("=" * 50)

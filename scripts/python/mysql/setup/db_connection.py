@@ -1,21 +1,7 @@
-from pathlib import Path
-import platform
+from scripts.python.common.config_loader import load_database_config
 import mysql.connector
 
-ROOT = Path(__file__).resolve().parents[4]
-
-if platform.system() == "Windows":
-    config_file = ROOT / "config" / "windows" / "mysql.conf"
-else:
-    config_file = ROOT / "config" / "ubuntu" / "mysql.conf"
-
-config = {}
-
-with open(config_file) as f:
-    for line in f:
-        if "=" in line:
-            k, v = line.strip().split("=", 1)
-            config[k] = v
+config = load_database_config("mysql")
 
 
 def get_connection():

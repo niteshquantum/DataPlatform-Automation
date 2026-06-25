@@ -1,14 +1,10 @@
-#!/bin/bash
-
-set -e
-
-PROJECT_ROOT=$(pwd)
-
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/install_python_requirements.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_python_requirements.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/common/validate_tools.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/start_mysql.sh"
 
@@ -19,9 +15,3 @@ bash "$PROJECT_ROOT/scripts/bash/mysql/load/validate_csv.sh"
 bash "$PROJECT_ROOT/scripts/bash/mysql/load/load_data.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/load/validate_loaded_data.sh"
-
-echo
-echo "====================================="
-echo "MYSQL DATA LOAD SUCCESSFUL"
-echo "====================================="
-echo
