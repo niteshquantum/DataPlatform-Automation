@@ -51,8 +51,8 @@ echo "-------------------------------------"
 echo "LOADING DATA"
 echo "-------------------------------------"
 echo
-
-python3 scripts/data_loader.py mysql
+export LOAD_MODE=${LOAD_MODE}
+python3 scripts/python/common/data_loader.py mysql
 
 echo
 echo "-------------------------------------"
