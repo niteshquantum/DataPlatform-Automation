@@ -34,6 +34,8 @@ echo "UPDATING MASTER XML"
 echo "-------------------------------------"
 echo
 
+rm -f "$PROJECT_ROOT/liquibase/mysql/master.xml"
+
 python3 scripts/python/mysql/update_master_xml.py
 
 echo
