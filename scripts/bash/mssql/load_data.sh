@@ -26,7 +26,7 @@ echo "GENERATING LIQUIBASE XML"
 echo "-------------------------------------"
 echo
 
-# python3 scripts/python/mysql/generate_liquibase_xml.py
+python3 scripts/python/mssql/generate_liquibase_xml.py
 
 echo
 echo "-------------------------------------"
