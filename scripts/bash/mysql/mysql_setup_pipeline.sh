@@ -13,13 +13,13 @@ bash "$PROJECT_ROOT/scripts/bash/common/install_mysql_driver.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/common/validate_tools.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mysql/install_mysql.sh"
-bash "$PROJECT_ROOT/scripts/bash/mysql/start_mysql.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/install_mysql.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/start_mysql.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mysql/create_database.sh"
-bash "$PROJECT_ROOT/scripts/bash/mysql/run_liquibase.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/create_database.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/run_liquibase.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mysql/validate_environment.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_environment.sh"
 
 echo
 echo "====================================="

@@ -1,10 +1,15 @@
 @echo off
 
-set "PROJECT_ROOT=%CD%"
+set "PROJECT_ROOT=%~dp0..\..\.."
 
-if not exist "%PROJECT_ROOT%\config\mysql.conf" (
-echo ERROR: INVALID PROJECT ROOT
-echo Current Directory: %PROJECT_ROOT%
-exit /b 1
+for %%I in ("%PROJECT_ROOT%") do (
+    set "PROJECT_ROOT=%%~fI"
 )
-@REM echo Project Root Set To: %PROJECT_ROOT%
+
+if not exist "%PROJECT_ROOT%\config" (
+    echo ERROR: INVALID PROJECT ROOT
+    echo PROJECT_ROOT=%PROJECT_ROOT%
+    exit /b 1
+)
+
+exit /b 0

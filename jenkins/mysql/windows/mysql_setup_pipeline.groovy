@@ -30,45 +30,40 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                bat 'scripts\\batch\\common\\install_tools.bat'
+                bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
             }
         }
 
         stage('Deploy MySQL') {
             steps {
-                bat 'scripts\\batch\\mysql\\deploy_mysql.bat'
+                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
             }
         }
 
         stage('Start MySQL') {
             steps {
-                bat 'scripts\\batch\\mysql\\start_mysql.bat'
+                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
             }
         }
 
         stage('Create Database') {
             steps {
-                bat 'scripts\\batch\\mysql\\create_database.bat'
+                bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
             }
         }
 
         stage('Run Liquibase') {
             steps {
-                bat 'scripts\\batch\\mysql\\run_liquibase.bat'
+                bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat'
             }
         }
 
         stage('Validate Environment') {
             steps {
-                bat 'scripts\\batch\\mysql\\validate_environment.bat'
+                bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
             }
         }
 
-        stage('Validate MySQL') {
-            steps {
-                bat 'scripts\\batch\\mysql\\validate_mysql.bat'
-            }
-        }
     }
 
     post {

@@ -5,13 +5,12 @@ pipeline {
     stages {
 
         stage('Set Permissions') {
-        steps {
-            sh '''
-            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-            '''
+            steps {
+                sh '''
+                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
+            }
         }
-    }
-
 
         stage('Validate Python Runtime') {
             steps {
@@ -21,43 +20,43 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                sh './scripts/bash/install_python_requirements.sh'
+                sh './scripts/bash/mysql/setup/install_python_requirements.sh'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                sh './scripts/bash/validate_python_requirements.sh'
+                sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
             }
         }
 
-        stage('Install Tools') {
+        stage('Start MySQL') {
             steps {
-                sh './scripts/bash/common/install_tools.sh'
-            }
-        }
-
-        stage('Validate Tools') {
-            steps {
-                sh './scripts/bash/common/validate_tools.sh'
+                sh './scripts/bash/mysql/setup/start_mysql.sh'
             }
         }
 
         stage('Validate MySQL') {
             steps {
-                sh './scripts/bash/mysql/validate_mysql.sh'
+                sh './scripts/bash/mysql/setup/validate_mysql.sh'
+            }
+        }
+
+        stage('Validate CSV') {
+            steps {
+                sh './scripts/bash/mysql/load/validate_csv.sh'
             }
         }
 
         stage('Load Data') {
             steps {
-                sh './scripts/bash/mysql/load_data.sh'
+                sh './scripts/bash/mysql/load/load_data.sh'
             }
         }
 
         stage('Validate Loaded Data') {
             steps {
-                sh './scripts/bash/mysql/validate_loaded_data.sh'
+                sh './scripts/bash/mysql/load/validate_loaded_data.sh'
             }
         }
     }

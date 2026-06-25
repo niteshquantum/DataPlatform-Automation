@@ -7,8 +7,7 @@ pipeline {
         stage('Set Permissions') {
             steps {
                 sh '''
-                chmod +x scripts/bash/common/*.sh
-                chmod +x scripts/bash/mysql/*.sh
+                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
                 '''
             }
         }
@@ -33,31 +32,31 @@ pipeline {
 
         stage('Install MySQL') {
             steps {
-                sh './scripts/bash/mysql/install_mysql.sh'
+                sh './scripts/bash/mysql/setup/install_mysql.sh'
             }
         }
 
         stage('Start MySQL') {
             steps {
-                sh './scripts/bash/mysql/start_mysql.sh'
+                sh './scripts/bash/mysql/setup/start_mysql.sh'
             }
         }
 
         stage('Create Database') {
             steps {
-                sh './scripts/bash/mysql/create_database.sh'
+                sh './scripts/bash/mysql/setup/create_database.sh'
             }
         }
 
         stage('Run Liquibase') {
             steps {
-                sh './scripts/bash/mysql/run_liquibase.sh'
+                sh './scripts/bash/mysql/setup/run_liquibase.sh'
             }
         }
 
         stage('Validate Environment') {
             steps {
-                sh './scripts/bash/mysql/validate_environment.sh'
+                sh './scripts/bash/mysql/setup/validate_environment.sh'
             }
         }
     }

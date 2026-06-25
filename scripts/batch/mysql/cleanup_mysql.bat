@@ -14,7 +14,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-py scripts\python\mysql\truncate_tables.py
+py "%PROJECT_ROOT%\scripts\python\mysql\load\truncate_tables.py"
 
 if errorlevel 1 (
     echo.
