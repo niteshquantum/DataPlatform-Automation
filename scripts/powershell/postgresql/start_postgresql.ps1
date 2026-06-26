@@ -25,7 +25,7 @@ $RetryInterval = 3
 
 $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
-$PgLog  = Join-Path $ProjectRoot "databases\postgresql\pg_server.log"
+$PgLog  = Join-Path $env:TEMP "postgresql_pg_server.log"
 $PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
 Write-Log "pg_ctl : $PgCtl"
