@@ -25,11 +25,12 @@ $RetryInterval = 3
 
 $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
-$PgLog  = Join-Path $env:TEMP "postgresql_pg_server.log"
+$PgLog  = Join-Path $ProjectRoot "databases\postgresql\pg_server.log"
 $PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
 Write-Log "pg_ctl : $PgCtl"
 Write-Log "Data   : $PgData"
+Write-Log "Log    : $PgLog"
 Write-Log "Port   : $Port"
 
 if (!(Test-Path $PgCtl)) {
@@ -38,6 +39,28 @@ if (!(Test-Path $PgCtl)) {
 
 $env:PATH = "$PgBin;$env:PATH"
 
+# FIX: Delete stale postmaster.opts so pg_ctl does not use old D:/QT path
+$PostmasterOpts = Join-Path $PgData "postmaster.opts"
+if (Test-Path $PostmasterOpts) {
+    $OptsContent = Get-Content $PostmasterOpts -Raw
+    if ($OptsContent -notmatch [regex]::Escape($ProjectRoot)) {
+        Write-Log "Removing stale postmaster.opts (wrong path detected): $OptsContent"
+        Remove-Item $PostmasterOpts -Force
+    }
+}
+
+# FIX: Delete postmaster.pid if server is NOT actually running (stale lock)
+$PostmasterPid = Join-Path $PgData "postmaster.pid"
+if (Test-Path $PostmasterPid) {
+    $PidContent = Get-Content $PostmasterPid
+    $StoredPid  = [int]($PidContent[0].Trim())
+    $ProcRunning = Get-Process -Id $StoredPid -ErrorAction SilentlyContinue
+    if (-not $ProcRunning) {
+        Write-Log "Removing stale postmaster.pid (PID $StoredPid not running)"
+        Remove-Item $PostmasterPid -Force
+    }
+}
+
 $StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
 Write-Log "Status: $StatusOutput"
 
@@ -45,7 +68,7 @@ if (($StatusOutput -join " ") -match "server is running") {
     Write-Log "PostgreSQL already running - skipping start"
 } else {
     Write-Log "Starting PostgreSQL..."
-$StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start 2>&1
+    $StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start 2>&1
     Write-Log "pg_ctl output: $StartOutput"
     Start-Sleep -Seconds 3
 }
@@ -55,7 +78,7 @@ $Ready = $false
 for ($i = 1; $i -le $MaxRetries; $i++) {
     try {
         $tcp = New-Object System.Net.Sockets.TcpClient
-        $tcp.Connect("localhost", $Port)
+        $tcp.Connect("127.0.0.1", $Port)
         $tcp.Close()
         $Ready = $true
         Write-Log "PostgreSQL ready on port $Port (attempt $i)"
@@ -67,6 +90,8 @@ for ($i = 1; $i -le $MaxRetries; $i++) {
 }
 
 if (!$Ready) {
+    Write-Log "Last 20 lines of server log:"
+    if (Test-Path $PgLog) { Get-Content $PgLog -Tail 20 | ForEach-Object { Write-Log $_ } }
     throw "PostgreSQL not ready after $MaxRetries retries"
 }
 
