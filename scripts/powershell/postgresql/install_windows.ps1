@@ -37,9 +37,25 @@ $AdminPassword  = $Config["POSTGRESQL_ADMIN_PASSWORD"]
 
 Write-Log "Expected Port : $ExpectedPort"
 
-# ---- FAST PATH: project folder already has binaries ----
-if (Test-Path (Join-Path $PgProjectBin "pg_ctl.exe")) {
-    Write-Log "PostgreSQL binaries already in project folder - skipping install"
+# ---- FAST PATH: binaries AND data directory both ready ----
+$BinReady  = Test-Path (Join-Path $PgProjectBin  "pg_ctl.exe")
+$DataReady = Test-Path (Join-Path $PgProjectData "PG_VERSION")
+
+if ($BinReady -and $DataReady) {
+    Write-Log "PostgreSQL binaries and data directory already ready - skipping install"
+    exit 0
+}
+
+# ---- If binaries exist but data not initialized, go straight to initdb ----
+if ($BinReady -and !$DataReady) {
+    Write-Log "Binaries found but data directory not initialized - running initdb..."
+    New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
+    $env:PATH = "$PgProjectBin;$env:PATH"
+    & (Join-Path $PgProjectBin "initdb.exe") `
+        -D "$PgProjectData" -U postgres --encoding=UTF8
+    if ($LASTEXITCODE -ne 0) { throw "initdb failed with exit code $LASTEXITCODE" }
+    Add-Content -Path (Join-Path $PgProjectData "postgresql.conf") -Value "`nport = $ExpectedPort"
+    Write-Log "Data directory initialized, port set to $ExpectedPort"
     exit 0
 }
 
