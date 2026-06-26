@@ -41,11 +41,20 @@ $env:PATH = "$PgBin;$env:PATH"
 
 # Delete stale postmaster.opts if path does not match current workspace
 $PostmasterOpts = Join-Path $PgData "postmaster.opts"
+
 if (Test-Path $PostmasterOpts) {
-    $OptsContent = Get-Content $PostmasterOpts -Raw
-    if ($OptsContent -notmatch [regex]::Escape($ProjectRoot)) {
+
+    $OptsContent = (Get-Content $PostmasterOpts -Raw).Trim()
+
+    # Normalize both paths to forward slashes
+    $NormalizedProjectRoot = ($ProjectRoot -replace '\\','/').TrimEnd('/')
+
+    if ($OptsContent -notmatch [regex]::Escape($NormalizedProjectRoot)) {
         Write-Log "Removing stale postmaster.opts (wrong path detected): $OptsContent"
         Remove-Item $PostmasterOpts -Force
+    }
+    else {
+        Write-Log "postmaster.opts matches current workspace."
     }
 }
 
@@ -67,7 +76,7 @@ Write-Log "pg_ctl ExitCode: $LASTEXITCODE"
 
 if (($StatusOutput -join " ") -match "server is running") {
     Write-Log "PostgreSQL already running - stopping for clean start..."
-    & "$PgCtl" -D "$PgData" stop -m fast -w 2>&1 | Out-Null
+    & "$PgCtl" -D "$PgData" stop -m fast 2>&1 | Out-Null
     Start-Sleep -Seconds 2
 }
 
