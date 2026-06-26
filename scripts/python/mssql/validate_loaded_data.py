@@ -5,9 +5,9 @@ import mssql.connector
 ROOT = Path(__file__).resolve().parents[3]
 
 if platform.system() == "Windows":
-    config_file = ROOT / "config" /"windows"/ "mssql.conf"
+    config_file = ROOT / "config" / "windows" / "mssql.conf"
 else:
-    config_file = ROOT / "config" / "ubuntu" / "mssql.config"
+    config_file = ROOT / "config" / "ubuntu" / "mssql.conf"
 
 config = {}
 
@@ -28,9 +28,9 @@ conn = mssql.connector.connect(
 cursor = conn.cursor()
 
 cursor.execute("""
-    SELECT table_name
-    FROM information_schema.tables
-    WHERE table_schema = DATABASE()
+    SELECT TABLE_NAME
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_SCHEMA = 'dbo'
 """)
 
 tables = [row[0] for row in cursor.fetchall()]
@@ -50,10 +50,10 @@ for table in sorted(tables):
     if table.lower() in system_tables:
         continue
 
-    cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
+    cursor.execute(f"SELECT COUNT(*) FROM [{table}]")
     count = cursor.fetchone()[0]
 
-    print(f"{table:<30} {count}")
+    print(f"{table:<40} {count}")
 
 cursor.close()
 conn.close()
