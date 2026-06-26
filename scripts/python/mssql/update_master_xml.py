@@ -39,7 +39,7 @@ existing_includes = {
 
 # Scan all XML files except master.xml
 xml_files = sorted(
-    f for f in mysql_dir.glob("*.xml")
+    f for f in mssql_dir.glob("*.xml")
     if f.name != "master.xml"
 )
 
