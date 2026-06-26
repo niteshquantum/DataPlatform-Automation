@@ -41,6 +41,22 @@ pipeline {
             }
         }
 
+        stage('Create Database') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\create_database.bat'
+                }
+            }
+        }
+
+        stage('Run Liquibase') {
+            steps {
+                dir("${WORKSPACE}") {
+                    bat 'scripts\\batch\\postgresql\\run_liquibase.bat'
+                }
+            }
+        }
+
         stage('Generate Datasets') {
             steps {
                 dir("${WORKSPACE}") {
