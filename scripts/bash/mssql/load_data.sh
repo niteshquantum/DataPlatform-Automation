@@ -34,9 +34,9 @@ echo "UPDATING MASTER XML"
 echo "-------------------------------------"
 echo
 
-rm -f "$PROJECT_ROOT/liquibase/mysql/master.xml"
+rm -f "$PROJECT_ROOT/liquibase/mssql/master.xml"
 
-# python3 scripts/python/mysql/update_master_xml.py
+python3 scripts/python/mssql/update_master_xml.py
 
 echo
 echo "-------------------------------------"
@@ -44,7 +44,7 @@ echo "RUNNING LIQUIBASE"
 echo "-------------------------------------"
 echo
 
-# bash scripts/bash/mysql/run_liquibase.sh
+bash scripts/bash/mssql/run_liquibase.sh
 
 echo
 echo "-------------------------------------"
@@ -62,7 +62,7 @@ echo "VALIDATING DATA"
 echo "-------------------------------------"
 echo
 
-# python3 scripts/python/mysql/validate_data.py
+python3 scripts/python/mssql/validate_data.py
 
 echo
 echo "====================================="
