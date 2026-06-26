@@ -20,6 +20,7 @@ if (!(Test-Path $PgCtl)) {
 
 Write-Log "Stopping PostgreSQL..."
 $StopOutput = & "$PgCtl" -D "$PgData" stop -m fast -w 2>&1
+Get-Content (Join-Path $PgData "postmaster.pid") -ErrorAction SilentlyContinue
 Write-Log "pg_ctl stop: $StopOutput"
 
 # Verify actually stopped

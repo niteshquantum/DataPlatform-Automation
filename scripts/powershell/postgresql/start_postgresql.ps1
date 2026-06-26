@@ -63,6 +63,7 @@ if (Test-Path $PostmasterPid) {
 # If server already running, stop it cleanly first
 $StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
 Write-Log "Status: $StatusOutput"
+Write-Log "pg_ctl ExitCode: $LASTEXITCODE"
 
 if (($StatusOutput -join " ") -match "server is running") {
     Write-Log "PostgreSQL already running - stopping for clean start..."
@@ -70,10 +71,21 @@ if (($StatusOutput -join " ") -match "server is running") {
     Start-Sleep -Seconds 2
 }
 
-# Start server — -w makes pg_ctl wait until server is fully ready
-Write-Log "Starting PostgreSQL..."
-$StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start -w 2>&1
-Write-Log "pg_ctl output: $StartOutput"
+# Check whether PostgreSQL is already accepting connections
+try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $tcp.Connect("127.0.0.1", $Port)
+    $tcp.Close()
+
+    Write-Log "PostgreSQL already accepting connections. Skipping start."
+}
+catch {
+    Write-Log "Starting PostgreSQL..."
+
+    $StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start -w 2>&1
+
+    Write-Log "pg_ctl output: $StartOutput"
+}
 
 # Verify port is accepting connections
 Write-Log "Waiting for port $Port to be ready..."
