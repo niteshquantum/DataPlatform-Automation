@@ -45,9 +45,9 @@ if ($StatusOutput -match "server is running") {
     Write-Log "PostgreSQL already running - skipping start"
 } else {
     Write-Log "Starting PostgreSQL..."
-$StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start 2>&1
-    Write-Log "pg_ctl start output: $StartOutput"
-        Start-Sleep -Seconds 5
+$StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" -w -t 30 start 2>&1
+    Write-Log "pg_ctl output: $StartOutput"
+    Start-Sleep -Seconds 3
 }
 
 Write-Log "Waiting for port $Port to be ready..."
