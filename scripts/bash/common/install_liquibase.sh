@@ -10,7 +10,7 @@ echo "INSTALLING LIQUIBASE"
 echo "====================================="
 echo
 
-CONFIG_FILE="$PROJECT_ROOT/config/mysql.conf"
+CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.conf"
 
 LIQUIBASE_VERSION=$(grep "^LIQUIBASE_VERSION=" "$CONFIG_FILE" | cut -d'=' -f2)
 

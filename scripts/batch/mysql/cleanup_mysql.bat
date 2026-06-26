@@ -5,7 +5,7 @@ echo =====================================
 echo MYSQL CLEANUP
 echo =====================================
 echo.
-
+call "%~dp0..\common\set_project_root.bat"
 call scripts\batch\mysql\validate_environment.bat
 
 if errorlevel 1 (

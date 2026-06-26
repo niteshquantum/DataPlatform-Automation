@@ -40,6 +40,7 @@ for table_name, columns in schema_registry.items():
 
     xml_path = liquibase_dir / filename
 
+
     column_xml = ""
 
     for col in columns:

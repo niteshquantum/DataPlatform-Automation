@@ -10,7 +10,7 @@ echo "INSTALLING MYSQL DRIVER"
 echo "====================================="
 echo
 
-CONFIG_FILE="$PROJECT_ROOT/config/mysql.conf"
+CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.conf"
 
 MYSQL_DRIVER_VERSION=$(grep "^MYSQL_DRIVER_VERSION=" "$CONFIG_FILE" | cut -d'=' -f2)
 

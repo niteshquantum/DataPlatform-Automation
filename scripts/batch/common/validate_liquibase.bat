@@ -12,12 +12,12 @@ REM PROJECT ROOT
 REM =====================================
 
 set "ROOT=%CD%"
-if not exist "%ROOT%\config\mysql.conf" (    
+if not exist "%ROOT%\config\windows\mysql.conf" (    
 set "ROOT=%~dp0..\..\.."
 
 )
 
-set "CONFIG_FILE=%ROOT%\config\mysql.conf"
+set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
 
 if not exist "%CONFIG_FILE%" (
 echo ERROR: MYSQL CONFIG NOT FOUND
