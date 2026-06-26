@@ -32,8 +32,8 @@ Get-Content $ConfigFile | ForEach-Object {
         $Config[$Matches[1].Trim()] = $Matches[2].Trim()
     }
 }
-$ExpectedPort   = [int]$Config["POSTGRESQL_PORT"]
-$AdminPassword  = $Config["POSTGRESQL_ADMIN_PASSWORD"]
+$ExpectedPort  = [int]$Config["POSTGRESQL_PORT"]
+$AdminPassword = $Config["POSTGRESQL_ADMIN_PASSWORD"]
 
 Write-Log "Expected Port : $ExpectedPort"
 
@@ -54,8 +54,12 @@ if ($BinReady -and !$DataReady) {
     & (Join-Path $PgProjectBin "initdb.exe") `
         -D "$PgProjectData" -U postgres --encoding=UTF8
     if ($LASTEXITCODE -ne 0) { throw "initdb failed with exit code $LASTEXITCODE" }
-    Add-Content -Path (Join-Path $PgProjectData "postgresql.conf") -Value "`nport = $ExpectedPort"
-    Write-Log "Data directory initialized, port set to $ExpectedPort"
+    $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
+    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
+    Add-Content -Path $PgConfFile -Value "`nfsync = off"
+    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
+    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+    Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
     exit 0
 }
 
@@ -132,9 +136,14 @@ if (!(Test-Path (Join-Path $PgProjectData "PG_VERSION"))) {
     & (Join-Path $PgProjectBin "initdb.exe") `
         -D "$PgProjectData" -U postgres --encoding=UTF8
 
-    # Set port in postgresql.conf
-    Add-Content -Path (Join-Path $PgProjectData "postgresql.conf") -Value "`nport = $ExpectedPort"
-    Write-Log "Data directory initialized, port set to $ExpectedPort"
+    if ($LASTEXITCODE -ne 0) { throw "initdb failed with exit code $LASTEXITCODE" }
+
+    $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
+    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
+    Add-Content -Path $PgConfFile -Value "`nfsync = off"
+    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
+    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+    Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
 } else {
     Write-Log "Data directory already initialized"
 }
