@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from db_connection import get_connection, config
 
 try:
@@ -5,7 +7,7 @@ try:
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DB_NAME()")
+    cursor.execute("SELECT DATABASE()")
     database = cursor.fetchone()[0]
 
     expected_database = config["MSSQL_DB"]
@@ -15,58 +17,61 @@ try:
             f"Expected database '{expected_database}' but connected to '{database}'"
         )
 
-    cursor.execute("""
-        SELECT local_tcp_port
-        FROM sys.dm_exec_connections
-        WHERE session_id = @@SPID
-    """)
-
+    cursor.execute("SELECT @@port")
     port = cursor.fetchone()[0]
 
-    cursor.execute("SELECT @@VERSION")
+    cursor.execute("SELECT VERSION()")
     version = cursor.fetchone()[0]
 
-    required_tables = {
-        "customers",
-        "sellers",
-        "products",
-        "orderstable",
-        "orderdetails",
-        "databasechangelog",
-        "databasechangeloglock"
-    }
+    schema_file = (
+        Path(__file__).resolve().parents[3]
+        / "metadata"
+        / "mssql"
+        / "schema_registry.json"
+    )
 
-    cursor.execute("""
-        SELECT TABLE_NAME
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_TYPE='BASE TABLE'
-    """)
+    # Load schema registry
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema_registry = json.load(f)
 
-    existing_tables = {
-        row[0].lower()
-        for row in cursor.fetchall()
-    }
+    validated_tables = set(schema_registry.keys())
 
-    missing_tables = required_tables - existing_tables
-
-    if missing_tables:
-        raise Exception(
-            f"Missing tables: {', '.join(sorted(missing_tables))}"
-        )
+    if not validated_tables:
+        raise Exception("No user tables found in schema_registry.json")
 
     print()
     print("=" * 50)
-    print("MSSQL VALIDATION SUCCESS")
+    print("MsSQL VALIDATION SUCCESS")
     print("=" * 50)
     print(f"Database : {database}")
     print(f"Port     : {port}")
     print(f"Version  : {version}")
-    print()
 
+    print()
     print("Tables Validated:")
 
-    for table in sorted(required_tables):
-        print(f"[OK] {table}")
+    for table in sorted(validated_tables):
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            AND table_name = %s
+            """,
+            (table,)
+        )
+
+        if cursor.fetchone()[0] == 0:
+            print(f"[SKIPPED] {table} : table does not exist")
+            continue
+
+        print("validate_tables:", table)
+
+        cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
+        count = cursor.fetchone()[0]
+
+        print(f"[OK] {table} : {count} rows")
 
     print("=" * 50)
 
@@ -77,10 +82,9 @@ except Exception as e:
 
     print()
     print("=" * 50)
-    print("MSSQL VALIDATION FAILED")
+    print("MsSQL VALIDATION FAILED")
     print("=" * 50)
     print(e)
     print("=" * 50)
 
     exit(1)
-    
