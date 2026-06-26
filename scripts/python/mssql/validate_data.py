@@ -7,9 +7,14 @@ try:
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Database name
     cursor.execute("SELECT DB_NAME()")
-    database = cursor.fetchone()[0]
+    result = cursor.fetchone()
 
+    if result is None:
+        raise Exception("Unable to fetch current database name")
+
+    database = result[0]
     expected_database = config["MSSQL_DB"]
 
     if database.lower() != expected_database.lower():
@@ -17,11 +22,17 @@ try:
             f"Expected database '{expected_database}' but connected to '{database}'"
         )
 
+    # Port
     port = config["MSSQL_PORT"]
-    port = cursor.fetchone()[0]
 
+    # Version
     cursor.execute("SELECT @@VERSION")
-    version = cursor.fetchone()[0]
+    result = cursor.fetchone()
+
+    if result is None:
+        raise Exception("Unable to fetch SQL Server version")
+
+    version = result[0]
 
     schema_file = (
         Path(__file__).resolve().parents[3]
@@ -30,7 +41,6 @@ try:
         / "schema_registry.json"
     )
 
-    # Load schema registry
     with open(schema_file, "r", encoding="utf-8") as f:
         schema_registry = json.load(f)
 
@@ -45,9 +55,9 @@ try:
     print("=" * 50)
     print(f"Database : {database}")
     print(f"Port     : {port}")
-    print(f"Version  : {version}")
-
+    print(f"Version  : {version[:80]}...")
     print()
+
     print("Tables Validated:")
 
     for table in sorted(validated_tables):
@@ -55,23 +65,23 @@ try:
         cursor.execute(
             """
             SELECT COUNT(*)
-            FROM information_schema.tables
+            FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = 'dbo'
-            AND table_name = %s
+            AND TABLE_NAME = ?
             """,
             (table,)
         )
 
-        if cursor.fetchone()[0] == 0:
+        result = cursor.fetchone()
+
+        if result is None or result[0] == 0:
             print(f"[SKIPPED] {table} : table does not exist")
             continue
-
-        print("validate_tables:", table)
 
         cursor.execute(f"SELECT COUNT(*) FROM [{table}]")
         count = cursor.fetchone()[0]
 
-        print(f"[OK] {table} : {count} rows")
+        print(f"[OK] {table:<50} {count} rows")
 
     print("=" * 50)
 
@@ -80,11 +90,13 @@ try:
 
 except Exception as e:
 
+    import traceback
+
     print()
     print("=" * 50)
     print("MsSQL VALIDATION FAILED")
     print("=" * 50)
-    print(e)
+    print(traceback.format_exc())
     print("=" * 50)
 
     exit(1)
