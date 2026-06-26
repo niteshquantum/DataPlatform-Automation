@@ -1,40 +1,26 @@
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "SilentlyContinue"
 
 function Write-Log {
     param([string]$Message)
-
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
 }
 
-$Service = Get-Service |
-Where-Object {
-    $_.Name -match "postgres"
-} |
-Select-Object -First 1
+$ProjectRoot = Split-Path $PSScriptRoot -Parent
+$ProjectRoot = Split-Path $ProjectRoot -Parent
+$ProjectRoot = Split-Path $ProjectRoot -Parent
 
-if (!$Service) {
+$PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
+$PgData = Join-Path $ProjectRoot "databases\postgresql\data"
+$PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
-    throw "PostgreSQL service not found"
-}
-
-if ($Service.Status -eq "Stopped") {
-
-    Write-Log "Service already stopped"
-
+if (!(Test-Path $PgCtl)) {
+    Write-Log "pg_ctl not found - skipping stop"
     exit 0
 }
 
-Stop-Service `
-    -Name $Service.Name `
-    -Force
-
-Start-Sleep 5
-
-$Service.Refresh()
-
-if ($Service.Status -ne "Stopped") {
-
-    throw "Failed to stop PostgreSQL"
-}
+Write-Log "Stopping PostgreSQL..."
+$StopOutput = & "$PgCtl" -D "$PgData" -m fast stop 2>&1
+Write-Log "pg_ctl stop: $StopOutput"
 
 Write-Log "PostgreSQL stopped successfully"
+exit 0

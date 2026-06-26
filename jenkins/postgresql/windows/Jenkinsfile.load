@@ -99,14 +99,17 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'PostgreSQL Load Pipeline Completed Successfully'
-        }
-        failure {
-            echo 'PostgreSQL Load Pipeline Failed'
-        }
-        always {
-            echo 'PostgreSQL Load Pipeline Finished'
-        }
+    success {
+        echo 'PostgreSQL Load Pipeline Completed Successfully'
     }
+    failure {
+        echo 'PostgreSQL Load Pipeline Failed'
+    }
+    always {
+        dir("${WORKSPACE}") {
+            powershell '.\\scripts\\powershell\\postgresql\\stop_postgresql.ps1'
+        }
+        echo 'PostgreSQL Load Pipeline Finished'
+    }
+}
 }
