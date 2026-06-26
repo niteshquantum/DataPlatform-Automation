@@ -39,7 +39,7 @@ if (!(Test-Path $PgCtl)) {
 
 $env:PATH = "$PgBin;$env:PATH"
 
-# FIX: Delete stale postmaster.opts so pg_ctl does not use old D:/QT path
+# Delete stale postmaster.opts if path does not match current workspace
 $PostmasterOpts = Join-Path $PgData "postmaster.opts"
 if (Test-Path $PostmasterOpts) {
     $OptsContent = Get-Content $PostmasterOpts -Raw
@@ -49,11 +49,10 @@ if (Test-Path $PostmasterOpts) {
     }
 }
 
-# FIX: Delete postmaster.pid if server is NOT actually running (stale lock)
+# Delete stale postmaster.pid if that process is no longer alive
 $PostmasterPid = Join-Path $PgData "postmaster.pid"
 if (Test-Path $PostmasterPid) {
-    $PidContent = Get-Content $PostmasterPid
-    $StoredPid  = [int]($PidContent[0].Trim())
+    $StoredPid   = [int]((Get-Content $PostmasterPid)[0].Trim())
     $ProcRunning = Get-Process -Id $StoredPid -ErrorAction SilentlyContinue
     if (-not $ProcRunning) {
         Write-Log "Removing stale postmaster.pid (PID $StoredPid not running)"
@@ -61,23 +60,22 @@ if (Test-Path $PostmasterPid) {
     }
 }
 
+# If server already running, stop it cleanly first
 $StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
 Write-Log "Status: $StatusOutput"
 
-
-
-Write-Log "Waiting for port $Port to be ready..."
-$Ready = $false
 if (($StatusOutput -join " ") -match "server is running") {
-    Write-Log "PostgreSQL already running - stopping first for clean start..."
-    & "$PgCtl" -D "$PgData" stop -m fast 2>&1 | Out-Null
-    Start-Sleep -Seconds 3
+    Write-Log "PostgreSQL already running - stopping for clean start..."
+    & "$PgCtl" -D "$PgData" stop -m fast -w 2>&1 | Out-Null
+    Start-Sleep -Seconds 2
 }
 
+# Start server — -w makes pg_ctl wait until server is fully ready
 Write-Log "Starting PostgreSQL..."
 $StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start -w 2>&1
 Write-Log "pg_ctl output: $StartOutput"
 
+# Verify port is accepting connections
 Write-Log "Waiting for port $Port to be ready..."
 $Ready = $false
 for ($i = 1; $i -le $MaxRetries; $i++) {
