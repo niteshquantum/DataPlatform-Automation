@@ -7,7 +7,7 @@ try:
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DATABASE()")
+    cursor.execute("SELECT DB_NAME()")
     database = cursor.fetchone()[0]
 
     expected_database = config["MSSQL_DB"]
@@ -17,10 +17,10 @@ try:
             f"Expected database '{expected_database}' but connected to '{database}'"
         )
 
-    cursor.execute("SELECT @@port")
+    port = config["MSSQL_PORT"]
     port = cursor.fetchone()[0]
 
-    cursor.execute("SELECT VERSION()")
+    cursor.execute("SELECT @@VERSION")
     version = cursor.fetchone()[0]
 
     schema_file = (
@@ -56,7 +56,7 @@ try:
             """
             SELECT COUNT(*)
             FROM information_schema.tables
-            WHERE table_schema = DATABASE()
+            WHERE TABLE_SCHEMA = 'dbo'
             AND table_name = %s
             """,
             (table,)
@@ -68,7 +68,7 @@ try:
 
         print("validate_tables:", table)
 
-        cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
+        cursor.execute(f"SELECT COUNT(*) FROM [{table}]")
         count = cursor.fetchone()[0]
 
         print(f"[OK] {table} : {count} rows")
