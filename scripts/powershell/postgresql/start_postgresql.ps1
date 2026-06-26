@@ -41,7 +41,7 @@ $env:PATH = "$PgBin;$env:PATH"
 $StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
 Write-Log "Status: $StatusOutput"
 
-if ($StatusOutput -match "server is running") {
+if (($StatusOutput -join " ") -match "server is running") {
     Write-Log "PostgreSQL already running - skipping start"
 } else {
     Write-Log "Starting PostgreSQL..."
