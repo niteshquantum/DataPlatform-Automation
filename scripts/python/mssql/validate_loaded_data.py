@@ -1,6 +1,6 @@
 from pathlib import Path
 import platform
-import mssql.connector
+from db_connection import get_connection
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -17,13 +17,7 @@ with open(config_file) as f:
             k, v = line.strip().split("=", 1)
             config[k] = v
 
-conn = mssql.connector.connect(
-    host=config["MSSQL_HOST"],
-    port=int(config["MSSQL_PORT"]),
-    user=config["MSSQL_USER"],
-    password=config["MSSQL_PASSWORD"],
-    database=config["MSSQL_DB"]
-)
+conn = get_connection()
 
 cursor = conn.cursor()
 
