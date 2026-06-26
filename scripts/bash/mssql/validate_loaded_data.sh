@@ -4,4 +4,18 @@ set -e
 
 source "$(dirname "$0")/../common/set_project_root.sh"
 
-python3 "$PROJECT_ROOT/scripts/python/mssql/validate_loaded_data.py"
+echo
+echo "====================================="
+echo "VALIDATING LOADED DATA"
+echo "====================================="
+echo
+
+cd "$PROJECT_ROOT"
+
+python3 scripts/python/mssql/validate_loaded_data.py
+
+echo
+echo "LOADED DATA VALIDATION SUCCESSFUL"
+echo
+
+exit 0
