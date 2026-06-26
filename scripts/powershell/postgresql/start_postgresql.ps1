@@ -64,14 +64,19 @@ if (Test-Path $PostmasterPid) {
 $StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
 Write-Log "Status: $StatusOutput"
 
+
+
+Write-Log "Waiting for port $Port to be ready..."
+$Ready = $false
 if (($StatusOutput -join " ") -match "server is running") {
-    Write-Log "PostgreSQL already running - skipping start"
-} else {
-    Write-Log "Starting PostgreSQL..."
-    $StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start 2>&1
-    Write-Log "pg_ctl output: $StartOutput"
+    Write-Log "PostgreSQL already running - stopping first for clean start..."
+    & "$PgCtl" -D "$PgData" stop -m fast 2>&1 | Out-Null
     Start-Sleep -Seconds 3
 }
+
+Write-Log "Starting PostgreSQL..."
+$StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start -w 2>&1
+Write-Log "pg_ctl output: $StartOutput"
 
 Write-Log "Waiting for port $Port to be ready..."
 $Ready = $false

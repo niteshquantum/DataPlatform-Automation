@@ -19,8 +19,21 @@ if (!(Test-Path $PgCtl)) {
 }
 
 Write-Log "Stopping PostgreSQL..."
-$StopOutput = & "$PgCtl" -D "$PgData" -m fast stop 2>&1
+$StopOutput = & "$PgCtl" -D "$PgData" stop -m fast -w 2>&1
 Write-Log "pg_ctl stop: $StopOutput"
 
-Write-Log "PostgreSQL stopped successfully"
+# Verify actually stopped
+$StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
+if (($StatusOutput -join " ") -match "no server running") {
+    Write-Log "PostgreSQL stopped successfully"
+} else {
+    Write-Log "Force killing remaining postgres processes..."
+    Get-Process -Name "postgres" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 2
+    # Clean up stale pid file
+    $PidFile = Join-Path $PgData "postmaster.pid"
+    if (Test-Path $PidFile) { Remove-Item $PidFile -Force }
+    Write-Log "PostgreSQL force stopped"
+}
+
 exit 0
