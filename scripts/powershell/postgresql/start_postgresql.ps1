@@ -75,9 +75,7 @@ Write-Log "Status: $StatusOutput"
 Write-Log "pg_ctl ExitCode: $LASTEXITCODE"
 
 if (($StatusOutput -join " ") -match "server is running") {
-    Write-Log "PostgreSQL already running - stopping for clean start..."
-    & "$PgCtl" -D "$PgData" stop -m fast 2>&1 | Out-Null
-    Start-Sleep -Seconds 2
+    Write-Log "PostgreSQL already running."
 }
 
 # Check whether PostgreSQL is already accepting connections
@@ -89,11 +87,19 @@ try {
     Write-Log "PostgreSQL already accepting connections. Skipping start."
 }
 catch {
+
     Write-Log "Starting PostgreSQL..."
 
-    $StartOutput = & "$PgCtl" -D "$PgData" -l "$PgLog" start -w 2>&1
+    # Start PostgreSQL without waiting (Jenkins may hang with -w)
+    & "$PgCtl" -D "$PgData" -l "$PgLog" start | Out-Null
 
-    Write-Log "pg_ctl output: $StartOutput"
+    $ExitCode = $LASTEXITCODE
+
+    Write-Log "pg_ctl start exit code: $ExitCode"
+
+    if ($ExitCode -ne 0) {
+        throw "pg_ctl start failed with exit code $ExitCode"
+    }
 }
 
 # Verify port is accepting connections
