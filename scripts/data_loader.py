@@ -5,7 +5,7 @@ Generic Data Loader
 Automatically loads CSV and JSON files from incoming/ into the database using
 dynamic schema detection and parameterized inserts.
 """
-
+import hashlib
 import csv
 import json
 import logging
@@ -117,12 +117,16 @@ def get_database_connection(db_type, config):
 
 
 def quote_name(name, db_type):
+
     if db_type == 'mysql':
-        return f"`{name.replace('`', '``')}`"
+        return '`' + name.replace('`', '``') + '`'
+
     if db_type == 'postgresql':
-        return f'"{name.replace('"', '""')}"'
+        return '"' + name.replace('"', '""') + '"'
+
     if db_type == 'mssql':
-        return f"[{name.replace(']', ']]')}]"
+        return '[' + name.replace(']', ']]') + ']'
+
     return name
 
 
@@ -230,10 +234,24 @@ def insert_rows(conn, db_type, table_name, actual_columns, rows):
 
 def read_csv_file(path):
     rows = []
+
     with open(path, 'r', encoding='utf-8-sig', newline='') as f:
+
         reader = csv.DictReader(f)
+
+        # NEW
+        reader.fieldnames = [
+            h.replace('\ufeff', '').strip()
+            for h in reader.fieldnames
+        ]
+
         for row in reader:
-            rows.append({k: (v if v != '' else None) for k, v in row.items()})
+            rows.append({
+                k.replace('\ufeff', '').strip():
+                (v if v != '' else None)
+                for k, v in row.items()
+            })
+
     return rows
 
 
@@ -256,19 +274,29 @@ def read_json_file(path):
             return [item if isinstance(item, dict) else {} for item in data]
         return []
 
+def get_file_hash(file_path):
 
+    sha256 = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+
+    return sha256.hexdigest()
 def write_history(record):
     path = Path(HISTORY_FILE)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(record) + '\n')
 
-def is_file_already_processed(file_name):
+def is_file_already_processed(file_path):
     """
     Check if file has already been successfully processed.
     """
     history_path = Path(HISTORY_FILE)
-
+    file_hash = get_file_hash(file_path)
+    file_name = file_path.name
     if not history_path.exists():
         return False
 
@@ -285,8 +313,8 @@ def is_file_already_processed(file_name):
 
                     if (
                         record.get('file') == file_name
-                        and record.get('status') == 'SUCCESS'
-                    ):
+                        and record.get('sha256') == file_hash
+                        and record.get('status') == 'SUCCESS'):
                         return True
 
                 except json.JSONDecodeError:
@@ -304,9 +332,44 @@ def move_file(source_path, dest_dir):
     target = dest_dir / source_path.name
     source_path.rename(target)
     return target
+def write_error_log(file_name, error, failed_dir, db_type):
 
+    failed_dir = Path(failed_dir)
+    failed_dir.mkdir(parents=True, exist_ok=True)
 
-def load_and_insert_file(conn, db_type, path):
+    log_file = failed_dir / f"{file_name}.error.log"
+
+    with open(log_file, "w", encoding="utf-8") as f:
+
+        f.write("=" * 60 + "\n")
+        f.write("DATA LOAD ERROR\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Timestamp : {datetime.now().isoformat()}\n")
+        f.write(f"Database  : {db_type}\n")
+        f.write(f"File      : {file_name}\n")
+        f.write(f"Error     : {str(error)}\n")
+        f.write("=" * 60 + "\n")
+
+    logger.info(f"Created error log: {log_file}")
+
+def truncate_table(conn, db_type, table_name):
+
+    quoted_table = quote_name(table_name, db_type)
+
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute(f"TRUNCATE TABLE {quoted_table}")
+
+        conn.commit()
+
+        logger.info(f"Truncated table {table_name}")
+
+    finally:
+
+        cursor.close()
+def load_and_insert_file(conn, db_type, path, load_mode="skip"):
     table_name = (
     path.stem
     .strip()
@@ -324,12 +387,19 @@ def load_and_insert_file(conn, db_type, path):
         logger.warning(f"No rows found in file {path.name}")
         return 0
 
-    file_columns = list({key for row in rows for key in row.keys() if key is not None})
+    file_columns = []
+
+    for row in rows:
+        for key in row.keys():
+            if key is not None and key not in file_columns:
+                file_columns.append(key)
     if not file_columns:
         logger.warning(f"No columns detected in file {path.name}")
         return 0
 
     existing_columns = get_table_columns(conn, db_type, table_name)
+    if existing_columns and load_mode == "reload":
+        truncate_table(conn, db_type, table_name)
     if not existing_columns:
         create_table(conn, db_type, table_name, file_columns)
         existing_columns = file_columns
@@ -346,16 +416,16 @@ def load_and_insert_file(conn, db_type, path):
     return inserted
 
 
+
 def get_config_for_db(db_type):
     return load_database_config(db_type)
-
 
 def main():
     
     logger.info('Starting generic data loader...')
 
-    project_root = Path(__file__).resolve().parent.parent
-
+    project_root = Path(__file__).resolve().parents[3]
+    load_mode = os.environ.get("LOAD_MODE", "skip").lower()
     db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
 
     global HISTORY_FILE
@@ -395,25 +465,63 @@ def main():
 
     for path in data_files:
         # Skip already processed files
-        if is_file_already_processed(path.name):
-            logger.info(f"{path.name} already processed. Skipping.")
-            continue
+        if load_mode == "skip":
+
+            if is_file_already_processed(path):
+                logger.info(f"{path.name} already processed. Skipping.")
+                continue
+
+        elif load_mode == "force":
+        
+            logger.info(f"{path.name} will be reloaded (FORCE mode).")
+        
+        elif load_mode == "reload":
+
+            logger.info(f"{path.name} will be reloaded (RELOAD mode).")
         timestamp = datetime.now().isoformat()
+        file_hash = get_file_hash(path)
+        
         rows_inserted = 0
         status = 'FAILED'
         try:
-            rows_inserted = load_and_insert_file(conn, db_type, path)
+            
+            rows_inserted = load_and_insert_file(
+                conn,
+                db_type,
+                path,
+                load_mode
+            )
+            
             status = 'SUCCESS'
+            
+            move_file(path, archive_dir)
+            
+            logger.info(
+                f"Moved {path.name} to archive/"
+            )
+            
             logger.info(
                 f"Loaded {rows_inserted} rows from {path.name}"
             )
         except Exception as exc:
-            logger.error(f'Error loading file {path.name}: {exc}')
+        
+            logger.error(
+                f'Error loading file {path.name}: {exc}'
+            )
+        
+            write_error_log(
+                path.name,
+                exc,
+                failed_dir,
+                db_type
+            )
+        
             move_file(path, failed_dir)
         finally:
             record = {
                 'timestamp': timestamp,
                 'file': path.name,
+                'sha256': file_hash,
                 'table': (
                     path.stem
                     .strip()

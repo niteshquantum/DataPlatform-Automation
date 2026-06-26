@@ -5,9 +5,8 @@ ROOT = Path(__file__).resolve().parents[4]
 
 liquibase_dir = ROOT / "liquibase"
 mysql_dir = liquibase_dir / "mysql"
-master_xml = liquibase_dir / "master.xml"
+master_xml = mysql_dir / "master.xml"
 
-# Namespace
 NS = "http://www.liquibase.org/xml/ns/dbchangelog"
 ET.register_namespace("", NS)
 
@@ -15,7 +14,14 @@ ET.register_namespace("", NS)
 if not master_xml.exists():
 
     root = ET.Element(
-        f"{{{NS}}}databaseChangeLog"
+        "databaseChangeLog",
+        {
+            "xmlns": "http://www.liquibase.org/xml/ns/dbchangelog",
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "xsi:schemaLocation":
+                "http://www.liquibase.org/xml/ns/dbchangelog "
+                "https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        }
     )
 
     tree = ET.ElementTree(root)
@@ -26,17 +32,20 @@ tree = ET.parse(master_xml)
 root = tree.getroot()
 
 # Existing include files
-existing_includes = set()
+existing_includes = {
+    elem.attrib["file"]
+    for elem in root.findall(f"{{{NS}}}include")
+}
 
-for elem in root.findall(f"{{{NS}}}include"):
-    existing_includes.add(elem.attrib["file"])
-
-# Scan all xml files
-xml_files = sorted(mysql_dir.glob("*.xml"))
+# Scan all XML files except master.xml
+xml_files = sorted(
+    f for f in mysql_dir.glob("*.xml")
+    if f.name != "master.xml"
+)
 
 for xml_file in xml_files:
 
-    relative_path = f"mysql/{xml_file.name}"
+    relative_path = xml_file.name
 
     if relative_path in existing_includes:
         continue
@@ -47,6 +56,12 @@ for xml_file in xml_files:
     )
 
     include_elem.set("file", relative_path)
+
+    # IMPORTANT
+    include_elem.set(
+        "relativeToChangelogFile",
+        "true"
+    )
 
     print(f"Added {relative_path}")
 

@@ -1,0 +1,1384 @@
+Folder PATH listing for volume drive
+Volume serial number is 00000015 2062:F504
+G:.
+�   .env
+�   .env.example
+�   .gitignore
+�   query
+�   README.md
+�   requirements.txt
+�   structure.txt
+�   
++---archive
+�   �   .gitkeep
+�   �   
+�   +---mongodb
+�   �       .gitkeep
+�   �       
+�   +---mssql
+�   �       .gitkeep
+�   �       
+�   +---mysql
+�   �       .gitkeep
+�   �       brand table.csv
+�   �       Product_master.csv
+�   �       
+�   +---postgresql
+�           .gitkeep
+�           
++---config
+�   �   metadata_schema.json
+�   �   mongodb.conf
+�   �   postgresql.conf
+�   �   python.conf
+�   �   
+�   +---mongodb
+�   �       datasets.yaml
+�   �       
+�   +---mysql
+�   �       datasets.yaml
+�   �       
+�   +---postgresql
+�   �       datasets.yaml
+�   �       
+�   +---ubuntu
+�   �       mongodb.conf
+�   �       mssql.conf
+�   �       mysql.conf
+�   �       postgresql.conf
+�   �       
+�   +---windows
+�           mongodb.conf
+�           mssql.conf
+�           mysql.conf
+�           postgresql.conf
+�           
++---databases
+�   �   .gitkeep
+�   �   
+�   +---mysql
+�       �   mysql.zip
+�       �   
+�       +---data
+�       �   �   #ib_16384_0.dblwr
+�       �   �   #ib_16384_1.dblwr
+�       �   �   auto.cnf
+�       �   �   binlog.000001
+�       �   �   binlog.index
+�       �   �   ca-key.pem
+�       �   �   ca.pem
+�       �   �   client-cert.pem
+�       �   �   client-key.pem
+�       �   �   ibdata1
+�       �   �   ibtmp1
+�       �   �   ib_buffer_pool
+�       �   �   mysql.ibd
+�       �   �   mysql_upgrade_history
+�       �   �   private_key.pem
+�       �   �   public_key.pem
+�       �   �   server-cert.pem
+�       �   �   server-key.pem
+�       �   �   TANIYA-PANWAR.err
+�       �   �   TANIYA-PANWAR.pid
+�       �   �   undo_001
+�       �   �   undo_002
+�       �   �   
+�       �   +---#innodb_redo
+�       �   �       #ib_redo10_tmp
+�       �   �       #ib_redo11_tmp
+�       �   �       #ib_redo12_tmp
+�       �   �       #ib_redo13_tmp
+�       �   �       #ib_redo14_tmp
+�       �   �       #ib_redo15_tmp
+�       �   �       #ib_redo16_tmp
+�       �   �       #ib_redo17_tmp
+�       �   �       #ib_redo18_tmp
+�       �   �       #ib_redo19_tmp
+�       �   �       #ib_redo20_tmp
+�       �   �       #ib_redo21_tmp
+�       �   �       #ib_redo22_tmp
+�       �   �       #ib_redo23_tmp
+�       �   �       #ib_redo24_tmp
+�       �   �       #ib_redo25_tmp
+�       �   �       #ib_redo26_tmp
+�       �   �       #ib_redo27_tmp
+�       �   �       #ib_redo28_tmp
+�       �   �       #ib_redo29_tmp
+�       �   �       #ib_redo30_tmp
+�       �   �       #ib_redo31_tmp
+�       �   �       #ib_redo32_tmp
+�       �   �       #ib_redo33_tmp
+�       �   �       #ib_redo34_tmp
+�       �   �       #ib_redo35_tmp
+�       �   �       #ib_redo36_tmp
+�       �   �       #ib_redo5
+�       �   �       #ib_redo6_tmp
+�       �   �       #ib_redo7_tmp
+�       �   �       #ib_redo8_tmp
+�       �   �       #ib_redo9_tmp
+�       �   �       
+�       �   +---#innodb_temp
+�       �   �       temp_1.ibt
+�       �   �       temp_10.ibt
+�       �   �       temp_2.ibt
+�       �   �       temp_3.ibt
+�       �   �       temp_4.ibt
+�       �   �       temp_5.ibt
+�       �   �       temp_6.ibt
+�       �   �       temp_7.ibt
+�       �   �       temp_8.ibt
+�       �   �       temp_9.ibt
+�       �   �       
+�       �   +---ecommercemysql
+�       �   �       databasechangelog.ibd
+�       �   �       databasechangeloglock.ibd
+�       �   �       
+�       �   +---mysql
+�       �   �       general_log.CSM
+�       �   �       general_log.CSV
+�       �   �       general_log_224.sdi
+�       �   �       slow_log.CSM
+�       �   �       slow_log.CSV
+�       �   �       slow_log_225.sdi
+�       �   �       
+�       �   +---performance_schema
+�       �   �       accounts_153.sdi
+�       �   �       binary_log_trans_200.sdi
+�       �   �       cond_instances_87.sdi
+�       �   �       data_locks_169.sdi
+�       �   �       data_lock_waits_170.sdi
+�       �   �       error_log_88.sdi
+�       �   �       events_errors_su_147.sdi
+�       �   �       events_errors_su_148.sdi
+�       �   �       events_errors_su_149.sdi
+�       �   �       events_errors_su_150.sdi
+�       �   �       events_errors_su_151.sdi
+�       �   �       events_stages_cu_119.sdi
+�       �   �       events_stages_hi_120.sdi
+�       �   �       events_stages_hi_121.sdi
+�       �   �       events_stages_su_122.sdi
+�       �   �       events_stages_su_123.sdi
+�       �   �       events_stages_su_124.sdi
+�       �   �       events_stages_su_125.sdi
+�       �   �       events_stages_su_126.sdi
+�       �   �       events_statement_127.sdi
+�       �   �       events_statement_128.sdi
+�       �   �       events_statement_129.sdi
+�       �   �       events_statement_130.sdi
+�       �   �       events_statement_131.sdi
+�       �   �       events_statement_132.sdi
+�       �   �       events_statement_133.sdi
+�       �   �       events_statement_134.sdi
+�       �   �       events_statement_135.sdi
+�       �   �       events_statement_136.sdi
+�       �   �       events_statement_137.sdi
+�       �   �       events_statement_138.sdi
+�       �   �       events_transacti_139.sdi
+�       �   �       events_transacti_140.sdi
+�       �   �       events_transacti_141.sdi
+�       �   �       events_transacti_142.sdi
+�       �   �       events_transacti_143.sdi
+�       �   �       events_transacti_144.sdi
+�       �   �       events_transacti_145.sdi
+�       �   �       events_transacti_146.sdi
+�       �   �       events_waits_cur_89.sdi
+�       �   �       events_waits_his_90.sdi
+�       �   �       events_waits_his_91.sdi
+�       �   �       events_waits_sum_92.sdi
+�       �   �       events_waits_sum_93.sdi
+�       �   �       events_waits_sum_94.sdi
+�       �   �       events_waits_sum_95.sdi
+�       �   �       events_waits_sum_96.sdi
+�       �   �       events_waits_sum_97.sdi
+�       �   �       file_instances_98.sdi
+�       �   �       file_summary_by__100.sdi
+�       �   �       file_summary_by__99.sdi
+�       �   �       global_status_190.sdi
+�       �   �       global_variables_193.sdi
+�       �   �       global_variable__197.sdi
+�       �   �       hosts_154.sdi
+�       �   �       host_cache_101.sdi
+�       �   �       keyring_componen_202.sdi
+�       �   �       keyring_keys_160.sdi
+�       �   �       log_status_183.sdi
+�       �   �       memory_summary_b_162.sdi
+�       �   �       memory_summary_b_163.sdi
+�       �   �       memory_summary_b_164.sdi
+�       �   �       memory_summary_b_165.sdi
+�       �   �       memory_summary_g_161.sdi
+�       �   �       metadata_locks_168.sdi
+�       �   �       mutex_instances_102.sdi
+�       �   �       objects_summary__103.sdi
+�       �   �       performance_time_104.sdi
+�       �   �       persisted_variab_198.sdi
+�       �   �       prepared_stateme_184.sdi
+�       �   �       processlist_105.sdi
+�       �   �       replication_appl_174.sdi
+�       �   �       replication_appl_175.sdi
+�       �   �       replication_appl_176.sdi
+�       �   �       replication_appl_177.sdi
+�       �   �       replication_appl_179.sdi
+�       �   �       replication_appl_180.sdi
+�       �   �       replication_asyn_181.sdi
+�       �   �       replication_asyn_182.sdi
+�       �   �       replication_conn_171.sdi
+�       �   �       replication_conn_173.sdi
+�       �   �       replication_grou_172.sdi
+�       �   �       replication_grou_178.sdi
+�       �   �       rwlock_instances_106.sdi
+�       �   �       session_account__159.sdi
+�       �   �       session_connect__158.sdi
+�       �   �       session_status_191.sdi
+�       �   �       session_variable_194.sdi
+�       �   �       setup_actors_107.sdi
+�       �   �       setup_consumers_108.sdi
+�       �   �       setup_instrument_109.sdi
+�       �   �       setup_loggers_110.sdi
+�       �   �       setup_meters_111.sdi
+�       �   �       setup_metrics_112.sdi
+�       �   �       setup_objects_113.sdi
+�       �   �       setup_threads_114.sdi
+�       �   �       socket_instances_155.sdi
+�       �   �       socket_summary_b_156.sdi
+�       �   �       socket_summary_b_157.sdi
+�       �   �       status_by_accoun_186.sdi
+�       �   �       status_by_host_187.sdi
+�       �   �       status_by_thread_188.sdi
+�       �   �       status_by_user_189.sdi
+�       �   �       table_handles_166.sdi
+�       �   �       table_io_waits_s_115.sdi
+�       �   �       table_io_waits_s_116.sdi
+�       �   �       table_lock_waits_117.sdi
+�       �   �       temporary_accoun_167.sdi
+�       �   �       threads_118.sdi
+�       �   �       tls_channel_stat_201.sdi
+�       �   �       users_152.sdi
+�       �   �       user_defined_fun_199.sdi
+�       �   �       user_variables_b_185.sdi
+�       �   �       variables_by_thr_192.sdi
+�       �   �       variables_info_195.sdi
+�       �   �       variables_metada_196.sdi
+�       �   �       
+�       �   +---sys
+�       �           sys_config.ibd
+�       �           
+�       +---server
+�           �   LICENSE
+�           �   README
+�           �   
+�           +---bin
+�           �   �   abseil_dll-debug.dll
+�           �   �   abseil_dll-debug.pdb
+�           �   �   abseil_dll.dll
+�           �   �   abseil_dll.lib
+�           �   �   ccapiserver.exe
+�           �   �   comerr64.dll
+�           �   �   echo.exe
+�           �   �   fido2.dll
+�           �   �   fido2.lib
+�           �   �   gssapi64.dll
+�           �   �   ibd2sdi.exe
+�           �   �   innochecksum.exe
+�           �   �   jemalloc.dll
+�           �   �   jemalloc.pdb
+�           �   �   k5sprt64.dll
+�           �   �   krb5_64.dll
+�           �   �   krbcc64.dll
+�           �   �   libcrypto-3-x64.dll
+�           �   �   libcrypto-3-x64.pdb
+�           �   �   libmecab.dll
+�           �   �   libprotobuf-debug.dll
+�           �   �   libprotobuf-lite-debug.dll
+�           �   �   libprotobuf-lite.dll
+�           �   �   libprotobuf-lite.lib
+�           �   �   libprotobuf.dll
+�           �   �   libprotobuf.lib
+�           �   �   libsasl.dll
+�           �   �   libssl-3-x64.dll
+�           �   �   libssl-3-x64.pdb
+�           �   �   myisamchk.exe
+�           �   �   myisamlog.exe
+�           �   �   myisampack.exe
+�           �   �   myisam_ftdump.exe
+�           �   �   mysql.exe
+�           �   �   mysqladmin.exe
+�           �   �   mysqlbinlog.exe
+�           �   �   mysqlcheck.exe
+�           �   �   mysqld.exe
+�           �   �   mysqld.pdb
+�           �   �   mysqldump.exe
+�           �   �   mysqldumpslow.pl
+�           �   �   mysqld_multi.pl
+�           �   �   mysqlimport.exe
+�           �   �   mysqlshow.exe
+�           �   �   mysqlslap.exe
+�           �   �   mysql_configurator.exe
+�           �   �   mysql_config_editor.exe
+�           �   �   mysql_migrate_keyring.exe
+�           �   �   mysql_secure_installation.exe
+�           �   �   mysql_tzinfo_to_sql.exe
+�           �   �   my_print_defaults.exe
+�           �   �   perror.exe
+�           �   �   xpprof64.dll
+�           �   �   
+�           �   +---sasl2
+�           �           saslGSSAPI.dll
+�           �           saslSCRAM.dll
+�           �           
+�           +---docs
+�           �       INFO_BIN
+�           �       INFO_SRC
+�           �       
+�           +---include
+�           �   �   errmsg.h
+�           �   �   field_types.h
+�           �   �   mysql.h
+�           �   �   mysqld_error.h
+�           �   �   mysqlx_ername.h
+�           �   �   mysqlx_error.h
+�           �   �   mysqlx_version.h
+�           �   �   mysql_com.h
+�           �   �   mysql_time.h
+�           �   �   mysql_version.h
+�           �   �   my_command.h
+�           �   �   my_compress.h
+�           �   �   my_list.h
+�           �   �   
+�           �   +---mysql
+�           �   �       client_plugin.h
+�           �   �       plugin_auth_common.h
+�           �   �       udf_registration_types.h
+�           �   �       
+�           �   +---openssl
+�           �           applink.c
+�           �           
+�           +---lib
+�           �   �   libmysql.dll
+�           �   �   libmysql.lib
+�           �   �   mysqlclient.lib
+�           �   �   mysqlservices.lib
+�           �   �   
+�           �   +---mecab
+�           �   �   +---dic
+�           �   �   �   +---ipadic_euc-jp
+�           �   �   �   �       char.bin
+�           �   �   �   �       dicrc
+�           �   �   �   �       left-id.def
+�           �   �   �   �       matrix.bin
+�           �   �   �   �       pos-id.def
+�           �   �   �   �       rewrite.def
+�           �   �   �   �       right-id.def
+�           �   �   �   �       sys.dic
+�           �   �   �   �       unk.dic
+�           �   �   �   �       
+�           �   �   �   +---ipadic_sjis
+�           �   �   �   �       char.bin
+�           �   �   �   �       dicrc
+�           �   �   �   �       left-id.def
+�           �   �   �   �       matrix.bin
+�           �   �   �   �       pos-id.def
+�           �   �   �   �       rewrite.def
+�           �   �   �   �       right-id.def
+�           �   �   �   �       sys.dic
+�           �   �   �   �       unk.dic
+�           �   �   �   �       
+�           �   �   �   +---ipadic_utf-8
+�           �   �   �           char.bin
+�           �   �   �           dicrc
+�           �   �   �           left-id.def
+�           �   �   �           matrix.bin
+�           �   �   �           pos-id.def
+�           �   �   �           rewrite.def
+�           �   �   �           right-id.def
+�           �   �   �           sys.dic
+�           �   �   �           unk.dic
+�           �   �   �           
+�           �   �   +---etc
+�           �   �           mecabrc
+�           �   �           
+�           �   +---plugin
+�           �   �   �   adt_null.dll
+�           �   �   �   authentication_kerberos_client.dll
+�           �   �   �   authentication_ldap_sasl_client.dll
+�           �   �   �   authentication_oci_client.dll
+�           �   �   �   authentication_openid_connect_client.dll
+�           �   �   �   authentication_webauthn_client.dll
+�           �   �   �   component_audit_api_message_emit.dll
+�           �   �   �   component_classic_hashing.dll
+�           �   �   �   component_connection_control.dll
+�           �   �   �   component_group_replication_elect_prefers_most_updated.dll
+�           �   �   �   component_group_replication_flow_control_stats.dll
+�           �   �   �   component_group_replication_resource_manager.dll
+�           �   �   �   component_keyring_file.dll
+�           �   �   �   component_log_filter_dragnet.dll
+�           �   �   �   component_log_sink_json.dll
+�           �   �   �   component_log_sink_syseventlog.dll
+�           �   �   �   component_mysqlbackup.dll
+�           �   �   �   component_query_attributes.dll
+�           �   �   �   component_reference_cache.dll
+�           �   �   �   component_replication_applier_metrics.dll
+�           �   �   �   component_telemetry.dll
+�           �   �   �   component_validate_password.dll
+�           �   �   �   connection_control.dll
+�           �   �   �   ddl_rewriter.dll
+�           �   �   �   group_replication.dll
+�           �   �   �   ha_example.dll
+�           �   �   �   ha_mock.dll
+�           �   �   �   keyring_udf.dll
+�           �   �   �   libpluginmecab.dll
+�           �   �   �   locking_service.dll
+�           �   �   �   mypluglib.dll
+�           �   �   �   mysql_clone.dll
+�           �   �   �   mysql_native_password.dll
+�           �   �   �   mysql_no_login.dll
+�           �   �   �   rewriter.dll
+�           �   �   �   rewrite_example.dll
+�           �   �   �   semisync_replica.dll
+�           �   �   �   semisync_source.dll
+�           �   �   �   telemetry_client.dll
+�           �   �   �   validate_password.dll
+�           �   �   �   
+�           �   �   +---debug
+�           �   �           adt_null.dll
+�           �   �           adt_null.pdb
+�           �   �           component_audit_api_message_emit.dll
+�           �   �           component_audit_api_message_emit.pdb
+�           �   �           component_classic_hashing.dll
+�           �   �           component_classic_hashing.pdb
+�           �   �           component_connection_control.dll
+�           �   �           component_connection_control.pdb
+�           �   �           component_group_replication_elect_prefers_most_updated.dll
+�           �   �           component_group_replication_elect_prefers_most_updated.pdb
+�           �   �           component_group_replication_flow_control_stats.dll
+�           �   �           component_group_replication_flow_control_stats.pdb
+�           �   �           component_group_replication_resource_manager.dll
+�           �   �           component_group_replication_resource_manager.pdb
+�           �   �           component_keyring_file.dll
+�           �   �           component_keyring_file.pdb
+�           �   �           component_log_filter_dragnet.dll
+�           �   �           component_log_filter_dragnet.pdb
+�           �   �           component_log_sink_json.dll
+�           �   �           component_log_sink_json.pdb
+�           �   �           component_log_sink_syseventlog.dll
+�           �   �           component_log_sink_syseventlog.pdb
+�           �   �           component_mysqlbackup.dll
+�           �   �           component_mysqlbackup.pdb
+�           �   �           component_query_attributes.dll
+�           �   �           component_query_attributes.pdb
+�           �   �           component_reference_cache.dll
+�           �   �           component_reference_cache.pdb
+�           �   �           component_replication_applier_metrics.dll
+�           �   �           component_replication_applier_metrics.pdb
+�           �   �           component_telemetry.dll
+�           �   �           component_telemetry.pdb
+�           �   �           component_validate_password.dll
+�           �   �           component_validate_password.pdb
+�           �   �           connection_control.dll
+�           �   �           connection_control.pdb
+�           �   �           ddl_rewriter.dll
+�           �   �           ddl_rewriter.pdb
+�           �   �           group_replication.dll
+�           �   �           group_replication.pdb
+�           �   �           ha_example.dll
+�           �   �           ha_example.pdb
+�           �   �           ha_mock.dll
+�           �   �           ha_mock.pdb
+�           �   �           keyring_udf.dll
+�           �   �           keyring_udf.pdb
+�           �   �           libpluginmecab.dll
+�           �   �           libpluginmecab.pdb
+�           �   �           locking_service.dll
+�           �   �           locking_service.pdb
+�           �   �           mypluglib.dll
+�           �   �           mypluglib.pdb
+�           �   �           mysql_clone.dll
+�           �   �           mysql_clone.pdb
+�           �   �           mysql_no_login.dll
+�           �   �           mysql_no_login.pdb
+�           �   �           rewriter.dll
+�           �   �           rewriter.pdb
+�           �   �           rewrite_example.dll
+�           �   �           rewrite_example.pdb
+�           �   �           semisync_replica.dll
+�           �   �           semisync_replica.pdb
+�           �   �           semisync_source.dll
+�           �   �           semisync_source.pdb
+�           �   �           validate_password.dll
+�           �   �           validate_password.pdb
+�           �   �           
+�           �   +---private
+�           �       +---icudt77l
+�           �           �   cnvalias.icu
+�           �           �   uemoji.icu
+�           �           �   ulayout.icu
+�           �           �   unames.icu
+�           �           �   
+�           �           +---brkitr
+�           �                   burmesedict.dict
+�           �                   char.brk
+�           �                   cjdict.dict
+�           �                   de.res
+�           �                   el.res
+�           �                   en.res
+�           �                   en_US.res
+�           �                   en_US_POSIX.res
+�           �                   es.res
+�           �                   fi.res
+�           �                   fr.res
+�           �                   it.res
+�           �                   ja.res
+�           �                   khmerdict.dict
+�           �                   ko.res
+�           �                   laodict.dict
+�           �                   line.brk
+�           �                   line_cj.brk
+�           �                   line_loose.brk
+�           �                   line_loose_cj.brk
+�           �                   line_loose_phrase_cj.brk
+�           �                   line_normal.brk
+�           �                   line_normal_cj.brk
+�           �                   line_normal_phrase_cj.brk
+�           �                   line_phrase_cj.brk
+�           �                   pt.res
+�           �                   res_index.res
+�           �                   root.res
+�           �                   ru.res
+�           �                   sent.brk
+�           �                   sent_el.brk
+�           �                   sv.res
+�           �                   thaidict.dict
+�           �                   title.brk
+�           �                   word.brk
+�           �                   word_POSIX.brk
+�           �                   zh.res
+�           �                   zh_Hant.res
+�           �                   
+�           +---share
+�               �   dictionary.txt
+�               �   install_rewriter.sql
+�               �   messages_to_clients.txt
+�               �   messages_to_error_log.txt
+�               �   uninstall_rewriter.sql
+�               �   
+�               +---bulgarian
+�               �       errmsg.sys
+�               �       
+�               +---charsets
+�               �       armscii8.xml
+�               �       ascii.xml
+�               �       cp1250.xml
+�               �       cp1251.xml
+�               �       cp1256.xml
+�               �       cp1257.xml
+�               �       cp850.xml
+�               �       cp852.xml
+�               �       cp866.xml
+�               �       dec8.xml
+�               �       geostd8.xml
+�               �       greek.xml
+�               �       hebrew.xml
+�               �       hp8.xml
+�               �       Index.xml
+�               �       keybcs2.xml
+�               �       koi8r.xml
+�               �       koi8u.xml
+�               �       latin1.xml
+�               �       latin2.xml
+�               �       latin5.xml
+�               �       latin7.xml
+�               �       macce.xml
+�               �       macroman.xml
+�               �       README
+�               �       swe7.xml
+�               �       
+�               +---czech
+�               �       errmsg.sys
+�               �       
+�               +---danish
+�               �       errmsg.sys
+�               �       
+�               +---dutch
+�               �       errmsg.sys
+�               �       
+�               +---english
+�               �       errmsg.sys
+�               �       
+�               +---estonian
+�               �       errmsg.sys
+�               �       
+�               +---french
+�               �       errmsg.sys
+�               �       
+�               +---german
+�               �       errmsg.sys
+�               �       
+�               +---greek
+�               �       errmsg.sys
+�               �       
+�               +---hungarian
+�               �       errmsg.sys
+�               �       
+�               +---italian
+�               �       errmsg.sys
+�               �       
+�               +---japanese
+�               �       errmsg.sys
+�               �       
+�               +---korean
+�               �       errmsg.sys
+�               �       
+�               +---norwegian
+�               �       errmsg.sys
+�               �       
+�               +---norwegian-ny
+�               �       errmsg.sys
+�               �       
+�               +---polish
+�               �       errmsg.sys
+�               �       
+�               +---portuguese
+�               �       errmsg.sys
+�               �       
+�               +---romanian
+�               �       errmsg.sys
+�               �       
+�               +---russian
+�               �       errmsg.sys
+�               �       
+�               +---serbian
+�               �       errmsg.sys
+�               �       
+�               +---slovak
+�               �       errmsg.sys
+�               �       
+�               +---spanish
+�               �       errmsg.sys
+�               �       
+�               +---swedish
+�               �       errmsg.sys
+�               �       
+�               +---ukrainian
+�                       errmsg.sys
+�                       
++---datasets
+�   +---mongodb
+�   �       customers.csv
+�   �       orderdetails.csv
+�   �       orders.csv
+�   �       products.csv
+�   �       sellers.csv
+�   �       
+�   +---mssql
+�   �       customers.csv
+�   �       orderdetails.csv
+�   �       orders.csv
+�   �       products.csv
+�   �       sellers.csv
+�   �       
+�   +---mysql
+�   �       Customers.csv
+�   �       OrderDetails.csv
+�   �       Orders.csv
+�   �       Products.csv
+�   �       Sellers.csv
+�   �       
+�   +---postgresql
+�           Customers.csv
+�           OrderDetails.csv
+�           Orders.csv
+�           Products.csv
+�           Sellers.csv
+�           
++---docs
+�   �   README.md
+�   �   
+�   +---architecture
+�   �       repository_architecture.md
+�   �       
+�   +---mysql
+�   �       windowsetup.md
+�   �       
+�   +---refactor
+�           01_repository_inventory.md
+�           02_dependency_map.md
+�           03_dead_files.md
+�           04_duplicate_files.md
+�           05_hardcoded_paths.md
+�           06_folder_restructure_plan.md
+�           07_required_file_moves.md
+�           08_pipeline_dependency_graph.md
+�           09_cleanup_execution_plan.md
+�           10_final_target_structure.md
+�           11_database_ownership_violations.md
+�           12_postgresql_readiness_report.md
+�           13_broken_references.md
+�           14_common_folder_violations.md
+�           15_risk_assessment.md
+�           16_configuration_centralization_report.md
+�           17_core_script_ownership_report.md
+�           18_active_execution_paths.md
+�           
++---failed
+�   �   .gitkeep
+�   �   
+�   +---mongodb
+�   �       .gitkeep
+�   �       
+�   +---mssql
+�   �       .gitkeep
+�   �       
+�   +---mysql
+�   �       .gitkeep
+�   �       filesysytem_seller.csv
+�   �       
+�   +---postgresql
+�           .gitkeep
+�           
++---incoming
+�   �   .gitkeep
+�   �   
+�   +---mongodb
+�   �       .gitkeep
+�   �       
+�   +---mssql
+�   �       .gitkeep
+�   �       
+�   +---mysql
+�   �       .gitkeep
+�   �       brand table.csv
+�   �       category table.csv
+�   �       Product_inventory.csv
+�   �       Product_master.csv
+�   �       
+�   +---postgresql
+�           .gitkeep
+�           
++---jenkins
+�   �   Jenkinsfile
+�   �   
+�   +---mongodb
+�   �   �   custom.load
+�   �   �   custom.setup
+�   �   �   Jenkinsfile.load
+�   �   �   Jenkinsfile.setup
+�   �   �   
+�   �   +---scripts
+�   �   �       mongodb_load_pipeline.bat
+�   �   �       mongodb_setup_pipeline.bat
+�   �   �       
+�   �   +---ubuntu
+�   �           mongodb_load_pipeline.groovy
+�   �           mongodb_setup_pipeline.groovy
+�   �           
+�   +---mssql
+�   �   +---ubuntu
+�   �   �       mssql_load_pipeline.groovy
+�   �   �       mssql_setup_pipeline.groovy
+�   �   �       
+�   �   +---windows
+�   �           mssql_load_pipeline.groovy
+�   �           mssql_setup_pipeline.groovy
+�   �           
+�   +---mysql
+�   �   +---ubuntu
+�   �   �       mysql_load_pipeline.groovy
+�   �   �       mysql_setup_pipeline.groovy
+�   �   �       
+�   �   +---windows
+�   �           mysql_load_pipeline.groovy
+�   �           mysql_setup_pipeline.groovy
+�   �           
+�   +---postgresql
+�   �   �   custom.setup
+�   �   �   Jenkinsfile.load
+�   �   �   Jenkinsfile.setup
+�   �   �   postgresql_load_pipeline.groovy
+�   �   �   postgresql_setup_pipeline.groovy
+�   �   �   
+�   �   +---ubuntu
+�   �   �       postgresql_load_pipeline.groovy
+�   �   �       postgresql_setup_pipeline.groovy
+�   �   �       
+�   �   +---windows
+�   �       �   custom.load
+�   �       �   custom.setup
+�   �       �   Jenkinsfile.load
+�   �       �   Jenkinsfile.setup
+�   �       �   postgresql_load_pipeline.groovy
+�   �       �   
+�   �       +---localwork
+�   �       �       postgresql_load_pipeline.groovy
+�   �       �       postgresql_setup_pipeline.groovy
+�   �       �       
+�   �       +---scripts
+�   �               postgresql_load_pipeline.bat
+�   �               postgresql_setup_pipeline.bat
+�   �               
+�   +---testing
+�           python_debug_pipeline.groovy
+�           tools_debug_pipeline.groovy
+�           
++---liquibase
+�   �   .gitkeep
+�   �   master.xml
+�   �   
+�   +---failed
+�   �       brand table_create.xml
+�   �       customers_create.xml
+�   �       
+�   +---mssql
+�   �       001_create_customers.xml
+�   �       002_create_sellers.xml
+�   �       003_create_products.xml
+�   �       004_create_orders.xml
+�   �       005_create_orderdetails.xml
+�   �       master.xml
+�   �       
+�   +---mysql
+�   �       liquibase.properties
+�   �       master.xml
+�   �       
+�   +---postgresql
+�           001_create_customers.xml
+�           002_create_products.xml
+�           003_create_orders.xml
+�           004_create_sellers.xml
+�           005_create_orderdetails.xml
+�           liquibase.properties
+�           master.xml
+�           
++---metadata
+�   �   .gitkeep
+�   �   data_load_history.jsonl
+�   �   liquibase_execution_history.jsonl
+�   �   schema_changes.json
+�   �   schema_registry.json
+�   �   schema_versions.json
+�   �   
+�   +---current_schema
+�   �       .gitkeep
+�   �       brand table.json
+�   �       customers.json
+�   �       
+�   +---mongodb
+�   �       .gitkeep
+�   �       
+�   +---mssql
+�   �       .gitkeep
+�   �       
+�   +---mysql
+�   �       .gitkeep
+�   �       data_load_history.jsonl
+�   �       schema_registry.json
+�   �       
+�   +---postgresql
+�           .gitkeep
+�           
++---requirements
+�       common.txt
+�       mongodb.txt
+�       mssql.txt
+�       mysql.txt
+�       postgresql.txt
+�       
++---scripts
+�   �   data_loader.py
+�   �   data_loader_mongodb.py
+�   �   liquibase_generator.py
+�   �   metadata_manager.py
+�   �   run_liquibase.py
+�   �   schema_detector.py
+�   �   schema_diff.py
+�   �   version_manager.py
+�   �   
+�   +---bash
+�   �   �   download_mysql_driver.sh
+�   �   �   install_python_requirements.sh
+�   �   �   validate_python_requirements.sh
+�   �   �   
+�   �   +---common
+�   �   �       install_liquibase.sh
+�   �   �       install_mssql_driver.sh
+�   �   �       install_mysql_driver.sh
+�   �   �       install_python_requirements.sh
+�   �   �       install_terraform.sh
+�   �   �       install_tools.sh
+�   �   �       set_project_root.sh
+�   �   �       validate_java_runtime.sh
+�   �   �       validate_python_runtime.sh
+�   �   �       validate_tools.sh
+�   �   �       
+�   �   +---mongodb
+�   �   �       install_mongodb.sh
+�   �   �       install_mongosh.sh
+�   �   �       load_data.sh
+�   �   �       mongodb_load_pipeline.sh
+�   �   �       mongodb_setup_pipeline.sh
+�   �   �       start_mongodb.sh
+�   �   �       stop_mongodb.sh
+�   �   �       validate_loaded_data.sh
+�   �   �       validate_mongodb.sh
+�   �   �       
+�   �   +---mssql
+�   �   �       create_database.sh
+�   �   �       install_mssql.sh
+�   �   �       install_sqlcmd.sh
+�   �   �       load_data.sh
+�   �   �       mssql_load_pipeline.sh
+�   �   �       mssql_setup_pipeline.sh
+�   �   �       run_liquibase.sh
+�   �   �       start_mssql.sh
+�   �   �       validate_environment.sh
+�   �   �       validate_loaded_data.sh
+�   �   �       validate_mssql.sh
+�   �   �       validate_tools.sh
+�   �   �       
+�   �   +---mysql
+�   �       �   mysql_load_pipeline.sh
+�   �       �   mysql_setup_pipeline.sh
+�   �       �   
+�   �       +---load
+�   �       �       load_data.sh
+�   �       �       validate_csv.sh
+�   �       �       validate_loaded_data.sh
+�   �       �       
+�   �       +---setup
+�   �               create_database.sh
+�   �               deploy_mysql.sh
+�   �               install_mysql.sh
+�   �               install_python_requirements.sh
+�   �               run_liquibase.sh
+�   �               start_mysql.sh
+�   �               stop_mysql.sh
+�   �               validate_environment.sh
+�   �               validate_mysql.sh
+�   �               validate_port.sh
+�   �               validate_python_requirements.sh
+�   �               
+�   +---batch
+�   �   �   install_python_requirements.bat
+�   �   �   validate_python_requirements.bat
+�   �   �   
+�   �   +---common
+�   �   �       install_liquibase.bat
+�   �   �       install_mssql_driver.bat
+�   �   �       install_postgresql_driver.bat
+�   �   �       install_terraform.bat
+�   �   �       install_tools.bat
+�   �   �       setup_liquibase.bat
+�   �   �       set_project_root.bat
+�   �   �       tools.bat
+�   �   �       validate_java_runtime.bat
+�   �   �       validate_liquibase.bat
+�   �   �       validate_mssql_driver.bat
+�   �   �       validate_postgresql_driver.bat
+�   �   �       validate_python_runtime.bat
+�   �   �       validate_tools.bat
+�   �   �       
+�   �   +---mongodb
+�   �   �   �   cleanup_mongodb.bat
+�   �   �   �   deploy_mongodb.bat
+�   �   �   �   destroy_mongodb.bat
+�   �   �   �   initialize_logs.bat
+�   �   �   �   load_data.bat
+�   �   �   �   mongodb_load_with_logging.bat
+�   �   �   �   mongodb_setup_with_logging.bat
+�   �   �   �   run_mongodb.bat
+�   �   �   �   start_mongodb.bat
+�   �   �   �   stop_mongodb.bat
+�   �   �   �   validate_data.bat
+�   �   �   �   validate_environment.bat
+�   �   �   �   validate_mongodb.bat
+�   �   �   �   validate_port.bat
+�   �   �   �   
+�   �   �   +---setup
+�   �   �           install_python_requirements.bat
+�   �   �           validate_python_requirements.bat
+�   �   �           
+�   �   +---mssql
+�   �   �   �   clean_mssql_data.bat
+�   �   �   �   create_database.bat
+�   �   �   �   deploy_mssql.bat
+�   �   �   �   destroy_mssql_environment.bat
+�   �   �   �   install_mssql.bat
+�   �   �   �   install_mssql_driver.bat
+�   �   �   �   install_mssql_tools.bat
+�   �   �   �   install_sqlcmd.bat
+�   �   �   �   load_data.bat
+�   �   �   �   run_liquibase.bat
+�   �   �   �   start_mssql.bat
+�   �   �   �   stop_mssql.bat
+�   �   �   �   validate_csv.bat
+�   �   �   �   validate_environment.bat
+�   �   �   �   validate_loaded_data.bat
+�   �   �   �   validate_mssql.bat
+�   �   �   �   validate_mssql_tools.bat
+�   �   �   �   
+�   �   �   +---setup
+�   �   �           install_python_requirements.bat
+�   �   �           validate_python_requirements.bat
+�   �   �           
+�   �   +---mysql
+�   �   �   �   cleanup_mysql.bat
+�   �   �   �   destroy_mysql.bat
+�   �   �   �   initialize_logs.bat
+�   �   �   �   mysql_load_pipeline.bat
+�   �   �   �   mysql_load_with_logging.bat
+�   �   �   �   mysql_setup_pipeline.bat
+�   �   �   �   mysql_setup_with_logging.bat
+�   �   �   �   stop_mysql.bat
+�   �   �   �   
+�   �   �   +---load
+�   �   �   �       load_data.bat
+�   �   �   �       validate_csv.bat
+�   �   �   �       validate_loaded_data.bat
+�   �   �   �       
+�   �   �   +---setup
+�   �   �           create_database.bat
+�   �   �           deploy_mysql.bat
+�   �   �           install_mysql_driver.bat
+�   �   �           install_python_requirements.bat
+�   �   �           install_tools.bat
+�   �   �           run_liquibase.bat
+�   �   �           start_mysql.bat
+�   �   �           validate_environment.bat
+�   �   �           validate_mysql.bat
+�   �   �           validate_mysql_driver.bat
+�   �   �           validate_port.bat
+�   �   �           validate_python_requirements.bat
+�   �   �           validate_tools.bat
+�   �   �           
+�   �   +---postgresql
+�   �   �   �   cleanup_postgresql.bat
+�   �   �   �   create_database.bat
+�   �   �   �   deploy_postgresql.bat
+�   �   �   �   destroy_postgresql.bat
+�   �   �   �   initialize_logs.bat
+�   �   �   �   install_python_requirements.bat
+�   �   �   �   install_tools.bat
+�   �   �   �   load_data.bat
+�   �   �   �   postgresql_load_with_logging.bat
+�   �   �   �   postgresql_setup_with_logging.bat
+�   �   �   �   run_liquibase.bat
+�   �   �   �   start_postgresql.bat
+�   �   �   �   stop_postgresql.bat
+�   �   �   �   validate_csv.bat
+�   �   �   �   validate_environment.bat
+�   �   �   �   validate_loaded_data.bat
+�   �   �   �   validate_port.bat
+�   �   �   �   validate_postgresql.bat
+�   �   �   �   validate_python_requirements.bat
+�   �   �   �   
+�   �   �   +---setup
+�   �   �           install_python_requirements.bat
+�   �   �           validate_python_requirements.bat
+�   �   �           
+�   �   +---test
+�   �       �   test_mysql_load.bat
+�   �       �   test_mysql_setup.bat
+�   �       �   
+�   �       +---mysql
+�   �               test_python_dependencies.bat
+�   �               test_setup_flow.bat
+�   �               
+�   +---powershell
+�   �   �   download_liquibase.ps1
+�   �   �   download_mssql_driver.ps1
+�   �   �   download_postgresql_driver copy.ps1
+�   �   �   install_mssql.ps1
+�   �   �   stop_mysql.ps1
+�   �   �   
+�   �   +---mongodb
+�   �   �       install_windows.ps1
+�   �   �       start_mongodb.ps1
+�   �   �       stop_mongodb.ps1
+�   �   �       
+�   �   +---mysql
+�   �   �       download_mysql_driver.ps1
+�   �   �       start_mysql.ps1
+�   �   �       
+�   �   +---postgresql
+�   �           install_windows.ps1
+�   �           remove_postgresql.ps1
+�   �           start_postgresql.ps1
+�   �           stop_postgresql.ps1
+�   �           validate_postgresql.ps1
+�   �           
+�   +---python
+�       +---common
+�       �   �   config_loader.py
+�       �   �   
+�       �   +---__pycache__
+�       �           config_loader.cpython-312.pyc
+�       �           
+�       +---mongodb
+�       �       cleanup_collections.py
+�       �       create_collections.py
+�       �       create_indexes.py
+�       �       db_connection.py
+�       �       generate_dataset.py
+�       �       load_all.py
+�       �       load_data.py
+�       �       test_connection.py
+�       �       validate_data.py
+�       �       validate_mongodb.py
+�       �       validate_port.py
+�       �       
+�       +---mssql
+�       �       db_connection.py
+�       �       load_all.py
+�       �       load_customers.py
+�       �       load_data.py
+�       �       load_orderdetails.py
+�       �       load_orders.py
+�       �       load_products.py
+�       �       load_sellers.py
+�       �       truncate_tables.py
+�       �       validate_csv.py
+�       �       validate_loaded_data.py
+�       �       validate_mssql.py
+�       �       validate_port.py
+�       �       
+�       +---mysql
+�       �   +---load
+�       �   �       load_all.py
+�       �   �       load_data.py
+�       �   �       testcsvschema.py
+�       �   �       truncate_tables.py
+�       �   �       validate_csv.py
+�       �   �       validate_data.py
+�       �   �       validate_loaded_data.py
+�       �   �       
+�       �   +---setup
+�       �       �   check_port.py
+�       �       �   db_connection.py
+�       �       �   generate_liquibase_xml.py
+�       �       �   test_connection.py
+�       �       �   update_master_xml.py
+�       �       �   validate_port.py
+�       �       �   
+�       �       +---__pycache__
+�       �               db_connection.cpython-312.pyc
+�       �               
+�       +---postgresql
+�               check_port.py
+�               create_database.py
+�               create_tables.py
+�               db_connection.py
+�               generate_dataset.py
+�               load_all.py
+�               load_customers.py
+�               load_data.py
+�               load_orderdetails.py
+�               load_orders.py
+�               load_products.py
+�               load_sellers.py
+�               testcsvschema.py
+�               test_connection.py
+�               truncate_tables.py
+�               validate_csv.py
+�               validate_customers.py
+�               validate_data.py
+�               validate_loaded_data.py
+�               validate_port.py
+�               validate_postgresql.py
+�               
++---terraform
+�   +---mongodb
+�   �       main.tf
+�   �       terraform.tfvars
+�   �       variables.tf
+�   �       
+�   +---mssql
+�   �   +---windows
+�   �           main.tf
+�   �           outputs.tf
+�   �           terraform.tfvars
+�   �           variables.tf
+�   �           
+�   +---mysql
+�   �   �   .terraform.lock.hcl
+�   �   �   main.tf
+�   �   �   terraform.tfstate
+�   �   �   terraform.tfstate.backup
+�   �   �   
+�   �   +---.terraform
+�   �       +---providers
+�   �           +---registry.terraform.io
+�   �               +---hashicorp
+�   �                   +---null
+�   �                       +---3.3.0
+�   �                           +---windows_amd64
+�   �                                   LICENSE.txt
+�   �                                   terraform-provider-null_v3.3.0_x5.exe
+�   �                                   
+�   +---postgresql
+�           main.tf
+�           terraform.tfvars
+�           variables.tf
+�           
++---tools
+    �   .gitkeep
+    �   
+    +---drivers
+    �       .gitkeep
+    �       mysql-connector-j-9.5.0.jar
+    �       
+    +---liquibase
+    �   �   .gitkeep
+    �   �   ABOUT.txt
+    �   �   changelog.txt
+    �   �   GETTING_STARTED.txt
+    �   �   LICENSE.txt
+    �   �   liquibase
+    �   �   liquibase.bat
+    �   �   README.txt
+    �   �   UNINSTALL.txt
+    �   �   
+    �   +---examples
+    �   �   �   start-h2
+    �   �   �   start-h2.bat
+    �   �   �   
+    �   �   +---json
+    �   �   �       blank-changelog.json
+    �   �   �       example-changelog.json
+    �   �   �       example-changeset-json.txt
+    �   �   �       liquibase.properties
+    �   �   �       
+    �   �   +---sql
+    �   �   �       blank-changelog.sql
+    �   �   �       example-changelog.sql
+    �   �   �       example-changeset-sql.txt
+    �   �   �       liquibase.properties
+    �   �   �       
+    �   �   +---xml
+    �   �   �       blank-changelog.xml
+    �   �   �       example-changelog.xml
+    �   �   �       example-changeset-xml.txt
+    �   �   �       liquibase.properties
+    �   �   �       
+    �   �   +---yaml
+    �   �           blank-changelog.yaml
+    �   �           example-changelog.yaml
+    �   �           example-changeset-yaml.txt
+    �   �           liquibase.properties
+    �   �           
+    �   +---internal
+    �   �   +---lib
+    �   �           commons-collections4.jar
+    �   �           commons-io.jar
+    �   �           commons-lang3.jar
+    �   �           commons-text.jar
+    �   �           h2.jar
+    �   �           liquibase-core.jar
+    �   �           opencsv.jar
+    �   �           picocli.jar
+    �   �           snakeyaml.jar
+    �   �           
+    �   +---lib
+    �   �       liquibase_autocomplete.sh
+    �   �       liquibase_autocomplete.zsh
+    �   �       liquibase_autocomplete_mac.bash
+    �   �       README.txt
+    �   �       
+    �   +---licenses
+    �       +---oss
+    �               apache-2.0.txt
+    �               epl-2.0.txt
+    �               FSL-1.1-ALv2.txt
+    �               gpl-2.0-classpath-exception.txt
+    �               README.txt
+    �               usage-data.txt
+    �               
+    +---terraform
+            .gitkeep
+            LICENSE.txt
+            terraform.exe
+            
+-----------------
+
+
+mysql_setup jenkin 
+pipeline {
+
+    agent any
+
+    environment {
+        PROJECT_ROOT = "/home/mohit/newteamd/DataPlatform-Automation-Reference"
+    }
+
+    stages {
+
+        // stage('Set Permissions') {
+        //     steps {
+        //         sh """
+        //         cd ${PROJECT_ROOT}
+        //         find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+        //         """
+        //     }
+        // }
+
+        stage('Validate Python Runtime') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/validate_python_runtime.sh"
+            }
+        }
+
+        stage('Install Python Requirements') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/install_python_requirements.sh"
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/validate_python_requirements.sh"
+            }
+        }
+
+        stage('Install Tools') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/install_tools.sh"
+            }
+        }
+
+        stage('Validate Tools') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/validate_tools.sh"
+            }
+        }
+
+        stage('Validate MySQL') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/validate_mysql.sh"
+            }
+        }
+
+        stage('Load Data') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/load_data.sh"
+            }
+        }
+
+        stage('Validate Loaded Data') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/validate_loaded_data.sh"
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'UBUNTU MYSQL LOAD SUCCESSFUL'
+        }
+
+        failure {
+            echo 'UBUNTU MYSQL LOAD FAILED'
+        }
+
+        always {
+            echo 'UBUNTU MYSQL LOAD PIPELINE COMPLETED'
+        }
+    }
+}

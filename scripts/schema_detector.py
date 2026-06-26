@@ -31,9 +31,14 @@ def get_csv_headers(file_path):
         List of column names
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
+            
             reader = csv.reader(f)
-            headers = next(reader)
+        
+            headers = [
+                h.replace('\ufeff', '').strip()
+                for h in next(reader)
+            ]
             logger.info(f"Extracted headers from {file_path.name}: {headers}")
             return headers
     except Exception as e:

@@ -96,7 +96,7 @@ resource "null_resource" "start_mysql_windows" {
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
  
-    command = "powershell -ExecutionPolicy Bypass -File ../../scripts/powershell/start_mysql.ps1"
+    command = "powershell -ExecutionPolicy Bypass -File ../../scripts/powershell/mysql/start_mysql.ps1"
   }
 }
 
@@ -107,7 +107,7 @@ resource "null_resource" "install_mysql_linux" {
 
     interpreter = ["/bin/bash", "-c"]
 
-    command = "../../scripts/bash/install_mysql.sh"
+    command = "../../scripts/bash/mysql/setup/install_mysql.sh"
   }
 }
 
@@ -119,7 +119,7 @@ resource "null_resource" "start_mysql_linux" {
 
     interpreter = ["/bin/bash", "-c"]
 
-    command = "../../scripts/bash/start_mysql.sh"
+    command = "../../scripts/bash/mysql/setup/start_mysql.sh"
   }
 }
 

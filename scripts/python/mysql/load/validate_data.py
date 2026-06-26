@@ -1,10 +1,9 @@
 import json
 from pathlib import Path
-import sys
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT))
-from scripts.python.mysql.setup.db_connection import get_connection, config
+from db_connection import get_connection, config
+
+ROOT = Path(__file__).resolve().parents[4] 
 
 try:
 
@@ -18,7 +17,8 @@ try:
 
     if database.lower() != expected_database.lower():
         raise Exception(
-            f"Expected database '{expected_database}' but connected to '{database}'"
+            f"Expected database '{expected_database}' "
+            f"but connected to '{database}'"
         )
 
     cursor.execute("SELECT @@port")
@@ -28,46 +28,21 @@ try:
     version = cursor.fetchone()[0]
 
     schema_file = (
-    Path(__file__).resolve().parents[4]
-    / "metadata"
-    / "mysql"
-    / "schema_registry.json"
+        ROOT
+        / "metadata"
+        / "mysql"
+        / "schema_registry.json"
     )
 
-    cursor.execute("""
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema_registry = json.load(f)
 
-        SELECT table_name
+    validated_tables = set(schema_registry.keys())
 
-        FROM information_schema.tables
-
-        WHERE table_schema = DATABASE()
-
-    """)
-    
-    existing_tables = {
-
-        row[0].lower()
-
-        for row in cursor.fetchall()
-
-    }
-    
-    # Ignore Liquibase internal tables
-
-    system_tables = {
-
-        "databasechangelog",
-
-        "databasechangeloglock"
-
-    }
-    
-    validated_tables = existing_tables - system_tables
-    
     if not validated_tables:
-
-        raise Exception("No user tables found")
-    
+        raise Exception(
+            "No user tables found in schema_registry.json"
+        )
 
     print()
     print("=" * 50)
@@ -82,10 +57,24 @@ try:
 
     for table in sorted(validated_tables):
 
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            AND table_name = %s
+            """,
+            (table,)
+        )
+
+        if cursor.fetchone()[0] == 0:
+            print(f"[SKIPPED] {table} : table does not exist")
+            continue
+
         cursor.execute(f"SELECT COUNT(*) FROM `{table}`")
         count = cursor.fetchone()[0]
 
-        print(f"[OK] {table} : {count} rows")
+        print(f"[OK] {table:<30} {count} rows")
 
     print("=" * 50)
 

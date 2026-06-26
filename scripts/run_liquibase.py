@@ -9,6 +9,7 @@ Supports PostgreSQL, MySQL, and MSSQL.
 
 import json
 import logging
+import platform
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -196,7 +197,7 @@ def main():
     logger.info("Starting Liquibase execution...")
     
     # Define paths
-    project_root = Path(__file__).parent.parent
+    project_root = Path(__file__).resolve().parents[3]
     generated_dir = project_root / "liquibase" / "generated"
     archive_dir = project_root / "liquibase" / "archive"
     failed_dir = project_root / "liquibase" / "failed"
@@ -204,7 +205,18 @@ def main():
     
     # Load database configuration
     # Try MySQL config first (can be extended for other databases)
-    mysql_config_path = project_root / "config" / "mysql.conf"
+    # Load database configuration
+    
+    
+    if platform.system() == "Windows":
+        mysql_config_path = project_root / "config" / "mysql.conf"
+    else:
+        mysql_config_path = project_root / "config" / "ubuntu" / "mysql.conf"
+    
+    if not mysql_config_path.exists():
+        logger.error(f"Config file not found: {mysql_config_path}")
+        return
+    
     config = load_config(mysql_config_path)
     
     if not config:
