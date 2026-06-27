@@ -88,14 +88,20 @@ try {
 }
 catch {
 
-    Write-Log "Starting PostgreSQL..."
+   Write-Log "Before pg_ctl start"
 
-    # Start PostgreSQL without waiting (Jenkins may hang with -w)
-    & "$PgCtl" -D "$PgData" -l "$PgLog" start | Out-Null
+$proc = Start-Process `
+    -FilePath $PgCtl `
+    -ArgumentList "-D `"$PgData`" -l `"$PgLog`" start" `
+    -NoNewWindow `
+    -Wait `
+    -PassThru
 
-    $ExitCode = $LASTEXITCODE
+Write-Log "After pg_ctl start"
 
-    Write-Log "pg_ctl start exit code: $ExitCode"
+$ExitCode = $proc.ExitCode
+
+Write-Log "pg_ctl start exit code: $ExitCode"
 
     if ($ExitCode -ne 0) {
         throw "pg_ctl start failed with exit code $ExitCode"
