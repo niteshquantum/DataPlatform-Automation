@@ -44,11 +44,11 @@ def get_connection():
     config = load_config()
 
     connection = psycopg2.connect(
-        host=config.get("POSTGRESQL_HOST", "localhost"),
+        host=config.get("POSTGRESQL_HOST", "127.0.0.1"),
         port=config.get("POSTGRESQL_PORT", "5432"),
-        database=config.get("POSTGRESQL_DATABASE"),
-        user=config.get("POSTGRESQL_ADMIN_USER"),
-        password=config.get("POSTGRESQL_ADMIN_PASSWORD", "")
+        database=config.get("POSTGRESQL_DATABASE", config.get("POSTGRESQL_DB")),
+        user=config.get("POSTGRESQL_ADMIN_USER", config.get("POSTGRESQL_USER")),
+        password=config.get("POSTGRESQL_ADMIN_PASSWORD", config.get("POSTGRESQL_PASSWORD", ""))
     )
 
     return connection
