@@ -28,7 +28,7 @@ pipeline {
         stage('Install PostgreSQL') {
             steps {
                 dir("${WORKSPACE}") {
-                    powershell '.\\scripts\\powershell\\postgresql\\install_windows.ps1'
+                    bat 'powershell -ExecutionPolicy Bypass -File scripts\\powershell\\postgresql\\install_windows.ps1'
                 }
             }
         }
@@ -36,7 +36,7 @@ pipeline {
         stage('Start PostgreSQL') {
             steps {
                 dir("${WORKSPACE}") {
-                    powershell '.\\scripts\\powershell\\postgresql\\start_postgresql.ps1'
+                    bat 'powershell -ExecutionPolicy Bypass -File scripts\\powershell\\postgresql\\start_postgresql.ps1'
                 }
             }
         }
@@ -99,17 +99,20 @@ pipeline {
     }
 
     post {
-    success {
-        echo 'PostgreSQL Load Pipeline Completed Successfully'
-    }
-    failure {
-        echo 'PostgreSQL Load Pipeline Failed'
-    }
-    always {
-        dir("${WORKSPACE}") {
-            powershell '.\\scripts\\powershell\\postgresql\\stop_postgresql.ps1'
+        success {
+            echo 'PostgreSQL Load Pipeline Completed Successfully'
         }
-        echo 'PostgreSQL Load Pipeline Finished'
+
+        failure {
+            echo 'PostgreSQL Load Pipeline Failed'
+        }
+
+        always {
+            dir("${WORKSPACE}") {
+                bat 'powershell -ExecutionPolicy Bypass -File scripts\\powershell\\postgresql\\stop_postgresql.ps1'
+            }
+
+            echo 'PostgreSQL Load Pipeline Finished'
+        }
     }
-}
 }
