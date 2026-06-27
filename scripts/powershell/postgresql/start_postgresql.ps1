@@ -88,20 +88,18 @@ try {
 }
 catch {
 
-   Write-Log "Before pg_ctl start"
+ Write-Log "Before pg_ctl start"
 
 $proc = Start-Process `
     -FilePath $PgCtl `
     -ArgumentList "-D `"$PgData`" -l `"$PgLog`" start" `
-    -NoNewWindow `
+    -PassThru `
     -Wait `
-    -PassThru
+    -NoNewWindow
 
 Write-Log "After pg_ctl start"
 
-$ExitCode = $proc.ExitCode
-
-Write-Log "pg_ctl start exit code: $ExitCode"
+Write-Log "ExitCode = $($proc.ExitCode)"
 
     if ($ExitCode -ne 0) {
         throw "pg_ctl start failed with exit code $ExitCode"
