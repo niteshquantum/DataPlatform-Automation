@@ -15,7 +15,7 @@ echo PROJECT_ROOT=%PROJECT_ROOT%
 echo PYTHONPATH=%PYTHONPATH%
 echo.
 
-python "%PROJECT_ROOT%\scripts\python\mysql\load\validate_data.py"
+python "%PROJECT_ROOT%\scripts\python\mysql\load\validate_database.py"
 
 if errorlevel 1 (
     echo.

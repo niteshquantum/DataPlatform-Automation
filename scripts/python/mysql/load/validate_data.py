@@ -27,6 +27,7 @@ try:
     cursor.execute("SELECT VERSION()")
     version = cursor.fetchone()[0]
 
+# ye wala code 
     schema_file = (
         ROOT
         / "metadata"

@@ -1,0 +1,235 @@
+# MySQL Migration Knowledge
+
+## Objective
+
+Refactor MySQL automation into the finalized project architecture without changing functionality.
+
+---
+
+## Major Architectural Changes
+
+### Configuration Standardization
+
+Old
+
+config/mysql.conf
+
+New
+
+config/windows/mysql.conf
+
+config/ubuntu/mysql.conf
+
+Configuration is now OS-specific.
+
+---
+
+### Centralized Config Loader
+
+Created
+
+scripts/python/common/config_loader.py
+
+Purpose
+
+* Detect operating system.
+* Load correct configuration.
+* Remove duplicated config-reading logic.
+* Provide one reusable implementation for every database.
+
+Every Python database module should use:
+
+load_database_config("<database_name>")
+
+instead of manually opening config files.
+
+---
+
+### Project Root Standardization
+
+Windows
+
+set_project_root.bat
+
+Ubuntu
+
+set_project_root.sh
+
+Python
+
+Path(**file**).resolve().parents[n]
+
+No script should depend on the current working directory.
+
+---
+
+### Python Refactoring
+
+Moved toward
+
+config_loader.py
+
+Removed duplicated config parsing.
+
+Updated imports.
+
+Added project root handling before package imports.
+
+---
+
+### Batch Refactoring
+
+Every batch file begins with
+
+set_project_root.bat
+
+No batch file should assume PROJECT_ROOT already exists.
+
+---
+
+### Bash Refactoring
+
+Every bash script begins with
+
+set_project_root.sh
+
+No script should use pwd as project root.
+
+---
+
+### PowerShell Refactoring
+
+All PowerShell scripts now use
+
+config/windows
+
+instead of legacy config paths.
+
+---
+
+### Folder Refactoring
+
+Setup scripts
+
+scripts/.../setup/
+
+Load scripts
+
+scripts/.../load/
+
+Structure is identical across operating systems.
+
+---
+
+### Pipeline Standardization
+
+Setup
+
+Validate Runtime
+
+↓
+
+Install Requirements
+
+↓
+
+Install Tools
+
+↓
+
+Deploy
+
+↓
+
+Start
+
+↓
+
+Create Database
+
+↓
+
+Liquibase
+
+↓
+
+Validate Environment
+
+Load
+
+Validate Runtime
+
+↓
+
+Validate Requirements
+
+↓
+
+Validate Database
+
+↓
+
+Validate CSV
+
+↓
+
+Load Data
+
+↓
+
+Validate Loaded Data
+
+---
+
+## Runtime Problems Solved
+
+* Broken PROJECT_ROOT handling
+* Hardcoded config paths
+* Windows/Ubuntu config separation
+* Python import failures
+* ModuleNotFoundError
+* mysql.connector import issue
+* Wrong Path(**file**).parents level
+* Liquibase path issues
+* Batch path issues
+* Bash path issues
+* PowerShell config path issues
+
+---
+
+## Search Strategy
+
+After every migration perform searches for
+
+* old config paths
+* old imports
+* old script locations
+* duplicate implementations
+* hardcoded paths
+* moved files
+
+---
+
+## Migration Rules
+
+Move only one file.
+
+Update references.
+
+Search.
+
+Run.
+
+Verify.
+
+Commit.
+
+Repeat.
+
+Never move many files together.
+
+---
+
+## Final Outcome
+
+MySQL became the reference implementation for future databases.

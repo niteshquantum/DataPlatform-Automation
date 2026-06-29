@@ -13,7 +13,7 @@ call "%PROJECT_ROOT%\scripts\batch\mysql\setup\validate_python_requirements.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\common\validate_java_runtime.bat"
-if errorlevel 1 exit /b 1
+if errorlevel 1 exit /b 1 
 
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1

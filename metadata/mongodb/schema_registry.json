@@ -1,0 +1,18 @@
+{
+  "customers": [
+    "customer_id"
+  ],
+  "sellers": [
+    "seller_id"
+  ],
+  "products": [
+    "product_id"
+  ],
+  "orders": [
+    "order_id"
+  ],
+  "orderdetails": [
+    "order_id",
+    "product_id"
+  ]
+}
