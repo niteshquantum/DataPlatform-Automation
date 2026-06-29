@@ -1297,8 +1297,95 @@ G:.
             
 -----------------
 
+mysql_Setup_window
+pipeline {
 
-mysql_setup jenkin 
+    agent any
+
+    environment {
+        PROJECT_ROOT = 'G:\\jenkins_prectice\\next_step\\DataPlatform-Automation-Reference'
+    }
+
+    stages {
+
+        stage('Validate Python Runtime') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\common\\validate_python_runtime.bat\""
+            }
+        }
+
+        stage('Install Python Requirements') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\install_python_requirements.bat\""
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\validate_python_requirements.bat\""
+            }
+        }
+
+        stage('Validate Java Runtime') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\common\\validate_java_runtime.bat\""
+            }
+        }
+
+        stage('Install Tools') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\install_tools.bat\""
+            }
+        }
+
+        stage('Deploy MySQL') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\deploy_mysql.bat\""
+            }
+        }
+
+        stage('Start MySQL') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\start_mysql.bat\""
+            }
+        }
+       
+        stage('Create Database') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\create_database.bat\""
+            }
+        }
+
+        stage('Run Liquibase') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\run_liquibase.bat\""
+            }
+        }
+
+        stage('Validate Environment') {
+            steps {
+                bat "\"%PROJECT_ROOT%\\scripts\\batch\\mysql\\setup\\validate_environment.bat\""
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'MYSQL SETUP SUCCESSFUL'
+        }
+
+        failure {
+            echo 'MYSQL SETUP FAILED'
+        }
+
+        always {
+            echo 'MYSQL SETUP PIPELINE COMPLETED'
+        }
+    }
+}
+----------------------------------------------------
+mysql_setup jenkin   uuntu-->
 pipeline {
 
     agent any
@@ -1363,6 +1450,92 @@ pipeline {
         stage('Validate Loaded Data') {
             steps {
                 sh "${PROJECT_ROOT}/scripts/bash/mysql/validate_loaded_data.sh"
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'UBUNTU MYSQL LOAD SUCCESSFUL'
+        }
+
+        failure {
+            echo 'UBUNTU MYSQL LOAD FAILED'
+        }
+
+        always {
+            echo 'UBUNTU MYSQL LOAD PIPELINE COMPLETED'
+        }
+    }
+}
+
+------------------------
+ubuntu load pipline -->
+pipeline {
+
+    agent any
+
+    environment {
+        PROJECT_ROOT = "/home/mohit/newteamd/DataPlatform-Automation-Reference"
+    }
+
+    stages {
+
+        stage('Set Permissions') {
+            steps {
+                sh """
+                cd ${PROJECT_ROOT}
+                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                """
+            }
+        }
+
+        stage('Validate Python Runtime') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/validate_python_runtime.sh"
+            }
+        }
+
+        stage('Install Python Requirements') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/install_python_requirements.sh"
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/validate_python_requirements.sh"
+            }
+        }
+
+        stage('Install Tools') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/install_tools.sh"
+            }
+        }
+
+        stage('Validate Tools') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/common/validate_tools.sh"
+            }
+        }
+
+        stage('Validate MySQL') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/setup/validate_mysql.sh"
+            }
+        }
+
+        stage('Load Data') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/load/load_data.sh"
+            }
+        }
+
+        stage('Validate Loaded Data') {
+            steps {
+                sh "${PROJECT_ROOT}/scripts/bash/mysql/load/validate_loaded_data.sh"
             }
         }
     }

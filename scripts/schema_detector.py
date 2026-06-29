@@ -31,7 +31,7 @@ def get_csv_headers(file_path):
         List of column names
     """
     try:
-        with open(file_path, 'r', encoding='utf-8-sig') as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             
             reader = csv.reader(f)
         
@@ -77,42 +77,65 @@ def get_json_keys(file_path):
         logger.error(f"Error reading JSON file {file_path}: {e}")
         return []
 
-
 def update_schema_registry(table_name, columns, registry_path):
     """
     Update schema_registry.json with new columns.
-    
-    Args:
-        table_name: Name of the table (filename without extension)
-        columns: List of column names
-        registry_path: Path to schema_registry.json
     """
     try:
-        # Load existing schema registry
         if registry_path.exists():
             with open(registry_path, 'r', encoding='utf-8') as f:
                 registry = json.load(f)
         else:
             registry = {}
-        
-        # Add or update table
+
+        # Normalize incoming columns
+        columns = [
+            col.replace('\ufeff', '').strip()
+            for col in columns
+        ]
+
         if table_name in registry:
-            # Merge columns, avoiding duplicates
-            existing_columns = registry[table_name]
-            new_columns = list(dict.fromkeys(existing_columns + columns))
+
+            existing_columns = [
+                col.replace('\ufeff', '').strip()
+                for col in registry[table_name]
+            ]
+
+            new_columns = []
+            seen = set()
+
+            for col in existing_columns + columns:
+                key = col.lower()
+
+                if key not in seen:
+                    seen.add(key)
+                    new_columns.append(col)
+
+            added_columns = [
+                col for col in new_columns
+                if col not in existing_columns
+            ]
+
             registry[table_name] = new_columns
-            logger.info(f"Updated table '{table_name}' with new columns: {[col for col in new_columns if col not in existing_columns]}")
+
+            logger.info(
+                f"Updated table '{table_name}' "
+                f"with new columns: {added_columns}"
+            )
+
         else:
             registry[table_name] = columns
-            logger.info(f"Created new table '{table_name}' with columns: {columns}")
-        
-        # Save updated registry
+
+            logger.info(
+                f"Created new table '{table_name}' "
+                f"with columns: {columns}"
+            )
+
         with open(registry_path, 'w', encoding='utf-8') as f:
             json.dump(registry, f, indent=2)
-            
+
     except Exception as e:
         logger.error(f"Error updating schema registry: {e}")
-
 
 def main():
     """

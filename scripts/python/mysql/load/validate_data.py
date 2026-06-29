@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from db_connection import get_connection, config
+from scripts.python.mysql.setup.db_connection import get_connection, config
 
 ROOT = Path(__file__).resolve().parents[4] 
 

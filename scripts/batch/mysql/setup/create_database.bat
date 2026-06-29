@@ -11,10 +11,12 @@ REM =====================================
 REM PROJECT ROOT
 REM =====================================
 
-call "%~dp0..\..\common\set_project_root.bat"
+REM Get project root from script location
+set "ROOT=%~dp0..\..\..\.."
+for %%I in ("%ROOT%") do set "ROOT=%%~fI"
 
-set "ROOT=%PROJECT_ROOT%"
 set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
+
 
 REM =====================================
 REM VALIDATE CONFIG

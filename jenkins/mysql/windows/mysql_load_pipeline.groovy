@@ -28,11 +28,7 @@ pipeline {
             }
         }
 
-        stage('Validate CSV') {
-            steps {
-                bat 'scripts\\batch\\mysql\\load\\validate_csv.bat'
-            }
-        }
+       
 
         stage('Load Data') {
             steps {

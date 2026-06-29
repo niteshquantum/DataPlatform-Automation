@@ -8,7 +8,11 @@ echo =====================================
 echo.
 
 call "%~dp0..\..\common\set_project_root.bat"
+
+set "PYTHONPATH=%PROJECT_ROOT%;%PYTHONPATH%"
+
 echo PROJECT_ROOT=%PROJECT_ROOT%
+echo PYTHONPATH=%PYTHONPATH%
 echo.
 
 python "%PROJECT_ROOT%\scripts\python\mysql\load\validate_data.py"

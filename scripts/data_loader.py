@@ -14,7 +14,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 import platform
+
 from scripts.python.common.config_loader import load_database_config
+from scripts.python.mysql.setup.db_connection import get_connection
+
+
+
 
 try:
     import mysql.connector
@@ -424,7 +429,7 @@ def main():
     
     logger.info('Starting generic data loader...')
 
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[1]
     load_mode = os.environ.get("LOAD_MODE", "skip").lower()
     db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
 
@@ -437,12 +442,15 @@ def main():
         / 'data_load_history.jsonl'
     )
 
-    incoming_dir = project_root / 'incoming' / db_type
+    db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
+
+    incoming_dir = project_root / "incoming" / db_type
 
     archive_dir = project_root / 'archive' / db_type
 
     failed_dir = project_root / 'failed' / db_type
-
+    logger.info(f"Database type: {db_type}")
+    logger.info(f"Incoming directory: {incoming_dir}")
     if not incoming_dir.exists():
         logger.error('incoming/ directory does not exist')
         return

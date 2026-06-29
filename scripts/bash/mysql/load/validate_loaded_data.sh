@@ -11,7 +11,7 @@ echo "====================================="
 echo
 
 cd "$PROJECT_ROOT"
-
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 python3 scripts/python/mysql/load/validate_loaded_data.py
 
 echo

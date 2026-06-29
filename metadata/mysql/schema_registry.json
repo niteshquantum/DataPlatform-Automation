@@ -31,7 +31,7 @@
     "Updated_At"
   ],
   "product_inventory": [
-    "\ufeffInventory_ID",
+    "Inventory_ID",
     "Product_ID",
     "SKU",
     "Total_Stock",

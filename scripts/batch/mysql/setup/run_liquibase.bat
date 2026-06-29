@@ -74,12 +74,14 @@ echo Expected: %DRIVER%
 exit /b 1
 )
 
-set "CHANGELOG=liquibase/mysql/master.xml"
+cd /d "%ROOT%"
+
+set "CHANGELOG=liquibase\mysql\master.xml"
 
 if not exist "%CHANGELOG%" (
-echo ERROR: CHANGELOG NOT FOUND
-echo Expected: %CHANGELOG%
-exit /b 1
+    echo ERROR: CHANGELOG NOT FOUND
+    echo Expected: %CD%\%CHANGELOG%
+    exit /b 1
 )
 
 echo Database : %MYSQL_DB%

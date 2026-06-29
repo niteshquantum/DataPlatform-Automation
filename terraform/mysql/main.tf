@@ -101,6 +101,30 @@ resource "null_resource" "start_mysql_windows" {
 }
 
 
+resource "null_resource" "create_mysql_user_windows" {
+
+  depends_on = [null_resource.start_mysql_windows]
+
+  provisioner "local-exec" {
+    interpreter = ["PowerShell", "-Command"]
+
+    command = <<EOT
+
+Start-Sleep -Seconds 5
+
+& "..\..\databases\mysql\server\bin\mysql.exe" `
+  -u root `
+  -e "CREATE USER IF NOT EXISTS 'rootuser'@'localhost' IDENTIFIED BY 'root123';
+      GRANT ALL PRIVILEGES ON *.* TO 'rootuser'@'localhost' WITH GRANT OPTION;
+      FLUSH PRIVILEGES;"
+
+Write-Host "rootuser created successfully"
+
+EOT
+  }
+}
+
+
 resource "null_resource" "install_mysql_linux" {
 
   provisioner "local-exec" {

@@ -4,6 +4,10 @@ set -e
 
 source "$(dirname "$0")/../../common/set_project_root.sh"
 
+cd "$PROJECT_ROOT"
+
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 echo
 echo "====================================="
 echo "MYSQL DATA LOAD"
@@ -26,7 +30,7 @@ echo "GENERATING LIQUIBASE XML"
 echo "-------------------------------------"
 echo
 
-python3 -m scripts.python.mysql.setup.generate_liquibase_xml
+python3 scripts/python/mysql/setup/generate_liquibase_xml.py
 
 echo
 echo "-------------------------------------"
@@ -34,7 +38,9 @@ echo "UPDATING MASTER XML"
 echo "-------------------------------------"
 echo
 
-python3 -m scripts.python.mysql.setup.update_master_xml
+rm -f "$PROJECT_ROOT/liquibase/mysql/master.xml"
+
+python3 scripts/python/mysql/setup/update_master_xml.py
 
 echo
 echo "-------------------------------------"
@@ -50,7 +56,10 @@ echo "LOADING DATA"
 echo "-------------------------------------"
 echo
 
-python3 -m scripts.python.mysql.load.load_data
+echo "LOAD MODE : ${LOAD_MODE:-skip}"
+export LOAD_MODE=${LOAD_MODE:-skip}
+
+python3 scripts/data_loader.py mysql
 
 echo
 echo "-------------------------------------"
@@ -58,9 +67,7 @@ echo "VALIDATING DATA"
 echo "-------------------------------------"
 echo
 
-cd "$PROJECT_ROOT"
-
-python3 -m scripts.python.mysql.load.validate_data
+python3 scripts/python/mysql/load/validate_data.py
 
 echo
 echo "====================================="

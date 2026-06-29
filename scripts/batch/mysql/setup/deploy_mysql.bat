@@ -50,4 +50,5 @@ echo.
 -target=null_resource.extract_mysql_windows ^
 -target=null_resource.init_mysql_windows ^
 -target=null_resource.start_mysql_windows ^
+-target=null_resource.create_mysql_user_windows ^
 -auto-approve
