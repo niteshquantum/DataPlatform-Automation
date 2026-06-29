@@ -3,24 +3,22 @@ setlocal
 
 echo.
 echo =====================================
-echo VALIDATING MYSQL
+echo VALIDATING MONGODB
 echo =====================================
 echo.
 
 call "%~dp0..\..\common\set_project_root.bat"
-echo PROJECT_ROOT=%PROJECT_ROOT%
-echo.
 
-python "%PROJECT_ROOT%\scripts\python\mysql\load\validate_database.py"
+python "%PROJECT_ROOT%\scripts\python\mongodb\setup\validate_database.py"
 
 if errorlevel 1 (
     echo.
-    echo MYSQL VALIDATION FAILED
+    echo MONGODB VALIDATION FAILED
     exit /b 1
 )
 
 echo.
-echo MYSQL VALIDATION SUCCESSFUL
+echo MONGODB VALIDATION SUCCESSFUL
 echo.
 
 exit /b 0

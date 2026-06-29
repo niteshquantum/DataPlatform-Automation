@@ -27,12 +27,21 @@ try:
     cursor.execute("SELECT VERSION()")
     version = cursor.fetchone()[0]
 
+# ye wala code 
     schema_file = (
     Path(__file__).resolve().parents[4]
     / "metadata"
     / "mysql"
     / "schema_registry.json"
     )
+
+# Notice kiya?
+
+# Ye variable kahin use hi nahi ho raha.
+
+# Matlab dead code hai.
+
+# Isko remove kar denge.
 
     cursor.execute("""
 

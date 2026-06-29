@@ -1,47 +1,87 @@
+$ErrorActionPreference = "Stop"
+
+Write-Host ""
 Write-Host "==================================="
-Write-Host "Starting MongoDB"
+Write-Host "STARTING MONGODB"
 Write-Host "==================================="
+Write-Host ""
 
-$root = Resolve-Path "$PSScriptRoot\..\..\.."
+# =====================================
+# PROJECT ROOT
+# =====================================
 
-$mongoHome = "$root\databases\mongodb"
+$PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
-$mongodExe = "$mongoHome\server\bin\mongod.exe"
+$MongoHome = "$PROJECT_ROOT\databases\mongodb"
 
-$dataPath = "$mongoHome\data"
+$MongodExe = "$MongoHome\server\bin\mongod.exe"
 
-$logPath = "$mongoHome\logs\mongodb.log"
+$DataPath = "$MongoHome\data"
 
-if (!(Test-Path $mongodExe)) {
+$LogPath = "$MongoHome\logs\mongodb.log"
 
-Write-Host "mongod.exe not found"
+Write-Host "PROJECT_ROOT : $PROJECT_ROOT"
+Write-Host "Mongo Home   : $MongoHome"
+Write-Host "mongod.exe   : $MongodExe"
+Write-Host ""
 
-exit 1
+# =====================================
+# VALIDATE
+# =====================================
 
-
+if (!(Test-Path $MongodExe)) {
+    throw "mongod.exe not found: $MongodExe"
 }
 
-$arguments = @(
+if (!(Test-Path $DataPath)) {
+    New-Item -ItemType Directory -Path $DataPath -Force | Out-Null
+}
 
-    "--dbpath", $dataPath,
+if (!(Test-Path (Split-Path $LogPath))) {
+    New-Item -ItemType Directory -Path (Split-Path $LogPath) -Force | Out-Null
+}
 
-    "--logpath", $logPath,
+# =====================================
+# START MONGODB
+# =====================================
 
-    "--bind_ip", "127.0.0.1",
-
-    "--port", "27018"
-
-)
- 
 Start-Process `
-
-    -FilePath "cmd.exe" `
-
-    -ArgumentList "/c start `"`" `"$mongodExe`" $($arguments -join ' ')" `
-
+    -FilePath $MongodExe `
+    -ArgumentList @(
+        "--dbpath", $DataPath,
+        "--logpath", $LogPath,
+        "--bind_ip", "127.0.0.1",
+        "--port", "27018"
+    ) `
     -WindowStyle Hidden
- 
-Start-Sleep -Seconds 5
- 
-Write-Host "MongoDB Started Successfully"
- 
+
+# =====================================
+# WAIT FOR PORT
+# =====================================
+
+$Started = $false
+
+for ($i = 1; $i -le 30; $i++) {
+
+    $PortCheck = netstat -ano | Select-String ":27018"
+
+    if ($PortCheck) {
+        $Started = $true
+        break
+    }
+
+    Start-Sleep -Seconds 1
+}
+
+if (-not $Started) {
+    throw "MongoDB failed to start on port 27018."
+}
+
+Write-Host ""
+Write-Host "==================================="
+Write-Host "MONGODB STARTED SUCCESSFULLY"
+Write-Host "Port : 27018"
+Write-Host "==================================="
+Write-Host ""
+
+exit 0
