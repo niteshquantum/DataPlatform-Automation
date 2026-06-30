@@ -2,9 +2,7 @@
 
 set -e
 
-if [ -z "$PROJECT_ROOT" ]; then
-    PROJECT_ROOT="/home/mohit/newteamd/next_step/DataPlatform-Automation-Reference"
-fi
+source "$(dirname "$0")/../common/set_project_root.sh"
 
 cd "$PROJECT_ROOT"
 

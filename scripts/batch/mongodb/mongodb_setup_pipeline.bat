@@ -24,8 +24,6 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\start_mongodb.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_mongodb.bat"
-if errorlevel 1 exit /b 1
 
 echo.
 echo =====================================

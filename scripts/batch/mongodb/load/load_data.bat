@@ -1,15 +1,12 @@
-
 @echo off
 setlocal
 
-if "%PROJECT_ROOT%"=="" (
-    set "PROJECT_ROOT=G:\jenkins_prectice\next_step\DataPlatform-Automation-Reference"
-)
+call "%~dp0..\common\set_project_root.bat"
 
 cd /d "%PROJECT_ROOT%"
 
 set "PYTHONPATH=%PROJECT_ROOT%;%PYTHONPATH%"
-set "LOAD_MODE=%LOAD_MODE%"
+
 if "%LOAD_MODE%"=="" set "LOAD_MODE=skip"
 
 echo.
