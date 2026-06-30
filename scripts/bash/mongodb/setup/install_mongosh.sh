@@ -2,7 +2,8 @@
 
 set -e
 
-source "$(dirname "$0")/../common/set_project_root.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../common/set_project_root.sh"
 
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mongodb.conf"
 
