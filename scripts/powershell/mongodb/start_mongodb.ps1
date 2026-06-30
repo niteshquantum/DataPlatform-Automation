@@ -13,16 +13,50 @@ Write-Host ""
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
 $MongoHome = "$PROJECT_ROOT\databases\mongodb"
-
 $MongodExe = "$MongoHome\server\bin\mongod.exe"
-
 $DataPath = "$MongoHome\data"
-
 $LogPath = "$MongoHome\logs\mongodb.log"
+
+# =====================================
+# READ CONFIG
+# =====================================
+
+$ConfigFile = "$PROJECT_ROOT\config\windows\mongodb.conf"
+
+if (!(Test-Path $ConfigFile)) {
+    throw "Config file not found: $ConfigFile"
+}
+
+$Config = @{}
+
+Get-Content $ConfigFile | ForEach-Object {
+
+    $Line = $_.Trim()
+
+    if (
+        $Line -and
+        -not $Line.StartsWith("#") -and
+        $Line.Contains("=")
+    ) {
+
+        $Key, $Value = $Line.Split("=", 2)
+
+        $Config[$Key.Trim()] = $Value.Trim()
+    }
+}
+
+$MongoHost = $Config["MONGODB_HOST"]
+$MongoPort = $Config["MONGODB_PORT"]
+
+if (-not $MongoPort) {
+    throw "MONGODB_PORT not found in mongodb.conf"
+}
 
 Write-Host "PROJECT_ROOT : $PROJECT_ROOT"
 Write-Host "Mongo Home   : $MongoHome"
 Write-Host "mongod.exe   : $MongodExe"
+Write-Host "Host         : $MongoHost"
+Write-Host "Port         : $MongoPort"
 Write-Host ""
 
 # =====================================
@@ -37,8 +71,25 @@ if (!(Test-Path $DataPath)) {
     New-Item -ItemType Directory -Path $DataPath -Force | Out-Null
 }
 
-if (!(Test-Path (Split-Path $LogPath))) {
-    New-Item -ItemType Directory -Path (Split-Path $LogPath) -Force | Out-Null
+$LogDir = Split-Path $LogPath
+
+if (!(Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
+
+# =====================================
+# CHECK IF ALREADY RUNNING
+# =====================================
+
+$AlreadyRunning = netstat -ano | Select-String ":$MongoPort"
+
+if ($AlreadyRunning) {
+
+    Write-Host ""
+    Write-Host "MongoDB already running on port $MongoPort"
+    Write-Host ""
+
+    exit 0
 }
 
 # =====================================
@@ -50,8 +101,8 @@ Start-Process `
     -ArgumentList @(
         "--dbpath", $DataPath,
         "--logpath", $LogPath,
-        "--bind_ip", "127.0.0.1",
-        "--port", "27018"
+        "--bind_ip", $MongoHost,
+        "--port", $MongoPort
     ) `
     -WindowStyle Hidden
 
@@ -63,9 +114,10 @@ $Started = $false
 
 for ($i = 1; $i -le 30; $i++) {
 
-    $PortCheck = netstat -ano | Select-String ":27018"
+    $PortCheck = netstat -ano | Select-String ":$MongoPort"
 
     if ($PortCheck) {
+
         $Started = $true
         break
     }
@@ -74,13 +126,13 @@ for ($i = 1; $i -le 30; $i++) {
 }
 
 if (-not $Started) {
-    throw "MongoDB failed to start on port 27018."
+    throw "MongoDB failed to start on port $MongoPort."
 }
 
 Write-Host ""
 Write-Host "==================================="
 Write-Host "MONGODB STARTED SUCCESSFULLY"
-Write-Host "Port : 27018"
+Write-Host "Port : $MongoPort"
 Write-Host "==================================="
 Write-Host ""
 
