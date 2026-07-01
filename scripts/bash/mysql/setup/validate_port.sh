@@ -14,7 +14,7 @@ echo "VALIDATING MYSQL PORT"
 echo "====================================="
 echo
 
-if ss -ltn | grep ":$MYSQL_PORT " >/dev/null
+if ss -ltn | grep -q ":${MYSQL_PORT}\b"
 then
     echo "Port $MYSQL_PORT is LISTENING"
 else

@@ -4,25 +4,20 @@ set -e
 
 source "$(dirname "$0")/../../common/set_project_root.sh"
 
+bash "$PROJECT_ROOT/scripts/bash/common/install_terraform.sh"
+bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/install_mysql_driver.sh"
 echo
 echo "====================================="
-echo "ENVIRONMENT VALIDATION STARTED"
+echo "TOOLS INSTALLED SUCCESSFULLY"
 echo "====================================="
 echo
-
-bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_tools.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_port.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_mysql.sh"
-
 echo
 echo "====================================="
-echo "ENVIRONMENT VALIDATION SUCCESSFUL"
+echo "TOOLS VALIDATED SUCCESSFULLY"
 echo "====================================="
 echo
 

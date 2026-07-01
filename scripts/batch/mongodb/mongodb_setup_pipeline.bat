@@ -18,6 +18,9 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
 
+call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_tools.bat"
+if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\run_terraform.bat"
 if errorlevel 1 exit /b 1
 

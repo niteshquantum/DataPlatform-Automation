@@ -24,6 +24,17 @@ pipeline {
                 sh './scripts/bash/common/install_python_requirements.sh'
             }
         }
+          stage('Install tools') {
+            steps {
+                sh './scripts/bash/mongodb/setup/install_tools.sh'
+            }
+        }
+
+        stage('Validate Tools') {
+            steps {
+                sh './scripts/bash/mongodb/setup/validate_tools.sh'
+            }
+        }
 
         stage('Install MongoDB') {
             steps {

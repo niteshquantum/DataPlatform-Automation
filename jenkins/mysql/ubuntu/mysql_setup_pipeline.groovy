@@ -26,13 +26,19 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                sh './scripts/bash/common/install_tools.sh'
+                sh './scripts/bash/mysql/setup/install_tools.sh'
             }
         }
 
         stage('Install MySQL') {
             steps {
                 sh './scripts/bash/mysql/setup/install_mysql.sh'
+            }
+        }
+
+        stage('Deploy MySQL') {
+            steps {
+                sh './scripts/bash/mysql/setup/deploy_mysql.sh'
             }
         }
 
@@ -48,11 +54,6 @@ pipeline {
             }
         }
 
-        stage('Run Liquibase') {
-            steps {
-                sh './scripts/bash/mysql/setup/run_liquibase.sh'
-            }
-        }
 
         stage('Validate Environment') {
             steps {

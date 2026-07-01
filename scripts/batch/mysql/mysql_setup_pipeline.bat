@@ -27,9 +27,6 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\create_database.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mysql\setup\run_liquibase.bat"
-if errorlevel 1 exit /b 1
-
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

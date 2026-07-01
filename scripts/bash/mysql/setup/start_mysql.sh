@@ -16,14 +16,13 @@ sleep 5
 
 if ! systemctl is-active --quiet mysql
 then
-    echo "MYSQL FAILED TO START"
+    echo
+    echo "MYSQL START FAILED"
     exit 1
 fi
 
 echo
-echo "====================================="
-echo "MYSQL STARTED SUCCESSFULLY"
-echo "====================================="
+echo "MYSQL START SUCCESSFUL"
 echo
 
 exit 0

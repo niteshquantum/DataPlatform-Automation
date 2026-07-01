@@ -12,13 +12,13 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
             }
         }
 
@@ -30,49 +30,47 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
             }
         }
 
-        stage('Deploy MySQL') {
+        stage('Validate Tools') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+                bat 'scripts\\batch\\common\\validate_tools.bat'
             }
         }
 
-        stage('Start MySQL') {
+        stage('Deploy MongoDB') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
             }
         }
 
-        stage('Create Database') {
+        stage('Start MongoDB') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
             }
         }
 
-
-        stage('Validate Environment') {
+        stage('Validate MongoDB') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
             }
         }
-
     }
 
     post {
 
         success {
-            echo 'MYSQL SETUP SUCCESSFUL'
+            echo 'MONGODB SETUP SUCCESSFUL'
         }
 
         failure {
-            echo 'MYSQL SETUP FAILED'
+            echo 'MONGODB SETUP FAILED'
         }
 
         always {
-            echo 'MYSQL SETUP PIPELINE COMPLETED'
+            echo 'MONGODB SETUP PIPELINE COMPLETED'
         }
     }
 }

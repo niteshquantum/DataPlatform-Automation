@@ -16,26 +16,12 @@ then
     sudo apt-get install -y mysql-server
 fi
 
-echo "MySQL Version:"
+echo
+echo "MYSQL VERSION"
 mysqld --version
 
 echo
-echo "====================================="
-echo "CONFIGURING MYSQL USER"
-echo "====================================="
-echo
-
-sudo mysql <<EOF
-CREATE USER IF NOT EXISTS 'rootuser'@'localhost' IDENTIFIED BY 'root123';
-ALTER USER 'rootuser'@'localhost' IDENTIFIED BY 'root123';
-GRANT ALL PRIVILEGES ON *.* TO 'rootuser'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-EOF
-
-echo
-echo "====================================="
-echo "MYSQL INSTALLED AND CONFIGURED"
-echo "====================================="
+echo "MYSQL INSTALLATION COMPLETED"
 echo
 
 exit 0

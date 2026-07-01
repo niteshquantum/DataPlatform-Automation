@@ -2,7 +2,7 @@
 
 set -e
 
-source "$(dirname "$0")/set_project_root.sh"
+source "$(dirname "$0")/../../common/set_project_root.sh"
 
 echo
 echo "====================================="

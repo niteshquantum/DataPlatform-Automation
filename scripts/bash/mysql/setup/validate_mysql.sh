@@ -23,7 +23,7 @@ mysql \
 -P "$MYSQL_PORT" \
 -u "$MYSQL_USER" \
 -p"$MYSQL_PASSWORD" \
--e "USE $MYSQL_DB;"
+-e "USE $MYSQL_DB; SELECT DATABASE();"
 
 echo
 echo "MYSQL VALIDATION SUCCESSFUL"
