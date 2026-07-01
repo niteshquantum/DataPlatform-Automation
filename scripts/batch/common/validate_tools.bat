@@ -22,8 +22,8 @@ echo Checking Liquibase...
 call "%~dp0validate_liquibase.bat"
 if errorlevel 1 exit /b 1
 
-echo Checking MySQL Driver...
-call "%~dp0validate_mysql_driver.bat"
+echo Checking MSSQL Driver...
+call "%~dp0validate_mssql_driver.bat"
 if errorlevel 1 exit /b 1
 
 echo TERRAFORM VALIDATED
