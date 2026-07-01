@@ -42,13 +42,6 @@ rm -f "$PROJECT_ROOT/liquibase/mysql/master.xml"
 
 python3 scripts/python/mysql/setup/update_master_xml.py
 
-echo
-echo "-------------------------------------"
-echo "RUNNING LIQUIBASE"
-echo "-------------------------------------"
-echo
-
-bash scripts/bash/mysql/setup/run_liquibase.sh
 
 echo
 echo "-------------------------------------"
