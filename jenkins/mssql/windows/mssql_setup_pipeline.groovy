@@ -35,11 +35,7 @@ pipeline {
             }
         }
 
-        stage('Install MSSQL Tools') {
-            steps {
-                bat 'scripts\\batch\\mssql\\install_mssql_tools.bat'
-            }
-        }
+       
 
         stage('Deploy MSSQL') {
             steps {
