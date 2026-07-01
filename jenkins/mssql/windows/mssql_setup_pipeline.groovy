@@ -39,7 +39,7 @@ pipeline {
 
         stage('Deploy MSSQL') {
             steps {
-                bat 'scripts\\batch\\mssql\\deploy_mssql.bat'
+                bat 'scripts\\batch\\mssql\\setup\\deploy_mssql.bat'
             }
         }
 
