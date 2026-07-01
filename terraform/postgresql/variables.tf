@@ -23,3 +23,7 @@ variable "retry_interval" {
   type = number
 }
 
+variable "target_os" {
+  type    = string
+  default = "windows"
+}

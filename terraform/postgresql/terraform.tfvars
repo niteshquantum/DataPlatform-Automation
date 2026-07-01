@@ -9,3 +9,5 @@ preferred_port = 5432
 max_retries = 30
 
 retry_interval = 5
+
+target_os = "windows"
