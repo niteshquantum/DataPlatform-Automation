@@ -1,3 +1,4 @@
+
 $ErrorActionPreference = "Stop"
 
 function Write-Log {
@@ -5,68 +6,146 @@ function Write-Log {
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
 }
 
-$ProjectRoot = Split-Path $PSScriptRoot -Parent
-$ProjectRoot = Split-Path $ProjectRoot -Parent
-$ProjectRoot = Split-Path $ProjectRoot -Parent
-
-$ConfigFile = Join-Path $ProjectRoot "config\postgresql.conf"
-$Config = @{}
-if (Test-Path $ConfigFile) {
-    Get-Content $ConfigFile | ForEach-Object {
-        if ($_ -match "^([^#=]+)=(.*)$") {
-            $Config[$Matches[1].Trim()] = $Matches[2].Trim()
-        }
-    }
+function Get-ProjectRoot {
+    $Root = Split-Path $PSScriptRoot -Parent
+    $Root = Split-Path $Root -Parent
+    $Root = Split-Path $Root -Parent
+    return $Root
 }
 
-if ($Config["POSTGRESQL_PORT"]) { $Port = [int]$Config["POSTGRESQL_PORT"] } else { $Port = 5432 }
-$MaxRetries    = 30
-$RetryInterval = 3
+# =====================================================
+# Project Paths
+# =====================================================
+
+$ProjectRoot = Get-ProjectRoot
 
 $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
-$PgLog  = Join-Path $ProjectRoot "databases\postgresql\pg_server.log"
+$PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
 $PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
-Write-Log "pg_ctl : $PgCtl"
-Write-Log "Data   : $PgData"
-Write-Log "Port   : $Port"
+# =====================================================
+# Read Configuration
+# =====================================================
+
+$ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
+
+if (!(Test-Path $ConfigFile)) {
+    throw "Configuration file not found: $ConfigFile"
+}
+
+$Config = @{}
+
+Get-Content $ConfigFile | ForEach-Object {
+
+    if ($_ -match "^([^#=]+)=(.*)$") {
+        $Config[$Matches[1].Trim()] = $Matches[2].Trim()
+    }
+
+}
+
+$ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
+
+# ------------------------------------------------------------
+# Check if configured port is already in use
+# ------------------------------------------------------------
+
+# ------------------------------------------------------------
+# Check if PostgreSQL is already running
+# ------------------------------------------------------------
+
+& "$PgCtl" -D "$PgData" status *> $null
+
+if ($LASTEXITCODE -eq 0) {
+
+    Write-Log "Project PostgreSQL is already running."
+    exit 0
+}
+
+# ------------------------------------------------------------
+# Check whether configured port is occupied
+# ------------------------------------------------------------
+
+$PortInUse = Get-NetTCPConnection `
+    -LocalPort $ExpectedPort `
+    -State Listen `
+    -ErrorAction SilentlyContinue
+
+if ($PortInUse) {
+
+    Write-Host ""
+    Write-Host "==============================================="
+    Write-Host " PORT CONFLICT DETECTED"
+    Write-Host "==============================================="
+    Write-Host ""
+
+    Write-Host "Configured Port : $ExpectedPort"
+    Write-Host "Process ID      : $($PortInUse.OwningProcess)"
+    Write-Host ""
+    Write-Host "Another process is using this port."
+    Write-Host "Stop that process or change POSTGRESQL_PORT."
+
+    throw "Port conflict detected."
+}
+
+# =====================================================
+# Validation
+# =====================================================
 
 if (!(Test-Path $PgCtl)) {
-    throw "pg_ctl not found at: $PgCtl - run install step first"
+    throw "pg_ctl not found: $PgCtl"
 }
 
 $env:PATH = "$PgBin;$env:PATH"
 
-$StatusOutput = & "$PgCtl" -D "$PgData" status 2>&1
-Write-Log "Status: $StatusOutput"
+Write-Log "pg_ctl        : $PgCtl"
+Write-Log "Data Directory: $PgData"
+Write-Log "Log File      : $PgLog"
+Write-Log "Port          : $ExpectedPort"
 
-if ($StatusOutput -match "server is running") {
-    Write-Log "PostgreSQL already running - skipping start"
-} else {
-    Write-Log "Starting PostgreSQL..."
-    & "$PgCtl" -D "$PgData" -l "$PgLog" start
-    Start-Sleep -Seconds 5
+# =====================================================
+# Already Running?
+# =====================================================
+
+& "$PgCtl" -D "$PgData" status *> $null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Log "PostgreSQL is already running."
+    exit 0
 }
 
-Write-Log "Waiting for port $Port to be ready..."
-$Ready = $false
-for ($i = 1; $i -le $MaxRetries; $i++) {
-    try {
-        $tcp = New-Object System.Net.Sockets.TcpClient
-        $tcp.Connect("localhost", $Port)
-        $tcp.Close()
-        $Ready = $true
-        Write-Log "PostgreSQL ready on port $Port (attempt $i)"
-        break
-    } catch {
-        Write-Log "Waiting... $i/$MaxRetries"
-        Start-Sleep -Seconds $RetryInterval
-    }
+# =====================================================
+# Start PostgreSQL
+# =====================================================
+
+Write-Log "Starting PostgreSQL..."
+
+& "$PgCtl" `
+    -D "$PgData" `
+    -l "$PgLog" `
+    start
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to start PostgreSQL."
 }
 
-if (!$Ready) {
-    throw "PostgreSQL not ready after $MaxRetries retries"
+Start-Sleep -Seconds 3
+
+# =====================================================
+# Verify
+# =====================================================
+
+& "$PgCtl" -D "$PgData" status
+
+if ($LASTEXITCODE -ne 0) {
+    throw "PostgreSQL failed to start."
 }
 
-Write-Log "PostgreSQL started successfully"
+Write-Log "PostgreSQL started successfully."
+
+Write-Log "Host : 127.0.0.1"
+Write-Log "Port : $ExpectedPort"
+Write-Log "Data : $PgData"
+
+exit 0
+

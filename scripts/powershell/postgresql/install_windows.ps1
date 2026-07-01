@@ -23,7 +23,7 @@ Write-Log "Project Root  : $ProjectRoot"
 Write-Log "Project PG Bin: $PgProjectBin"
 
 # Read config
-$ConfigFile = Join-Path $ProjectRoot "config\postgresql.conf"
+$ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
 if (!(Test-Path $ConfigFile)) { throw "Config not found: $ConfigFile" }
 
 $Config = @{}
@@ -32,20 +32,75 @@ Get-Content $ConfigFile | ForEach-Object {
         $Config[$Matches[1].Trim()] = $Matches[2].Trim()
     }
 }
-$ExpectedPort   = [int]$Config["POSTGRESQL_PORT"]
-$AdminPassword  = $Config["POSTGRESQL_ADMIN_PASSWORD"]
+
+$ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
+
+$PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) {
+    "postgres"
+}
+else {
+    $Config["POSTGRESQL_USER"]
+}
+
+$PgPassword = $Config["POSTGRESQL_PASSWORD"]
+
+$PgVersion = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_VERSION"])) {
+    "Unknown"
+}
+else {
+    $Config["POSTGRESQL_VERSION"]
+}
 
 Write-Log "Expected Port : $ExpectedPort"
+Write-Log "PostgreSQL User : $PgUser"
+Write-Log "PostgreSQL Version : $PgVersion"
 
-# ---- FAST PATH: project folder already has binaries ----
-if (Test-Path (Join-Path $PgProjectBin "pg_ctl.exe")) {
-    Write-Log "PostgreSQL binaries already in project folder - skipping install"
+# ---- FAST PATH: binaries AND data directory both ready ----
+
+$BinReady  = Test-Path (Join-Path $PgProjectBin "pg_ctl.exe")
+$DataReady = Test-Path (Join-Path $PgProjectData "PG_VERSION")
+
+if ($BinReady -and $DataReady) {
+
+    Write-Log "PostgreSQL binaries and data directory already ready - skipping install"
+    exit 0
+}
+
+# ---- If binaries exist but data not initialized, go straight to initdb ----
+
+if ($BinReady -and !$DataReady) {
+
+    Write-Log "Binaries found but data directory not initialized - running initdb..."
+
+    New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
+
+    $env:PATH = "$PgProjectBin;$env:PATH"
+
+    & (Join-Path $PgProjectBin "initdb.exe") `
+        -D "$PgProjectData" `
+        -U postgres `
+        --encoding=UTF8
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "initdb failed with exit code $LASTEXITCODE"
+    }
+
+    $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
+
+    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
+    Add-Content -Path $PgConfFile -Value "`nfsync = off"
+    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
+    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+
+    Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
+
     exit 0
 }
 
 Write-Log "Project folder binaries not found - checking system installation..."
 
 # ---- Check system-installed PostgreSQL ----
+
 $SystemBinPaths = @(
     "C:\Program Files\PostgreSQL\17\bin",
     "C:\Program Files\PostgreSQL\16\bin",
@@ -53,81 +108,158 @@ $SystemBinPaths = @(
 )
 
 $SystemBin = $null
+
 foreach ($BinPath in $SystemBinPaths) {
+
     if (Test-Path (Join-Path $BinPath "pg_ctl.exe")) {
+
         $SystemBin = $BinPath
         Write-Log "Found system PostgreSQL at: $SystemBin"
         break
     }
 }
 
-# ---- If not found anywhere, run installer ----
+
+
+# ------------------------------------------------------------
+# Use cached ZIP if available
+# ------------------------------------------------------------
+
 if (!$SystemBin) {
-    Write-Log "PostgreSQL not found - running installer..."
 
-    $InstallerDir  = Join-Path $ProjectRoot "databases\postgresql\installer"
-    $InstallerFile = Join-Path $InstallerDir "postgresql-installer.exe"
+    $ZipDir  = Join-Path $ProjectRoot "databases\postgresql\zip"
+    $ZipFile = Join-Path $ZipDir "postgresql-binaries.zip"
+    $ExtDir  = Join-Path $ZipDir "extracted"
 
-    if (!(Test-Path $InstallerFile)) {
-        Write-Log "Downloading installer..."
-        New-Item -ItemType Directory -Path $InstallerDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
+
+    if (Test-Path $ZipFile) {
+
+        Write-Log "Using cached PostgreSQL ZIP."
+    }
+    else {
+
+        Write-Log "PostgreSQL ZIP not found - downloading..."
+
+        $ZipUrl = "https://get.enterprisedb.com/postgresql/postgresql-17.5-1-windows-x64-binaries.zip"
+
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
         Invoke-WebRequest `
-            -Uri "https://get.enterprisedb.com/postgresql/postgresql-17.5-1-windows-x64.exe" `
-            -OutFile $InstallerFile -TimeoutSec 600
-        Write-Log "Download complete"
+            -Uri $ZipUrl `
+            -OutFile $ZipFile `
+            -UseBasicParsing `
+            -TimeoutSec 600
+
+        Write-Log "Download complete."
     }
 
-    $Process = Start-Process -FilePath $InstallerFile `
-        -ArgumentList @("--mode","unattended","--superpassword",$AdminPassword,"--serverport",$ExpectedPort.ToString()) `
-        -Wait -PassThru
+    Write-Log "Extracting ZIP..."
 
-    if ($Process.ExitCode -ne 0) {
-        throw "Installer failed with exit code: $($Process.ExitCode)"
+    if (Test-Path $ExtDir) {
+
+        Write-Log "Removing previous extraction..."
+
+        Remove-Item `
+            -Path $ExtDir `
+            -Recurse `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+        Start-Sleep -Seconds 2
     }
 
-    Start-Sleep -Seconds 15
+    New-Item -ItemType Directory -Path $ExtDir -Force | Out-Null
 
-    foreach ($BinPath in $SystemBinPaths) {
-        if (Test-Path (Join-Path $BinPath "pg_ctl.exe")) {
-            $SystemBin = $BinPath
-            Write-Log "Installer placed binaries at: $SystemBin"
-            break
-        }
+    Write-Log "Extracting PostgreSQL ZIP using tar..."
+
+    tar -xf "$ZipFile" -C "$ExtDir"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to extract PostgreSQL ZIP."
     }
 
-    if (!$SystemBin) { throw "Binaries not found after installation" }
+    Write-Log "Extraction completed."
+
+    $SystemBin = Join-Path $ExtDir "pgsql\bin"
+
+    Write-Log "Using extracted binaries: $SystemBin"
 }
 
 # ---- Copy binaries to project folder ----
+
 Write-Log "Copying binaries from $SystemBin to project folder..."
 
 $SystemRoot = Split-Path $SystemBin -Parent
 
-New-Item -ItemType Directory -Path $PgProjectBin   -Force | Out-Null
-New-Item -ItemType Directory -Path $PgProjectLib   -Force | Out-Null
+New-Item -ItemType Directory -Path $PgProjectBin -Force | Out-Null
+New-Item -ItemType Directory -Path $PgProjectLib -Force | Out-Null
 New-Item -ItemType Directory -Path $PgProjectShare -Force | Out-Null
 
-Copy-Item -Path (Join-Path $SystemRoot "bin\*")   -Destination $PgProjectBin   -Recurse -Force
-Copy-Item -Path (Join-Path $SystemRoot "lib\*")   -Destination $PgProjectLib   -Recurse -Force
-Copy-Item -Path (Join-Path $SystemRoot "share\*") -Destination $PgProjectShare -Recurse -Force
+Copy-Item `
+    -Path (Join-Path $SystemRoot "bin\*") `
+    -Destination $PgProjectBin `
+    -Recurse `
+    -Force
+
+Copy-Item `
+    -Path (Join-Path $SystemRoot "lib\*") `
+    -Destination $PgProjectLib `
+    -Recurse `
+    -Force
+
+Copy-Item `
+    -Path (Join-Path $SystemRoot "share\*") `
+    -Destination $PgProjectShare `
+    -Recurse `
+    -Force
 
 Write-Log "Binaries copied successfully"
 
+if (!(Test-Path (Join-Path $PgProjectBin "pg_ctl.exe"))) {
+    throw "pg_ctl.exe not found after copy."
+}
+
+if (!(Test-Path (Join-Path $PgProjectBin "postgres.exe"))) {
+    throw "postgres.exe not found after copy."
+}
+
+if (!(Test-Path (Join-Path $PgProjectBin "initdb.exe"))) {
+    throw "initdb.exe not found after copy."
+}
+
+Write-Log "Binary validation successful."
+
 # ---- initdb: initialize project data directory ----
+
 if (!(Test-Path (Join-Path $PgProjectData "PG_VERSION"))) {
+
     Write-Log "Initializing data directory: $PgProjectData"
+
     New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
 
     $env:PATH = "$PgProjectBin;$env:PATH"
 
     & (Join-Path $PgProjectBin "initdb.exe") `
-        -D "$PgProjectData" -U postgres --encoding=UTF8
+        -D "$PgProjectData" `
+        -U postgres `
+        --encoding=UTF8
 
-    # Set port in postgresql.conf
-    Add-Content -Path (Join-Path $PgProjectData "postgresql.conf") -Value "`nport = $ExpectedPort"
-    Write-Log "Data directory initialized, port set to $ExpectedPort"
-} else {
+    if ($LASTEXITCODE -ne 0) {
+        throw "initdb failed with exit code $LASTEXITCODE"
+    }
+
+    $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
+
+    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
+    Add-Content -Path $PgConfFile -Value "`nfsync = off"
+    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
+    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+
+    Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
+}
+else {
+
     Write-Log "Data directory already initialized"
 }
 

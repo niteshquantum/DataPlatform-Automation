@@ -2,7 +2,8 @@
 
 set -e
 
-source "$(dirname "$0")/set_project_root.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../common/set_project_root.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/common/install_terraform.sh"
 bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"

@@ -27,9 +27,6 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\create_database.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\run_liquibase.bat"
-if errorlevel 1 exit /b 1
-
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

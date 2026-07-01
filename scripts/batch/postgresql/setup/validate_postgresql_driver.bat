@@ -51,19 +51,19 @@ if not exist "%DRIVER_DIR%" (
 )
 
 REM =====================================
-REM EXPECTED DRIVER
+REM EXPECTED JAR
 REM =====================================
 
-set "EXPECTED_DRIVER=%DRIVER_DIR%\postgresql-%EXPECTED_VERSION%.jar"
+set "EXPECTED_JAR=%DRIVER_DIR%\postgresql-%EXPECTED_VERSION%.jar"
 
-if not exist "%EXPECTED_DRIVER%" (
+if not exist "%EXPECTED_JAR%" (
     echo ERROR: EXPECTED JDBC DRIVER NOT FOUND
-    echo Expected: %EXPECTED_DRIVER%
+    echo Expected: %EXPECTED_JAR%
     exit /b 1
 )
 
 echo Driver Found:
-echo %EXPECTED_DRIVER%
+echo %EXPECTED_JAR%
 
 echo.
 echo =====================================

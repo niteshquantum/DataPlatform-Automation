@@ -2,39 +2,51 @@ $ErrorActionPreference = "Stop"
 
 function Write-Log {
     param([string]$Message)
-
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
 }
 
-$Service = Get-Service |
-Where-Object {
-    $_.Name -match "postgres"
-} |
-Select-Object -First 1
+$ProjectRoot = Split-Path $PSScriptRoot -Parent
+$ProjectRoot = Split-Path $ProjectRoot -Parent
+$ProjectRoot = Split-Path $ProjectRoot -Parent
 
-if (!$Service) {
+$PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
+$PgData = Join-Path $ProjectRoot "databases\postgresql\data"
+$PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
-    throw "PostgreSQL service not found"
+if (!(Test-Path $PgCtl)) {
+    throw "pg_ctl.exe not found: $PgCtl"
 }
 
-if ($Service.Status -eq "Stopped") {
+$env:PATH = "$PgBin;$env:PATH"
 
-    Write-Log "Service already stopped"
+Write-Log "Checking PostgreSQL status..."
 
+& "$PgCtl" -D "$PgData" status *> $null
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Log "Project PostgreSQL is already stopped."
     exit 0
 }
 
-Stop-Service `
-    -Name $Service.Name `
-    -Force
+Write-Log "Stopping Project PostgreSQL..."
 
-Start-Sleep 5
+& "$PgCtl" `
+    -D "$PgData" `
+    stop `
+    -m fast
 
-$Service.Refresh()
-
-if ($Service.Status -ne "Stopped") {
-
-    throw "Failed to stop PostgreSQL"
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to stop Project PostgreSQL."
 }
 
-Write-Log "PostgreSQL stopped successfully"
+Start-Sleep -Seconds 2
+
+& "$PgCtl" -D "$PgData" status *> $null
+
+if ($LASTEXITCODE -eq 0) {
+    throw "Project PostgreSQL is still running."
+}
+
+Write-Log "Project PostgreSQL stopped successfully."
+
+exit 0
