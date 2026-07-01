@@ -8,12 +8,23 @@ Write-Host ""
 
 $service = Get-Service MSSQLSERVER -ErrorAction SilentlyContinue
 
+$service = Get-Service MSSQLSERVER -ErrorAction SilentlyContinue
+
+Write-Host "DEBUG:"
+Write-Host "Service Variable = [$service]"
+Write-Host "Service Exists   = $($null -ne $service)"
+Write-Host ""
+
 if ($service) {
 Write-Host "SQL Server already installed."
 exit 0
 }
 
-$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$root = Split-Path -Parent (
+            Split-Path -Parent (
+                Split-Path -Parent $PSScriptRoot
+            )
+        )
 
 $downloadDir = Join-Path $root "databases\sqlserver\downloads"
 
