@@ -36,7 +36,7 @@ resource "null_resource" "p1_detect_os" {
 }
 
 #############################################################
-# P2 Install PostgreSQL
+# P2 Install PostgreSQL (WINDOWS)
 #############################################################
 
 resource "null_resource" "p2_install_postgresql" {
@@ -54,7 +54,7 @@ resource "null_resource" "p2_install_postgresql" {
 }
 
 #############################################################
-# P3 Start PostgreSQL
+# P3 Start PostgreSQL (WINDOWS)
 #############################################################
 
 resource "null_resource" "p3_start_postgresql" {
@@ -72,7 +72,7 @@ resource "null_resource" "p3_start_postgresql" {
 }
 
 #############################################################
-# P4 Validate PostgreSQL
+# P4 Validate PostgreSQL (WINDOWS)
 #############################################################
 
 resource "null_resource" "p4_validate_postgresql" {
@@ -93,3 +93,34 @@ resource "null_resource" "p4_validate_postgresql" {
   }
 }
 
+#############################################################
+# INSTALL POSTGRESQL (LINUX)
+#############################################################
+
+resource "null_resource" "install_postgresql_linux" {
+
+  provisioner "local-exec" {
+
+    interpreter = ["/bin/bash", "-c"]
+
+    command = "../../scripts/bash/postgresql/setup/install_postgresql.sh"
+  }
+}
+
+#############################################################
+# START POSTGRESQL (LINUX)
+#############################################################
+
+resource "null_resource" "start_postgresql_linux" {
+
+  depends_on = [
+    null_resource.install_postgresql_linux
+  ]
+
+  provisioner "local-exec" {
+
+    interpreter = ["/bin/bash", "-c"]
+
+    command = "../../scripts/bash/postgresql/setup/start_postgresql.sh"
+  }
+}
