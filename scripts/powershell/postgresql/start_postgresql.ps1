@@ -115,39 +115,39 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # =====================================================
-
 # Start PostgreSQL
-
 # =====================================================
- 
+
 $LogDir = Split-Path $PgLog -Parent
- 
+
 if (!(Test-Path $LogDir)) {
-
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-
 }
- 
+
 Write-Log "Starting PostgreSQL..."
- 
+
 & "$PgCtl" `
-
     start `
-
     -D "$PgData" `
-
     -l "$PgLog" `
-
     -o "-p $ExpectedPort" `
-
     -w
- 
+
 if ($LASTEXITCODE -ne 0) {
 
-    throw "Unable to start PostgreSQL."
+    Write-Host ""
+    Write-Host "==============================================="
+    Write-Host "POSTGRESQL FAILED TO START"
+    Write-Host "==============================================="
+    Write-Host ""
 
+    if (Test-Path $PgLog) {
+        Write-Host "PostgreSQL Log:"
+        Get-Content $PgLog -Tail 50
+    }
+
+    throw "Unable to start PostgreSQL."
 }
- 
 
 Start-Sleep -Seconds 3
 
@@ -155,9 +155,16 @@ Start-Sleep -Seconds 3
 # Verify
 # =====================================================
 
-& "$PgCtl" -D "$PgData" status
+& "$PgCtl" status -D "$PgData"
 
 if ($LASTEXITCODE -ne 0) {
+
+    if (Test-Path $PgLog) {
+        Write-Host ""
+        Write-Host "Last PostgreSQL Log Entries:"
+        Get-Content $PgLog -Tail 50
+    }
+
     throw "PostgreSQL failed to start."
 }
 
