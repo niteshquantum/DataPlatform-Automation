@@ -14,7 +14,7 @@ echo "INSTALLING POSTGRESQL $POSTGRESQL_VERSION"
 echo "====================================="
 echo
 
-# Check exact version installation
+# Already installed?
 if [ -x "/usr/lib/postgresql/$POSTGRESQL_VERSION/bin/initdb" ]
 then
     echo "PostgreSQL $POSTGRESQL_VERSION already installed"
@@ -23,30 +23,31 @@ fi
 
 sudo apt-get update
 
-# Add PostgreSQL official repository if package is unavailable
+# Add PostgreSQL official repository if needed
 if ! apt-cache show "postgresql-$POSTGRESQL_VERSION" >/dev/null 2>&1
 then
     echo
-    echo "Adding PostgreSQL official repository..."
+    echo "Adding PostgreSQL PGDG repository..."
     echo
 
-    sudo apt-get install -y wget gnupg lsb-release ca-certificates
+    sudo apt-get install -y wget ca-certificates gnupg lsb-release
 
-    wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-        | gpg --dearmor \
-        | sudo tee /usr/share/keyrings/postgresql.gpg >/dev/null
+    sudo install -d /usr/share/postgresql-common/pgdg
 
-    echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc >/dev/null
+
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
 http://apt.postgresql.org/pub/repos/apt \
 $(lsb_release -cs)-pgdg main" \
-        | sudo tee /etc/apt/sources.list.d/pgdg.list
+    | sudo tee /etc/apt/sources.list.d/pgdg.list
 
     sudo apt-get update
 fi
 
 sudo apt-get install -y \
-    "postgresql-$POSTGRESQL_VERSION" \
-    "postgresql-client-$POSTGRESQL_VERSION"
+    postgresql-$POSTGRESQL_VERSION \
+    postgresql-client-$POSTGRESQL_VERSION
 
 sudo systemctl enable postgresql
 
@@ -64,7 +65,4 @@ echo "PostgreSQL Version:"
 echo
 echo "====================================="
 echo "POSTGRESQL INSTALLED SUCCESSFULLY"
-echo "====================================="
 echo
-
-exit 0
