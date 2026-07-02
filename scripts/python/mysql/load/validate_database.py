@@ -54,28 +54,7 @@ try:
         )
 
    
-    # =====================================
-    # USER TABLES
-    # =====================================
 
-    cursor.execute("""
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE()
-    """)
-
-    tables = {
-        row[0].lower()
-        for row in cursor.fetchall()
-    }
-
-    tables -= {
-        "databasechangelog",
-        "databasechangeloglock"
-    }
-
-    if not tables:
-        raise Exception("No application tables found.")
 
     # =====================================
     # SUCCESS
