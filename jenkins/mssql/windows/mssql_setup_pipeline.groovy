@@ -29,33 +29,29 @@ pipeline {
             }
         }
 
-        stage('Install Common Tools') {
-            steps {
-                bat 'scripts\\batch\\common\\install_tools.bat'
-            }
-        }
+       
 
         stage('Install MSSQL Tools') {
             steps {
-                bat 'scripts\\batch\\mssql\\install_mssql_tools.bat'
+                bat 'scripts\\batch\\mssql\\setup\\install_mssql_tools.bat'
             }
         }
 
         stage('Deploy MSSQL') {
             steps {
-                bat 'scripts\\batch\\mssql\\deploy_mssql.bat'
+                bat 'scripts\\batch\\mssql\\setup\\deploy_mssql.bat'
             }
         }
 
         stage('Start MSSQL') {
             steps {
-                bat 'scripts\\batch\\mssql\\start_mssql.bat'
+                bat 'scripts\\batch\\mssql\\setup\\start_mssql.bat'
             }
         }
 
         stage('Create Database') {
             steps {
-                bat 'scripts\\batch\\mssql\\create_database.bat'
+                bat 'scripts\\batch\\mssql\\setup\\create_database.bat'
             }
         }
 
@@ -67,13 +63,13 @@ pipeline {
 
         stage('Validate Environment') {
             steps {
-                bat 'scripts\\batch\\mssql\\validate_environment.bat'
+                bat 'scripts\\batch\\mssql\\setup\\validate_environment.bat'
             }
         }
 
         stage('Validate MSSQL') {
             steps {
-                bat 'scripts\\batch\\mssql\\validate_mssql.bat'
+                bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
             }
         }
     }
