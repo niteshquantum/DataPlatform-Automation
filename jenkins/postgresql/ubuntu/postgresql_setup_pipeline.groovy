@@ -48,6 +48,12 @@ pipeline {
             }
         }
 
+	stage('Install PostgreSQL') {
+	    steps {
+	        sh './scripts/bash/postgresql/setup/install_postgresql.sh'
+	    }
+	}
+
         stage('Start PostgreSQL') {
             steps {
                 sh './scripts/bash/postgresql/setup/start_postgresql.sh'
