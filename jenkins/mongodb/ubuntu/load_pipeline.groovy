@@ -6,6 +6,7 @@ pipeline {
 
         stage('Set Permissions') {
             steps {
+                
                 sh '''
                 chmod +x scripts/bash/common/*.sh
                 chmod +x scripts/bash/mongodb/*.sh
