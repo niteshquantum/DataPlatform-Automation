@@ -18,13 +18,21 @@ echo
 echo "Using PostgreSQL version: $VERSION"
 echo "Using PostgreSQL port: $PORT"
 
+# Verify installation
+if [ ! -x "/usr/lib/postgresql/$VERSION/bin/initdb" ]
+then
+    echo "PostgreSQL $VERSION is not installed"
+    exit 1
+fi
+
 PG_CONF="/etc/postgresql/$VERSION/main/postgresql.conf"
 
 # Create cluster if it does not exist
-if [ ! -f "$PG_CONF" ]; then
+if [ ! -f "$PG_CONF" ]
+then
     echo "Creating PostgreSQL $VERSION cluster..."
 
-    sudo pg_createcluster "$VERSION" main --start
+    sudo pg_createcluster "$VERSION" main
 
     PG_CONF="/etc/postgresql/$VERSION/main/postgresql.conf"
 fi
@@ -38,7 +46,8 @@ sudo pg_ctlcluster "$VERSION" main restart
 sleep 5
 
 # Validate port
-if ! sudo ss -ltn | grep -q ":$PORT "; then
+if ! sudo ss -ltn | grep -q ":$PORT "
+then
     echo "PostgreSQL not listening on port $PORT"
     exit 1
 fi
