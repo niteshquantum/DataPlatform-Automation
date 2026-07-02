@@ -69,18 +69,7 @@ try:
     print(f"Version  : {version}")
     print()
 
-    print("Application Tables:")
 
-    for table in sorted(tables):
-        print(f"[OK] {table}")
-
-    print()
-    print("Liquibase Tables:")
-
-    for table in sorted(required_liquibase):
-        print(f"[OK] {table}")
-
-    print("=" * 50)
 
     cursor.close()
     conn.close()
