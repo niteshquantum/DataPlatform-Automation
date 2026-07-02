@@ -1,124 +1,67 @@
 pipeline {
- 
+
     agent any
- 
-    environment {
 
-        PROJECT_ROOT = "/home/mohit/TeamD/DataPlatform-AutomationNitesh"
-
-    }
- 
     stages {
- 
+
         stage('Set Permissions') {
-
             steps {
-
                 sh '''
-
-                cd "$PROJECT_ROOT"
-
-                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-
+                chmod +x scripts/bash/common/*.sh
+                chmod +x scripts/bash/mongodb/*.sh
                 '''
-
             }
-
         }
- 
+
         stage('Validate Python Runtime') {
-
             steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/common/validate_python_runtime.sh"
-
+                sh './scripts/bash/common/validate_python_runtime.sh'
             }
-
         }
- 
+
         stage('Install Python Requirements') {
-
             steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/common/install_python_requirements.sh"
-
+                sh './scripts/bash/common/install_python_requirements.sh'
             }
-
         }
- 
-        stage('Validate Python Requirements') {
 
+        stage('Install MongoDB') {
             steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/mongodb/setup/validate_python_requirements.sh"
-
+                sh './scripts/bash/mongodb/install_mongodb.sh'
             }
-
         }
- 
+
+        stage('Install Mongosh') {
+            steps {
+                sh './scripts/bash/mongodb/install_mongosh.sh'
+            }
+        }
+
         stage('Start MongoDB') {
-
             steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/mongodb/setup/start_mongodb.sh"
-
+                sh './scripts/bash/mongodb/start_mongodb.sh'
             }
-
         }
- 
+
         stage('Validate MongoDB') {
-
             steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/mongodb/setup/validate_mongodb.sh"
-
+                sh './scripts/bash/mongodb/validate_mongodb.sh'
             }
-
         }
- 
-        stage('Load Data') {
-
-            steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/mongodb/load/load_data.sh"
-
-            }
-
-        }
- 
-        stage('Validate Loaded Data') {
-
-            steps {
-
-                sh "${PROJECT_ROOT}/scripts/bash/mongodb/load/validate_loaded_data.sh"
-
-            }
-
-        }
-
     }
- 
+
     post {
- 
+
         success {
-
-            echo 'UBUNTU MONGODB LOAD SUCCESSFUL'
-
+            echo 'UBUNTU MONGODB SETUP SUCCESSFUL'
         }
- 
+
         failure {
-
-            echo 'UBUNTU MONGODB LOAD FAILED'
-
+            echo 'UBUNTU MONGODB SETUP FAILED'
         }
- 
+
         always {
-
-            echo 'UBUNTU MONGODB LOAD PIPELINE COMPLETED'
-
+            echo 'UBUNTU MONGODB SETUP PIPELINE COMPLETED'
         }
-
     }
-
 }
- 
