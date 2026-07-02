@@ -27,25 +27,25 @@ pipeline {
 
         stage('Install MongoDB') {
             steps {
-                sh './scripts/bash/mongodb/install_mongodb.sh'
+                sh './scripts/bash/mongodb/setup/install_mongodb.sh'
             }
         }
 
         stage('Install Mongosh') {
             steps {
-                sh './scripts/bash/mongodb/install_mongosh.sh'
+                sh './scripts/bash/mongodb/setup/install_mongosh.sh'
             }
         }
 
         stage('Start MongoDB') {
             steps {
-                sh './scripts/bash/mongodb/start_mongodb.sh'
+                sh './scripts/bash/mongodb/setup/start_mongodb.sh'
             }
         }
 
         stage('Validate MongoDB') {
             steps {
-                sh './scripts/bash/mongodb/validate_mongodb.sh'
+                sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
             }
         }
     }
