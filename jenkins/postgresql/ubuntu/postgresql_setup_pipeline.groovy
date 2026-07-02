@@ -60,17 +60,18 @@ pipeline {
             }
         }
 
+	  stage('Create Database') {
+            steps {
+                sh './scripts/bash/postgresql/setup/create_database.sh'
+            }
+        }
+
         stage('Validate PostgreSQL') {
             steps {
                 sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
             }
         }
 
-        stage('Create Database') {
-            steps {
-                sh './scripts/bash/postgresql/setup/create_database.sh'
-            }
-        }
 
         stage('Validate Environment') {
             steps {
