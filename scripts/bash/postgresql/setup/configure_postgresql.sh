@@ -8,6 +8,7 @@ CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/postgresql.conf"
 
 USER=$(grep "^POSTGRESQL_USER=" "$CONFIG_FILE" | cut -d'=' -f2)
 PASSWORD=$(grep "^POSTGRESQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
+PORT=$(grep "^POSTGRESQL_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 echo
 echo "====================================="
@@ -15,12 +16,15 @@ echo "CONFIGURING POSTGRESQL USER"
 echo "====================================="
 echo
 
-sudo -u postgres psql <<EOF
-ALTER USER $USER WITH PASSWORD '$PASSWORD';
-EOF
+echo "Configuring user on port: $PORT"
+
+sudo -u postgres psql \
+    -p "$PORT" \
+    -d postgres \
+    -c "ALTER USER \"$USER\" WITH PASSWORD '$PASSWORD';"
 
 echo
-echo "PostgreSQL user configured successfully"
+echo "POSTGRESQL USER CONFIGURED SUCCESSFULLY"
 echo
 
 exit 0
