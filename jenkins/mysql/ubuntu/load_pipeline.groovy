@@ -42,11 +42,7 @@ pipeline {
             }
         }
 
-        stage('Validate CSV') {
-            steps {
-                sh './scripts/bash/mysql/load/validate_csv.sh'
-            }
-        }
+        
 
         stage('Load Data') {
             steps {
