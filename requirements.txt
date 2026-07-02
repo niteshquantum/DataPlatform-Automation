@@ -1,7 +1,0 @@
-pandas
-pyyaml
-python-dotenv
-
-mysql-connector-python
-pymongo
-pyodbc

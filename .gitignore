@@ -1,26 +1,8 @@
 # =====================================================
-# Terraform
-# =====================================================
-
-**/.terraform/
-
-*.tfstate
-*.tfstate.*
-*.tfplan
-
-.terraform.lock.hcl
-
-# =====================================================
 # Databases (Generated Locally)
 # =====================================================
 
 databases/
-
-# =====================================================
-# Tools (Auto Downloaded)
-# =====================================================
-
-tools/
 
 # =====================================================
 # Logs
@@ -53,61 +35,66 @@ Thumbs.db
 .DS_Store
 
 # =====================================================
-# Incoming / Archive / Failed
+# Metadata
+# Keep folder structure only
 # =====================================================
 
-incoming/mysql/*
-!incoming/mysql/.gitkeep
-
-archive/mysql/*
-!archive/mysql/.gitkeep
-
-failed/mysql/*
-!failed/mysql/.gitkeep
-
-incoming/postgresql/*
-!incoming/postgresql/.gitkeep
-
-archive/postgresql/*
-!archive/postgresql/.gitkeep
-
-failed/postgresql/*
-!failed/postgresql/.gitkeep
-
-incoming/mongodb/*
-!incoming/mongodb/.gitkeep
-
-archive/mongodb/*
-!archive/mongodb/.gitkeep
-
-failed/mongodb/*
-!failed/mongodb/.gitkeep
-
-incoming/mssql/*
-!incoming/mssql/.gitkeep
-
-archive/mssql/*
-!archive/mssql/.gitkeep
-
-failed/mssql/*
-!failed/mssql/.gitkeep
+metadata/*/*
+!metadata/*/.gitkeep
 
 # =====================================================
-# Metadata (Generated)
+# Incoming
+# Keep folder structure only
 # =====================================================
 
-metadata/mysql/*
-!metadata/mysql/.gitkeep
-!metadata/mysql/schema_registry.json
+incoming/*/*
+!incoming/*/.gitkeep
 
-metadata/postgresql/*
-!metadata/postgresql/.gitkeep
-!metadata/postgresql/schema_registry.json
+# =====================================================
+# Archive
+# Keep folder structure only
+# =====================================================
 
-metadata/mongodb/*
-!metadata/mongodb/.gitkeep
-!metadata/mongodb/schema_registry.json
+archive/*/*
+!archive/*/.gitkeep
 
-metadata/mssql/*
-!metadata/mssql/.gitkeep
-!metadata/mssql/schema_registry.json
+# =====================================================
+# Failed
+# Keep folder structure only
+# =====================================================
+
+failed/*/*
+!failed/*/.gitkeep
+
+# =====================================================
+# Terraform
+# Keep only Terraform configuration files
+# =====================================================
+
+terraform/*/*
+!terraform/*/*.tf
+!terraform/*/*.tfvars
+
+# =====================================================
+# Tools
+# Keep folder structure only
+# =====================================================
+
+tools/*/*
+!tools/*/.gitkeep
+
+# =====================================================
+# Liquibase
+# Keep only required files
+# =====================================================
+
+# Ignore everything under Liquibase folders
+liquibase/*/*
+
+# Keep failed folder structure
+!liquibase/failed/.gitkeep
+
+# Keep required Liquibase configuration files
+!liquibase/*/master.xml
+!liquibase/*/liquibase.properties
+
