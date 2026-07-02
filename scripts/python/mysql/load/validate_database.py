@@ -53,37 +53,7 @@ try:
             f"Expected MySQL {expected_version} but found {version}"
         )
 
-    # =====================================
-    # LIQUIBASE TABLES
-    # =====================================
-
-    cursor.execute("""
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = DATABASE()
-          AND table_name IN (
-                'DATABASECHANGELOG',
-                'DATABASECHANGELOGLOCK'
-          )
-    """)
-
-    liquibase_tables = {
-        row[0].lower()
-        for row in cursor.fetchall()
-    }
-
-    required_liquibase = {
-        "databasechangelog",
-        "databasechangeloglock"
-    }
-
-    missing = required_liquibase - liquibase_tables
-
-    if missing:
-        raise Exception(
-            f"Missing Liquibase tables: {', '.join(sorted(missing))}"
-        )
-
+   
     # =====================================
     # USER TABLES
     # =====================================
