@@ -1,48 +1,23 @@
-import json
-from pathlib import Path
-
 from db_connection import get_db
-
+ 
 db = get_db()
-
+ 
 print()
 print("=" * 50)
 print("MONGODB VALIDATION")
 print("=" * 50)
-
-schema_file = (
-    Path(__file__).resolve().parents[4]
-    / "metadata"
-    / "mongodb"
-    / "schema_registry.json"
-)
-
-with open(schema_file, "r", encoding="utf-8") as f:
-    schema_registry = json.load(f)
-
-collections = [
-    collection.lower()
-    for collection in schema_registry.keys()
-]
-
-if not collections:
-    raise Exception("No collections found in schema registry")
-
+ 
+# Simple connectivity check -- this stage runs BEFORE schema_detector.py,
+# so metadata/mongaodb/schema_registry.json does not exist yet.
+# Detailed collection/document validation happens later, after load,
+# in scripts/python/mongodb/load/validate_data.py.
+db.command("ping")
+ 
 print()
-
-for collection in collections:
-
-    count = db[collection].count_documents({})
-
-    print(f"[OK] {collection} : {count} documents")
-
+print(f"[OK] Connected to MongoDB database: {db.name}")
+ 
 print()
 print("=" * 50)
 print("MONGODB VALIDATION SUCCESS")
 print("=" * 50)
-
-
-
-
-
-
+ 
