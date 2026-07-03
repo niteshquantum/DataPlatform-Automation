@@ -2,6 +2,11 @@ pipeline {
 
     agent any
 
+    environment {
+        PIPELINE_TYPE = "POSTGRESQL_SETUP"
+        DATABASE      = "POSTGRESQL"
+    }
+
     stages {
 
         stage('Checkout SCM') {
@@ -12,89 +17,73 @@ pipeline {
 
         stage('Repository Audit') {
             steps {
-                sh '''
-                echo "Workspace : $WORKSPACE"
-                echo "Branch    : $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
-                echo "Commit    : $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-                ls -la
-                '''
+                sh 'ls -la'
             }
         }
 
         stage('Set Script Permissions') {
             steps {
                 sh '''
-                chmod -R +x scripts/bash/
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
                 '''
             }
         }
 
         stage('Validate Python Runtime') {
             steps {
-                sh './scripts/bash/common/validate_python_runtime.sh'
+                sh 'bash scripts/bash/common/validate_python_runtime.sh'
             }
         }
 
         stage('Install Python Requirements') {
             steps {
-                sh '''
-                python3 -m pip install --break-system-packages psycopg2-binary pandas || \
-                python3 -m pip install psycopg2-binary pandas
-                '''
+                sh 'bash scripts/bash/install_python_requirements.sh'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                sh '''
-                python3 -c "import psycopg2; print('psycopg2 OK:', psycopg2.__version__)"
-                python3 -c "import pandas; print('pandas OK:', pandas.__version__)"
-                '''
+                sh 'bash scripts/bash/validate_python_requirements.sh'
             }
         }
 
         stage('Validate Java Runtime') {
             steps {
-                sh './scripts/bash/common/validate_java_runtime.sh'
+                sh 'bash scripts/bash/common/validate_java_runtime.sh'
             }
         }
 
         stage('Install Tools') {
             steps {
-                sh '''
-                bash scripts/bash/common/install_liquibase.sh || true
-                '''
+                sh 'bash scripts/bash/common/install_tools.sh'
             }
         }
 
         stage('Deploy PostgreSQL') {
             steps {
-                sh './scripts/bash/postgresql/install_postgresql.sh'
-                sh './scripts/bash/postgresql/start_postgresql.sh'
-                sh './scripts/bash/postgresql/create_database.sh'
-                sh './scripts/bash/postgresql/run_liquibase.sh'
+                sh 'bash scripts/bash/postgresql/deploy_postgresql.sh'
             }
         }
 
         stage('Validate PostgreSQL') {
             steps {
-                sh './scripts/bash/postgresql/validate_postgresql.sh'
+                sh 'bash scripts/bash/postgresql/validate_postgresql.sh'
             }
         }
+
     }
 
     post {
-
         success {
-            echo 'UBUNTU POSTGRESQL SETUP SUCCESSFUL'
+            echo 'PostgreSQL Setup Pipeline Completed Successfully'
         }
 
         failure {
-            echo 'UBUNTU POSTGRESQL SETUP FAILED'
+            echo 'PostgreSQL Setup Pipeline Failed'
         }
 
         always {
-            echo 'UBUNTU POSTGRESQL SETUP PIPELINE COMPLETED'
+            sh 'find scripts/bash -type f -name "*.sh" -exec ls -l {} \\;'
         }
     }
 }
