@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "$0")/../../common/set_project_root.sh"
+
 echo
 echo "====================================="
 echo "INSTALLING PYTHON REQUIREMENTS"
@@ -8,7 +10,7 @@ echo
 
 python3 -m pip install --upgrade pip
 
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r "$PROJECT_ROOT/requirements.txt"
 
 echo
 echo "====================================="

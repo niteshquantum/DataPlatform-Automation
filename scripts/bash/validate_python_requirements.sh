@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$(dirname "$0")/common/set_project_root.sh"
+source "$(dirname "$0")/../../common/set_project_root.sh"
 
 echo
 echo "====================================="
@@ -10,27 +10,50 @@ echo
 
 if ! command -v python3 >/dev/null 2>&1
 then
-    echo "PYTHON3 NOT FOUND"
+    echo "ERROR: Python3 not found."
     exit 1
 fi
 
-echo "Checking mysql-connector-python..."
+echo "Using Python:"
+which python3
 
-python3 -c "import mysql.connector"
+python3 --version
+
+echo
+
+echo "Checking PyYAML..."
+python3 -c "import yaml"
 
 if [ $? -ne 0 ]
 then
-    echo "mysql-connector-python NOT INSTALLED"
+    echo "ERROR: PyYAML not installed."
+    exit 1
+fi
+
+echo "Checking python-dotenv..."
+python3 -c "import dotenv"
+
+if [ $? -ne 0 ]
+then
+    echo "ERROR: python-dotenv not installed."
+    exit 1
+fi
+
+echo "Checking pyodbc..."
+python3 -c "import pyodbc"
+
+if [ $? -ne 0 ]
+then
+    echo "ERROR: pyodbc not installed."
     exit 1
 fi
 
 echo "Checking pandas..."
-
 python3 -c "import pandas"
 
 if [ $? -ne 0 ]
 then
-    echo "pandas NOT INSTALLED"
+    echo "ERROR: pandas not installed."
     exit 1
 fi
 
