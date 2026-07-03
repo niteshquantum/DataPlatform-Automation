@@ -23,49 +23,51 @@ pipeline {
 
         stage('Set Script Permissions') {
             steps {
-                sh 'chmod -R +x scripts/bash/'
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
             }
         }
 
         stage('Validate Python Runtime') {
             steps {
-                sh 'scripts/bash/common/validate_python_runtime.sh'
+                sh 'bash scripts/bash/common/validate_python_runtime.sh'
             }
         }
 
         stage('Install Python Requirements') {
             steps {
-                sh 'scripts/bash/install_python_requirements.sh'
+                sh 'bash scripts/bash/install_python_requirements.sh'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                sh 'scripts/bash/validate_python_requirements.sh'
+                sh 'bash scripts/bash/validate_python_requirements.sh'
             }
         }
 
         stage('Validate Java Runtime') {
             steps {
-                sh 'scripts/bash/common/validate_java_runtime.sh'
+                sh 'bash scripts/bash/common/validate_java_runtime.sh'
             }
         }
 
         stage('Install Tools') {
             steps {
-                sh 'scripts/bash/common/install_tools.sh'
+                sh 'bash scripts/bash/common/install_tools.sh'
             }
         }
 
         stage('Deploy PostgreSQL') {
             steps {
-                sh 'scripts/bash/postgresql/deploy_postgresql.sh'
+                sh 'bash scripts/bash/postgresql/deploy_postgresql.sh'
             }
         }
 
         stage('Validate PostgreSQL') {
             steps {
-                sh 'scripts/bash/postgresql/validate_postgresql.sh'
+                sh 'bash scripts/bash/postgresql/validate_postgresql.sh'
             }
         }
 
@@ -75,8 +77,13 @@ pipeline {
         success {
             echo 'PostgreSQL Setup Pipeline Completed Successfully'
         }
+
         failure {
             echo 'PostgreSQL Setup Pipeline Failed'
+        }
+
+        always {
+            sh 'find scripts/bash -type f -name "*.sh" -exec ls -l {} \\;'
         }
     }
 }
