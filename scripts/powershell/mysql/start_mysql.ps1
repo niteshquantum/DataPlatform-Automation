@@ -16,6 +16,7 @@ $port = (
 $baseDir = "$ROOT\databases\mysql\server"
 $dataDir = "$ROOT\databases\mysql\data"
 $mysqld  = "$baseDir\bin\mysqld.exe"
+$mysqladmin = "$baseDir\bin\mysqladmin.exe"
 
 Write-Host ""
 Write-Host "====================================="
@@ -32,6 +33,10 @@ Write-Host ""
 
 if (!(Test-Path $mysqld)) {
     throw "mysqld.exe not found: $mysqld"
+}
+
+if (!(Test-Path $mysqladmin)) {
+    throw "mysqladmin.exe not found: $mysqladmin"
 }
 
 if (!(Test-Path $dataDir)) {
@@ -73,13 +78,13 @@ for ($i = 1; $i -le 60; $i++) {
 
     try {
 
-        $result = Test-NetConnection `
-            -ComputerName "127.0.0.1" `
-            -Port $port `
-            -InformationLevel Quiet `
-            -WarningAction SilentlyContinue
+        & $mysqladmin `
+            --host=127.0.0.1 `
+            --port=$port `
+            -u root `
+            ping 2>$null | Out-Null
 
-        if ($result) {
+        if ($LASTEXITCODE -eq 0) {
             $started = $true
             break
         }
