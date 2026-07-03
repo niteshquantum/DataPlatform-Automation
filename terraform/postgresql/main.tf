@@ -74,7 +74,7 @@ resource "null_resource" "validate_postgresql_windows" {
 
 resource "null_resource" "postgresql_install_linux" {
 
-  count = var.target_os == "linux" ? 1 : 0
+  # count remove
 
   triggers = {
     always_run = timestamp()
@@ -89,7 +89,7 @@ resource "null_resource" "postgresql_install_linux" {
 
 resource "null_resource" "postgresql_start_linux" {
 
-  count = var.target_os == "linux" ? 1 : 0
+  # count remove
 
   depends_on = [
     null_resource.postgresql_install_linux
