@@ -23,7 +23,7 @@ locals {
 
 resource "null_resource" "install_postgresql_windows" {
 
-  count = var.target_os == "windows" ? 1 : 0
+  # count remove
 
  
 
@@ -36,7 +36,7 @@ resource "null_resource" "install_postgresql_windows" {
 
 resource "null_resource" "start_postgresql_windows" {
 
-  count = var.target_os == "windows" ? 1 : 0
+  # count remove
 
   depends_on = [
     null_resource.install_postgresql_windows
@@ -51,7 +51,7 @@ resource "null_resource" "start_postgresql_windows" {
 
 resource "null_resource" "validate_postgresql_windows" {
 
-  count = var.target_os == "windows" ? 1 : 0
+  # count remove
 
   depends_on = [
     null_resource.start_postgresql_windows

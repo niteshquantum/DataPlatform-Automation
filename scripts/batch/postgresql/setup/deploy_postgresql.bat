@@ -48,6 +48,7 @@ if errorlevel 1 (
     echo ERROR: Terraform initialization failed.
     exit /b 1
 )
+"%TF%" validate
 
 echo.
 echo =====================================
@@ -55,7 +56,11 @@ echo TERRAFORM APPLY
 echo =====================================
 echo.
 
-"%TF%" apply -auto-approve
+"%TF%" apply ^
+-target=null_resource.install_postgresql_windows ^
+-target=null_resource.start_postgresql_windows ^
+-target=null_resource.validate_postgresql_windows ^
+-auto-approve
 
 if errorlevel 1 (
     echo ERROR: Terraform deployment failed.
