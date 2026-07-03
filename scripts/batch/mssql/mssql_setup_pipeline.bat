@@ -15,7 +15,7 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\common\validate_java_runtime.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\install_tools.bat"
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\install_mssql_tools.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql.bat"
