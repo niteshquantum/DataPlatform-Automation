@@ -13,33 +13,19 @@ terraform {
 locals {
   project_root   = abspath("${path.module}/../..")
   powershell_dir = "${local.project_root}/scripts/powershell/postgresql"
+  bash_dir       = "${local.project_root}/scripts/bash/postgresql/setup"
 }
 
 #############################################################
-# WINDOWS RESOURCES
+# WINDOWS DEPLOYMENT PIPELINE
 #############################################################
 
-resource "null_resource" "p1_detect_os" {
+
+resource "null_resource" "install_postgresql_windows" {
 
   count = var.target_os == "windows" ? 1 : 0
 
-  triggers = {
-    always_run = timestamp()
-  }
-
-  provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
-    command     = "$env:OS"
-  }
-}
-
-resource "null_resource" "p2_install_postgresql" {
-
-  count = var.target_os == "windows" ? 1 : 0
-
-  depends_on = [
-    null_resource.p1_detect_os
-  ]
+ 
 
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
@@ -48,12 +34,12 @@ resource "null_resource" "p2_install_postgresql" {
   }
 }
 
-resource "null_resource" "p3_start_postgresql" {
+resource "null_resource" "start_postgresql_windows" {
 
   count = var.target_os == "windows" ? 1 : 0
 
   depends_on = [
-    null_resource.p2_install_postgresql
+    null_resource.install_postgresql_windows
   ]
 
   provisioner "local-exec" {
@@ -63,12 +49,12 @@ resource "null_resource" "p3_start_postgresql" {
   }
 }
 
-resource "null_resource" "p4_validate_postgresql" {
+resource "null_resource" "validate_postgresql_windows" {
 
   count = var.target_os == "windows" ? 1 : 0
 
   depends_on = [
-    null_resource.p3_start_postgresql
+    null_resource.start_postgresql_windows
   ]
 
   triggers = {
@@ -83,10 +69,10 @@ resource "null_resource" "p4_validate_postgresql" {
 }
 
 #############################################################
-# LINUX RESOURCES
+# LINUX DEPLOYMENT PIPELINE
 #############################################################
 
-resource "null_resource" "install_postgresql_linux" {
+resource "null_resource" "postgresql_install_linux" {
 
   count = var.target_os == "linux" ? 1 : 0
 
@@ -97,16 +83,16 @@ resource "null_resource" "install_postgresql_linux" {
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
 
-    command = "../../scripts/bash/postgresql/setup/install_postgresql.sh"
+    command = "${local.bash_dir}/install_postgresql.sh"
   }
 }
 
-resource "null_resource" "start_postgresql_linux" {
+resource "null_resource" "postgresql_start_linux" {
 
   count = var.target_os == "linux" ? 1 : 0
 
   depends_on = [
-    null_resource.install_postgresql_linux
+    null_resource.postgresql_install_linux
   ]
 
   triggers = {
@@ -116,6 +102,25 @@ resource "null_resource" "start_postgresql_linux" {
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
 
-    command = "../../scripts/bash/postgresql/setup/start_postgresql.sh"
+    command = "${local.bash_dir}/start_postgresql.sh"
+  }
+}
+
+resource "null_resource" "postgresql_validate_linux" {
+
+  count = var.target_os == "linux" ? 1 : 0
+
+  depends_on = [
+    null_resource.postgresql_start_linux
+  ]
+
+  triggers = {
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+
+    command = "${local.bash_dir}/validate_postgresql.sh"
   }
 }

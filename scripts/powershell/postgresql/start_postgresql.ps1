@@ -22,6 +22,16 @@ $ProjectRoot = Get-ProjectRoot
 $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
 $PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
+$LogDirectory = Split-Path $PgLog -Parent
+
+if (!(Test-Path $LogDirectory)) {
+
+    New-Item `
+        -ItemType Directory `
+        -Path $LogDirectory `
+        -Force | Out-Null
+
+}
 $PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 
 # =====================================================
@@ -44,7 +54,36 @@ Get-Content $ConfigFile | ForEach-Object {
 
 }
 
+$PgHost = $Config["POSTGRESQL_HOST"]
+
 $ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
+
+$PgDatabase = $Config["POSTGRESQL_DB"]
+
+$PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) {
+    "postgres"
+}
+else {
+    $Config["POSTGRESQL_USER"]
+}
+
+$PgPassword = $Config["POSTGRESQL_PASSWORD"]
+if ([string]::IsNullOrWhiteSpace($PgHost)) {
+    throw "POSTGRESQL_HOST missing."
+}
+
+if ([string]::IsNullOrWhiteSpace($PgDatabase)) {
+    throw "POSTGRESQL_DB missing."
+}
+
+if ($ExpectedPort -le 0) {
+    throw "Invalid POSTGRESQL_PORT."
+}
+
+Write-Log "Host      : $PgHost"
+Write-Log "Port      : $ExpectedPort"
+Write-Log "Database  : $PgDatabase"
+Write-Log "User      : $PgUser"
 
 # ------------------------------------------------------------
 # Check if configured port is already in use
@@ -73,6 +112,8 @@ $PortInUse = Get-NetTCPConnection `
 
 if ($PortInUse) {
 
+    $Process = Get-Process -Id $PortInUse[0].OwningProcess -ErrorAction SilentlyContinue
+
     Write-Host ""
     Write-Host "==============================================="
     Write-Host " PORT CONFLICT DETECTED"
@@ -80,14 +121,18 @@ if ($PortInUse) {
     Write-Host ""
 
     Write-Host "Configured Port : $ExpectedPort"
-    Write-Host "Process ID      : $($PortInUse.OwningProcess)"
+    Write-Host "Process ID      : $($PortInUse[0].OwningProcess)"
+
+    if ($Process) {
+        Write-Host "Process Name    : $($Process.ProcessName)"
+    }
+
     Write-Host ""
-    Write-Host "Another process is using this port."
-    Write-Host "Stop that process or change POSTGRESQL_PORT."
+    Write-Host "Another application is using this port."
+    Write-Host "Stop that application or change POSTGRESQL_PORT."
 
     throw "Port conflict detected."
 }
-
 # =====================================================
 # Validation
 # =====================================================
@@ -118,13 +163,8 @@ if ($LASTEXITCODE -eq 0) {
 # Start PostgreSQL
 # =====================================================
 
-$LogDir = Split-Path $PgLog -Parent
-
-if (!(Test-Path $LogDir)) {
-    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-}
-
 Write-Log "Starting PostgreSQL..."
+Write-Log "Using configuration from : $ConfigFile"
 
 & "$PgCtl" `
     start `
@@ -168,11 +208,17 @@ if ($LASTEXITCODE -ne 0) {
     throw "PostgreSQL failed to start."
 }
 
-Write-Log "PostgreSQL started successfully."
+Write-Log ""
 
-Write-Log "Host : 127.0.0.1"
-Write-Log "Port : $ExpectedPort"
-Write-Log "Data : $PgData"
+Write-Log "======================================="
+Write-Log "POSTGRESQL START COMPLETED"
+Write-Log "======================================="
+Write-Log "Host      : $PgHost"
+Write-Log "Port      : $ExpectedPort"
+Write-Log "Database  : $PgDatabase"
+Write-Log "User      : $PgUser"
+Write-Log "Data Dir  : $PgData"
+Write-Log "Log File  : $PgLog"
 
 exit 0
 

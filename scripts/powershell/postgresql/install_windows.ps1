@@ -24,7 +24,9 @@ Write-Log "Project PG Bin: $PgProjectBin"
 
 # Read config
 $ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
-if (!(Test-Path $ConfigFile)) { throw "Config not found: $ConfigFile" }
+if (!(Test-Path $ConfigFile)) {
+    throw "Config not found: $ConfigFile"
+}
 
 $Config = @{}
 Get-Content $ConfigFile | ForEach-Object {
@@ -33,7 +35,11 @@ Get-Content $ConfigFile | ForEach-Object {
     }
 }
 
+$PgHost = $Config["POSTGRESQL_HOST"]
+
 $ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
+
+$PgDatabase = $Config["POSTGRESQL_DB"]
 
 $PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) {
     "postgres"
@@ -45,15 +51,17 @@ else {
 $PgPassword = $Config["POSTGRESQL_PASSWORD"]
 
 $PgVersion = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_VERSION"])) {
-    "Unknown"
+    throw "POSTGRESQL_VERSION is missing in config."
 }
 else {
     $Config["POSTGRESQL_VERSION"]
 }
 
-Write-Log "Expected Port : $ExpectedPort"
-Write-Log "PostgreSQL User : $PgUser"
-Write-Log "PostgreSQL Version : $PgVersion"
+Write-Log "Host               : $PgHost"
+Write-Log "Port               : $ExpectedPort"
+Write-Log "Database           : $PgDatabase"
+Write-Log "User               : $PgUser"
+Write-Log "Version            : $PgVersion"
 
 # ---- FAST PATH: binaries AND data directory both ready ----
 
@@ -62,7 +70,10 @@ $DataReady = Test-Path (Join-Path $PgProjectData "PG_VERSION")
 
 if ($BinReady -and $DataReady) {
 
-    Write-Log "PostgreSQL binaries and data directory already ready - skipping install"
+    Write-Log "Project PostgreSQL binaries already exist."
+    Write-Log "Project data directory already initialized."
+    Write-Log "Skipping installation."
+
     exit 0
 }
 
@@ -87,10 +98,13 @@ if ($BinReady -and !$DataReady) {
 
     $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
 
-    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
-    Add-Content -Path $PgConfFile -Value "`nfsync = off"
-    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
-    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+    (Get-Content $PgConfFile) `
+        -replace '^#?port\s*=.*', "port = $ExpectedPort" `
+        | Set-Content $PgConfFile
+
+    Add-Content $PgConfFile "`nfsync = off"
+    Add-Content $PgConfFile "`nsynchronous_commit = off"
+    Add-Content $PgConfFile "`nfull_page_writes = off"
 
     Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
 
@@ -102,10 +116,13 @@ Write-Log "Project folder binaries not found - checking system installation..."
 # ---- Check system-installed PostgreSQL ----
 
 $SystemBinPaths = @(
+    "C:\Program Files\PostgreSQL\$PgVersion\bin",
     "C:\Program Files\PostgreSQL\17\bin",
     "C:\Program Files\PostgreSQL\16\bin",
     "C:\Program Files\PostgreSQL\15\bin"
 )
+
+Write-Log "Searching PostgreSQL Version $PgVersion ..."
 
 $SystemBin = $null
 
@@ -119,7 +136,12 @@ foreach ($BinPath in $SystemBinPaths) {
     }
 }
 
-
+if ($SystemBin) {
+    Write-Log "System installation found."
+}
+else {
+    Write-Log "System installation not found."
+}
 
 # ------------------------------------------------------------
 # Use cached ZIP if available
@@ -130,7 +152,7 @@ if (!$SystemBin) {
     $ZipDir  = Join-Path $ProjectRoot "databases\postgresql\zip"
     $ZipFile = Join-Path $ZipDir "postgresql-binaries.zip"
     $ExtDir  = Join-Path $ZipDir "extracted"
-
+    
     New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
 
     if (Test-Path $ZipFile) {
@@ -141,7 +163,7 @@ if (!$SystemBin) {
 
         Write-Log "PostgreSQL ZIP not found - downloading..."
 
-        $ZipUrl = "https://get.enterprisedb.com/postgresql/postgresql-17.5-1-windows-x64-binaries.zip"
+        $ZipUrl = "https://get.enterprisedb.com/postgresql/postgresql-$PgVersion.5-1-windows-x64-binaries.zip"
 
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -183,6 +205,10 @@ if (!$SystemBin) {
 
     $SystemBin = Join-Path $ExtDir "pgsql\bin"
 
+    if (!(Test-Path (Join-Path $SystemBin "pg_ctl.exe"))) {
+        throw "Invalid PostgreSQL binaries extracted."
+    }
+
     Write-Log "Using extracted binaries: $SystemBin"
 }
 
@@ -195,7 +221,6 @@ $SystemRoot = Split-Path $SystemBin -Parent
 New-Item -ItemType Directory -Path $PgProjectBin -Force | Out-Null
 New-Item -ItemType Directory -Path $PgProjectLib -Force | Out-Null
 New-Item -ItemType Directory -Path $PgProjectShare -Force | Out-Null
-
 Copy-Item `
     -Path (Join-Path $SystemRoot "bin\*") `
     -Destination $PgProjectBin `
@@ -228,6 +253,10 @@ if (!(Test-Path (Join-Path $PgProjectBin "initdb.exe"))) {
     throw "initdb.exe not found after copy."
 }
 
+if (!(Test-Path (Join-Path $PgProjectBin "psql.exe"))) {
+    throw "psql.exe missing."
+}
+
 Write-Log "Binary validation successful."
 
 # ---- initdb: initialize project data directory ----
@@ -251,16 +280,39 @@ if (!(Test-Path (Join-Path $PgProjectData "PG_VERSION"))) {
 
     $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
 
-    Add-Content -Path $PgConfFile -Value "`nport = $ExpectedPort"
-    Add-Content -Path $PgConfFile -Value "`nfsync = off"
-    Add-Content -Path $PgConfFile -Value "`nsynchronous_commit = off"
-    Add-Content -Path $PgConfFile -Value "`nfull_page_writes = off"
+    (Get-Content $PgConfFile) `
+        -replace '^#?port\s*=.*', "port = $ExpectedPort" `
+        | Set-Content $PgConfFile
+
+    Add-Content $PgConfFile "`nfsync = off"
+    Add-Content $PgConfFile "`nsynchronous_commit = off"
+    Add-Content $PgConfFile "`nfull_page_writes = off"
 
     Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
 }
-else {
-
-    Write-Log "Data directory already initialized"
+else {    Write-Log "Data directory already initialized"
 }
 
-Write-Log "Installation complete - Binaries: $PgProjectBin | Data: $PgProjectData"
+Write-Log ""
+Write-Log "======================================="
+Write-Log "POSTGRESQL INSTALLATION COMPLETED"
+Write-Log "======================================="
+Write-Log "Version  : $PgVersion"
+Write-Log "Host     : $PgHost"
+Write-Log "Port     : $ExpectedPort"
+Write-Log "Database : $PgDatabase"
+Write-Log "User     : $PgUser"
+Write-Log "Binaries : $PgProjectBin"
+Write-Log "Data Dir : $PgProjectData"
+
+if ([string]::IsNullOrWhiteSpace($PgHost)) {
+    throw "POSTGRESQL_HOST is missing in config."
+}
+
+if ([string]::IsNullOrWhiteSpace($PgDatabase)) {
+    throw "POSTGRESQL_DB is missing in config."
+}
+
+if ($ExpectedPort -le 0) {
+    throw "Invalid POSTGRESQL_PORT."
+}
