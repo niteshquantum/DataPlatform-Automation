@@ -58,15 +58,7 @@ $ConfigPath = Join-Path $PROJECT_ROOT "config\windows\mssql.conf"
 Write-Output "[INIT] Starting SQL Server service operational verification phase..."
 
 # 1. Pre-Flight Administrator Context Security Validation
-Write-Output "[SECURITY] Initializing elevated context security validation..."
-$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
-$IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-if (-not $IsAdmin) {
-    throw "[ERROR] [SECURITY] Elevated Administrator privileges are strictly required to manage or query Windows NT services."
-}
-Write-Output "[SECURITY] Verified execution context runs with elevated administrative privileges."
+Write-Output "[SECURITY] Validating SQL Server service accessibility..."
 
 # 2. Read and Parse Configuration File
 if (-not (Test-Path -Path $ConfigPath)) {
@@ -103,24 +95,8 @@ Get-ItemProperty `
 
 $TcpPath = "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer\SuperSocketNetLib\Tcp"
 
-Set-ItemProperty `
-    -Path $TcpPath `
-    -Name Enabled `
-    -Value 1
 
-$IpAll = Join-Path $TcpPath "IPAll"
 
-Set-ItemProperty `
-    -Path $IpAll `
-    -Name TcpDynamicPorts `
-    -Value ""
-
-Set-ItemProperty `
-    -Path $IpAll `
-    -Name TcpPort `
-    -Value $Port
-
-Write-Output "[NETWORK] TCP/IP configured on static port $Port."
 
 # 3. Service Descriptor Name Resolution
 $ExpectedServiceName = if ($InstanceName -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceName" }
@@ -132,9 +108,14 @@ $ServiceController = $null
 try {
     # 4. SCM Registration Verification
     Write-Output "[STORAGE] Querying Service Control Manager database registry..."
-$ServiceController = Get-Service `
-    -Name $ExpectedServiceName `
-    -ErrorAction Stop
+try {
+    $ServiceController = Get-Service `
+        -Name $ExpectedServiceName `
+        -ErrorAction Stop
+}
+catch {
+    throw "[ERROR] SQL Server service '$ExpectedServiceName' not found or inaccessible. Original Error: $($_.Exception.Message)"
+}
 
 if ($ServiceController.Status -eq "Stopped") {
 

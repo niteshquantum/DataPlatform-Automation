@@ -20,32 +20,16 @@ $TrackingFile = Join-Path $DownloadDir "mounted_drive.txt"
 
 Write-Output "[INIT] Starting SQL Server ISO mount phase..."
 
-try {
-    Mount-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop | Out-Null
+# 1. Pre-Flight Administrator Context Security Validation
+$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
+$IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $IsAdmin) {
+    throw "[ERROR] Elevated Administrator permissions are strictly required to execute loopback volume mounting."
 }
-catch {
-    $msg = $_.Exception.Message
+Write-Output "[SECURITY] Verified execution context runs with elevated administrative privileges."
 
-    if ($msg -match "Access is denied|administrator|privilege") {
-        throw @"
-[FATAL]
-
-Windows denied ISO mounting.
-
-Current process is not elevated.
-
-Mount-DiskImage requires Administrator privileges.
-
-Configure Jenkins service to run under an Administrator account
-or execute the pipeline from an elevated process.
-
-Original Error:
-$msg
-"@
-    }
-
-    throw
-}
 # 2. Media Verification and Corruption Validation
 if (-not (Test-Path -Path $DownloadDir)) {
     throw "[ERROR] Target media repository folder missing or unreachable: $DownloadDir"
