@@ -108,7 +108,7 @@ resource "null_resource" "postgresql_start_linux" {
 
 resource "null_resource" "postgresql_validate_linux" {
 
-  count = var.target_os == "linux" ? 1 : 0
+   # count remove
 
   depends_on = [
     null_resource.postgresql_start_linux
