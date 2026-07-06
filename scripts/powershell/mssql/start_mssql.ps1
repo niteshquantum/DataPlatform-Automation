@@ -280,4 +280,4 @@ Write-Output "====================================="
 Write-Output "SQL SERVER LIFECYCLE SERVICE SUCCESSFUL"
 Write-Output "====================================="
 
-exit 0
+exit 0 
