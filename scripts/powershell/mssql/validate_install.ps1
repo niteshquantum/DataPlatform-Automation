@@ -2,8 +2,9 @@
 .SYNOPSIS
     DataPlatform-Automation - Post-Installation Operational Validation Module
 .DESCRIPTION
-    Performs comprehensive, read-only structural, registry, network, and version 
-    validation of the deployed SQL Server instance. Zero side-effects architecture.
+    Performs comprehensive, read-only structural, registry, network, and version
+    validation of the deployed SQL Server instance. Self-elevates via the
+    SYSTEM-privileged scheduled task if not already running elevated.
 .NOTES
     Target OS: Windows Server 2019 / 2022
     PowerShell Version: 5.1+
@@ -12,23 +13,24 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
+# === ELEVATION AUTO-DISPATCH (do not remove) ===
+if ($env:DPA_ELEVATED -ne "1") {
+    $InvokeElevated = Join-Path $PSScriptRoot "common\invoke_elevated.ps1"
+    if (-not (Test-Path -Path $InvokeElevated)) {
+        throw "[FATAL] invoke_elevated.ps1 not found at: $InvokeElevated. Ensure the 'common' folder exists alongside the mssql scripts folder."
+    }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InvokeElevated -ScriptPath $PSCommandPath
+    exit $LASTEXITCODE
+}
+# === END ELEVATION AUTO-DISPATCH ===
+
 # Define strict relative paths based on repository freeze structure
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $ConfigPath = Join-Path $PROJECT_ROOT "config\windows\mssql.conf"
 
-Write-Output "[INIT] Starting SQL Server production post-flight validation pipeline..."
+Write-Output "[INIT] Starting SQL Server production post-flight validation pipeline (elevated)..."
 
-# 1. Pre-Flight Administrator Context Security Validation
-$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
-$IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-if (-not $IsAdmin) {
-    throw "[ERROR] Elevated Administrator permissions are strictly required to execute instance validation."
-}
-Write-Output "[SECURITY] Verified execution context runs with elevated administrative privileges."
-
-# 2. Read and Parse Configuration File
+# 1. Read and Parse Configuration File
 if (-not (Test-Path -Path $ConfigPath)) {
     throw "[ERROR] Configuration file not found at expected path: $ConfigPath"
 }
@@ -40,7 +42,6 @@ Get-Content -Path $ConfigPath | Where-Object { $_ -match '=' -and $_ -notmatch '
     $Config[$Key.Trim()] = $Value.Trim()
 }
 
-# Scalable Required Configuration Keys Validation
 $RequiredKeys = @(
     "MSSQL_INSTANCE",
     "MSSQL_PORT",
@@ -57,7 +58,6 @@ $InstanceName = $Config['MSSQL_INSTANCE']
 $ExpectedPort = $Config['MSSQL_PORT']
 $ExpectedVersionString = $Config['MSSQL_VERSION']
 
-# Initialize scope variables for safety block cleanup leaks
 $RegHklm = $null
 $InstanceNamesKey = $null
 $SetupKey = $null
@@ -65,11 +65,11 @@ $TcpKey = $null
 $IpAllKey = $null
 
 try {
-    # 3. Native 64-Bit Registry View Enforcement
+    # 2. Native 64-Bit Registry View Enforcement
     Write-Output "[REGISTRY] Binding to native 64-bit local machine registry view..."
     $RegHklm = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry64)
 
-    # 4. Microsoft Documented Registry Topology Verification & Instance Mapping
+    # 3. Microsoft Documented Registry Topology Verification & Instance Mapping
     $InstanceNamesKeyPath = "SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL"
     $InstanceNamesKey = $RegHklm.OpenSubKey($InstanceNamesKeyPath)
 
@@ -83,7 +83,7 @@ try {
     }
     Write-Output "[REGISTRY] Instance '$InstanceName' successfully resolved to Internal ID: $InstanceId"
 
-    # 5. SQL Server Version Cross-Check Validation
+    # 4. SQL Server Version Cross-Check Validation
     $SetupKeyPath = "SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\Setup"
     $SetupKey = $RegHklm.OpenSubKey($SetupKeyPath)
 
@@ -103,26 +103,24 @@ try {
     }
     Write-Output "[VERSION-CHECK] Complete major version alignment verified successfully."
 
-    
-# 6. Hardened Binary Layer Verification
+    # 5. Hardened Binary Layer Verification
+    $BinnPath = Join-Path `
+        "$env:ProgramFiles\Microsoft SQL Server\$InstanceId\MSSQL" `
+        "Binn"
 
-$BinnPath = Join-Path `
-    "$env:ProgramFiles\Microsoft SQL Server\$InstanceId\MSSQL" `
-    "Binn"
+    if (-not (Test-Path $BinnPath)) {
+        throw "[ERROR] SQL Server Binn directory not found: $BinnPath"
+    }
 
-if (-not (Test-Path $BinnPath)) {
-    throw "[ERROR] SQL Server Binn directory not found: $BinnPath"
-}
+    $EngineBinaryPath = Join-Path $BinnPath "sqlservr.exe"
 
-$EngineBinaryPath = Join-Path $BinnPath "sqlservr.exe"
+    if (-not (Test-Path $EngineBinaryPath)) {
+        throw "[ERROR] SQL Server engine binary missing: $EngineBinaryPath"
+    }
 
-if (-not (Test-Path $EngineBinaryPath)) {
-    throw "[ERROR] SQL Server engine binary missing: $EngineBinaryPath"
-}
+    Write-Output "[VALIDATION] Hardened file-system asset checks passed. Core binaries verified intact."
 
-Write-Output "[VALIDATION] Hardened file-system asset checks passed. Core binaries verified intact."
-
-    # 7. Windows Service Layer Profiling
+    # 6. Windows Service Layer Profiling
     $ExpectedServiceName = if ($InstanceName -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceName" }
     Write-Output "[SERVICE] Querying Windows Service configuration metadata for service descriptor: $ExpectedServiceName"
 
@@ -140,7 +138,7 @@ Write-Output "[VALIDATION] Hardened file-system asset checks passed. Core binari
     }
     Write-Output "[SERVICE] Verified service is configured to start Automatically and is actively Running."
 
-    # 8. Dual-Layered TCP Binding Policy - Phase 1: Registry Desired State Check
+    # 7. Dual-Layered TCP Binding Policy - Phase 1: Registry Desired State Check
     $TcpKeyPath = "SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer\SuperSocketNetLib\Tcp"
     $TcpKey = $RegHklm.OpenSubKey($TcpKeyPath)
 
@@ -166,7 +164,6 @@ Write-Output "[VALIDATION] Hardened file-system asset checks passed. Core binari
     Write-Output "[NETWORK] Dual-Layer Phase 1: Desired TCP/IP parameters successfully confirmed in the registry view layout."
 }
 finally {
-    # Guard explicit closure allocation boundaries to prevent active session handle leakage leaks
     if ($null -ne $IpAllKey) { $IpAllKey.Close() }
     if ($null -ne $TcpKey) { $TcpKey.Close() }
     if ($null -ne $SetupKey) { $SetupKey.Close() }
@@ -175,7 +172,7 @@ finally {
     Write-Output "[REGISTRY] Safely released and deallocated all local machine registry handles."
 }
 
-# 9. Dual-Layered TCP Binding Policy - Phase 2: Deterministic Live Socket Polling Loop
+# 8. Dual-Layered TCP Binding Policy - Phase 2: Deterministic Live Socket Polling Loop
 Write-Output "[NETWORK] Dual-Layer Phase 2: Initializing active live socket connection validation testing block..."
 $LoopbackIp = "127.0.0.1"
 $MaxWaitTimeSeconds = 30
@@ -198,13 +195,12 @@ while (-not $SocketConnected -and $IterationCounter -lt $MaxIterations) {
         # Suppress exceptions during transient polling backoff frame windows
     }
     finally {
-        # Guarantee network resource disposal in a hardened environment lifecycle wrapper block
         if ($null -ne $TcpClient) {
             $TcpClient.Close()
             if ($TcpClient -is [System.IDisposable]) { $TcpClient.Dispose() }
         }
     }
-    
+
     if (-not $SocketConnected) {
         Write-Output "[NETWORK-POLLING] Listener not answering yet. Iteration ($IterationCounter/$MaxIterations). Sleeping $PollIntervalSeconds seconds..."
         Start-Sleep -Seconds $PollIntervalSeconds
