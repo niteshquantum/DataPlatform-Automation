@@ -4,14 +4,13 @@ pipeline {
 
     stages {
 
-        stage('Set Permissions') {
-            steps {
-                sh '''
-                chmod +x scripts/bash/common/*.sh
-                chmod +x scripts/bash/mongodb/*.sh
-                '''
-            }
-        }
+      stage('Set Permissions') {
+    steps {
+        sh '''
+        chmod -R +x scripts/bash
+        '''
+    }
+}
 
         stage('Validate Python Runtime') {
             steps {
