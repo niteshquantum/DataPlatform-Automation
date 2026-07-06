@@ -149,6 +149,3 @@ for table_name, columns in schema_registry.items():
 if not generated_any:
     print("No schema changes detected. Nothing to generate.")
  
-Liquibase | Liquibase XML Schema Definitions
-Liquibase XML Schema Definitions
- 
