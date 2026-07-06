@@ -28,8 +28,6 @@ pipeline {
             }
         }
 
-       
-
         stage('Load Data') {
             steps {
                 bat 'scripts\\batch\\mysql\\load\\load_data.bat'
