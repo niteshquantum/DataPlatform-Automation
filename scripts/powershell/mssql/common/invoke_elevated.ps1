@@ -54,36 +54,56 @@ if (-not (Test-Path -Path $WorkDir)) {
     New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 }
 
-# 1. Clear any stale job state and hand off the new job
-Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
-Set-Content -Path $JobFile -Value $ScriptPath -Force
+# Global system-wide lock: ensures only ONE elevated request is in flight at
+# any time, across ALL scripts and ALL concurrent Terraform/Jenkins calls on
+# this machine. Without this, two near-simultaneous requests could collide
+# on the same shared job files and cause one of them to hang forever.
+$Mutex = New-Object System.Threading.Mutex($false, "Global\DataPlatformElevatedMutex")
+$LockAcquired = $false
+try {
+    Write-Output "[ELEVATED] Waiting for exclusive access to the elevated runner (in case another step is using it)..."
+    $LockAcquired = $Mutex.WaitOne(300000)  # wait up to 5 minutes for the lock itself
+    if (-not $LockAcquired) {
+        throw "[FATAL] Could not acquire the elevated runner lock within 5 minutes. Another elevated step appears to be stuck. Check Task Scheduler history for 'DataPlatformElevatedRunner'."
+    }
 
-Write-Output "[ELEVATED] Dispatching '$ScriptPath' to SYSTEM-privileged task runner..."
-$RunOutput = & schtasks.exe /run /tn $TaskName 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "[FATAL] Failed to trigger elevated task '$TaskName'. schtasks output: $RunOutput"
+    # 1. Clear any stale job state and hand off the new job
+    Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
+    Set-Content -Path $JobFile -Value $ScriptPath -Force
+
+    Write-Output "[ELEVATED] Dispatching '$ScriptPath' to SYSTEM-privileged task runner..."
+    $RunOutput = & schtasks.exe /run /tn $TaskName 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "[FATAL] Failed to trigger elevated task '$TaskName'. schtasks output: $RunOutput"
+    }
+
+    # 2. Wait for the worker to signal completion
+    $MaxWaitSeconds = 600
+    $Waited = 0
+    while (-not (Test-Path -Path $DoneFile) -and $Waited -lt $MaxWaitSeconds) {
+        Start-Sleep -Seconds 2
+        $Waited += 2
+    }
+
+    if (-not (Test-Path -Path $DoneFile)) {
+        throw "[FATAL] Elevated task did not complete within $MaxWaitSeconds seconds. Check Task Scheduler history for '$TaskName'."
+    }
+
+    # 3. Surface the captured output and exit code
+    if (Test-Path -Path $LogFile) {
+        Get-Content -Path $LogFile
+    }
+
+    $ExitCode = 1
+    if (Test-Path -Path $ExitFile) {
+        $ExitCode = [int](Get-Content -Path $ExitFile -Raw).Trim()
+    }
 }
-
-# 2. Wait for the worker to signal completion
-$MaxWaitSeconds = 600
-$Waited = 0
-while (-not (Test-Path -Path $DoneFile) -and $Waited -lt $MaxWaitSeconds) {
-    Start-Sleep -Seconds 2
-    $Waited += 2
-}
-
-if (-not (Test-Path -Path $DoneFile)) {
-    throw "[FATAL] Elevated task did not complete within $MaxWaitSeconds seconds. Check Task Scheduler history for '$TaskName'."
-}
-
-# 3. Surface the captured output and exit code
-if (Test-Path -Path $LogFile) {
-    Get-Content -Path $LogFile
-}
-
-$ExitCode = 1
-if (Test-Path -Path $ExitFile) {
-    $ExitCode = [int](Get-Content -Path $ExitFile -Raw).Trim()
+finally {
+    if ($LockAcquired) {
+        $Mutex.ReleaseMutex()
+    }
+    $Mutex.Dispose()
 }
 
 exit $ExitCode
