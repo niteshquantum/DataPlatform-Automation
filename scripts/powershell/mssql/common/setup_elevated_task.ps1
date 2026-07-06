@@ -65,6 +65,7 @@ $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
+    -MultipleInstances Queue `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
 
 Register-ScheduledTask `
