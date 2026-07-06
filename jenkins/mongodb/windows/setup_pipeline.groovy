@@ -36,7 +36,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                bat 'scripts\\batch\\common\\validate_tools.bat'
+                bat 'scripts\batch\mongodb\setup\validate_tools.bat'
             }
         }
 
