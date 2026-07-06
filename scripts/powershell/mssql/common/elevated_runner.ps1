@@ -39,6 +39,7 @@ if (-not (Test-Path -Path $TargetScript)) {
 }
 
 try {
+    $env:DPA_ELEVATED = "1"
     # Execute the real script (mount_iso.ps1, start_mssql.ps1, etc.) with full
     # SYSTEM-level privileges. Output is captured to the log file so the
     # caller can surface it in the Jenkins console.
