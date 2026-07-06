@@ -2,8 +2,9 @@
 .SYNOPSIS
     DataPlatform-Automation - Windows SCM SQL Server Lifecycle Module
 .DESCRIPTION
-    Ensures that the target Microsoft SQL Server instance service is started and operational.
-    Interfaces natively with the SCM state machine with absolute configuration safety.
+    Ensures that the target Microsoft SQL Server instance service is started and operational,
+    with static TCP port configuration applied. Interfaces natively with the SCM state machine
+    with absolute configuration safety.
 .NOTES
     Target OS: Windows Server 2019 / 2022
     PowerShell Version: 5.1+
@@ -19,8 +20,7 @@ $ProgressPreference = 'SilentlyContinue'
 function Get-ServiceManagementObject {
     param([string]$SvcName)
     $Obj = $null
-    
-    # Robust feature availability checking before execution to survive stripped/hardened environments
+
     if (Get-Command Get-CimInstance -ErrorAction SilentlyContinue) {
         try {
             $Obj = Get-CimInstance -ClassName Win32_Service -Filter "Name = '$SvcName'" -ErrorAction Stop
@@ -29,7 +29,7 @@ function Get-ServiceManagementObject {
             Write-Output "[WARNING] [STORAGE] Get-CimInstance execution failed structurally. Falling back to legacy providers..."
         }
     }
-    
+
     if ($null -eq $Obj -and (Get-Command Get-WmiObject -ErrorAction SilentlyContinue)) {
         try {
             Write-Output "[WARNING] [STORAGE] Falling back to legacy WMI lookup for '$SvcName'..."
@@ -39,11 +39,11 @@ function Get-ServiceManagementObject {
             Write-Output "[WARNING] [STORAGE] WMI fallback execution query rejected."
         }
     }
-    
+
     if ($null -eq $Obj) {
         throw "[ERROR] [STORAGE] Hardened System Barrier: Neither CIM nor WMI management infrastructure is available or functional on this host."
     }
-    
+
     return $Obj
 }
 
@@ -56,11 +56,9 @@ $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $ConfigPath = Join-Path $PROJECT_ROOT "config\windows\mssql.conf"
 
 Write-Output "[INIT] Starting SQL Server service operational verification phase..."
-
-# 1. Pre-Flight Administrator Context Security Validation
 Write-Output "[SECURITY] Validating SQL Server service accessibility..."
 
-# 2. Read and Parse Configuration File
+# 1. Read and Parse Configuration File
 if (-not (Test-Path -Path $ConfigPath)) {
     throw "[ERROR] [CONFIG] Configuration file not found at expected path: $ConfigPath"
 }
@@ -72,7 +70,6 @@ Get-Content -Path $ConfigPath | Where-Object { $_ -match '=' -and $_ -notmatch '
     $Config[$Key.Trim()] = $Value.Trim()
 }
 
-# Scalable Required Configuration Keys Validation
 $RequiredKeys = @(
     "MSSQL_INSTANCE"
 )
@@ -84,93 +81,101 @@ foreach ($Key in $RequiredKeys) {
 }
 
 $InstanceName = $Config['MSSQL_INSTANCE']
-
-
 $Port = $Config["MSSQL_PORT"]
 
 $InstanceId = (
-Get-ItemProperty `
-"HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL"
+    Get-ItemProperty `
+    "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL"
 ).$InstanceName
 
+if ([string]::IsNullOrWhiteSpace($InstanceId)) {
+    throw "[ERROR] [CONFIG] Could not resolve InstanceId for instance '$InstanceName'. Is SQL Server actually installed on this host?"
+}
+
 $TcpPath = "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer\SuperSocketNetLib\Tcp"
+$IpAll   = Join-Path $TcpPath "IPAll"
 
+# 2. TCP/IP Static Port Configuration
+if (-not [string]::IsNullOrWhiteSpace($Port)) {
+    Write-Output "[NETWORK] Applying static TCP port configuration ($Port)..."
+    try {
+        Set-ItemProperty -Path $TcpPath -Name Enabled -Value 1 -ErrorAction Stop
+        Set-ItemProperty -Path $IpAll -Name TcpDynamicPorts -Value "" -ErrorAction Stop
+        Set-ItemProperty -Path $IpAll -Name TcpPort -Value $Port -ErrorAction Stop
+        Write-Output "[NETWORK] TCP/IP configured on static port $Port."
+    }
+    catch {
+        throw @"
+[ERROR] [NETWORK] Failed to write SQL Server TCP registry configuration.
 
+This account lacks write permission on:
+$TcpPath
 
+PERMANENT FIX: Run the Jenkins agent service under an account with local
+Administrator rights on this machine (Services.msc -> Jenkins -> Log On tab).
+This is a one-time, per-machine setting; the pipeline runs fully automatically
+afterward.
+
+Original Error:
+$($_.Exception.Message)
+"@
+    }
+}
+else {
+    Write-Output "[NETWORK] No MSSQL_PORT configured; skipping static TCP port assignment (default dynamic port in effect)."
+}
 
 # 3. Service Descriptor Name Resolution
 $ExpectedServiceName = if ($InstanceName -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceName" }
 Write-Output "[SERVICE] Resolved service identifier layout context to: $ExpectedServiceName"
 
-# Scoped controller resource container allocation
 $ServiceController = $null
 
 try {
     # 4. SCM Registration Verification
     Write-Output "[STORAGE] Querying Service Control Manager database registry..."
-try {
-    $ServiceController = Get-Service `
-        -Name $ExpectedServiceName `
-        -ErrorAction Stop
-}
-catch {
-    throw "[ERROR] SQL Server service '$ExpectedServiceName' not found or inaccessible. Original Error: $($_.Exception.Message)"
-}
-
-if ($ServiceController.Status -eq "Stopped") {
-
-    Start-Service $ExpectedServiceName
-
-}
-elseif ($ServiceController.Status -eq "Running") {
-
-    Write-Output "[IDEMPOTENCY] SQL Server service already running."
-
-}
-else {
-
-    Write-Output "[INFO] Current Service State : $($ServiceController.Status)"
-
-}
-    
     try {
-        # Accessing an explicit property forces the handle context to evaluate registration metadata existence
+        $ServiceController = Get-Service -Name $ExpectedServiceName -ErrorAction Stop
+    }
+    catch {
+        throw "[ERROR] SQL Server service '$ExpectedServiceName' not found or inaccessible. Original Error: $($_.Exception.Message)"
+    }
+
+    try {
         $Null = $ServiceController.DisplayName
     }
     catch {
         throw "[ERROR] [STORAGE] Target database service wrapper '$ExpectedServiceName' is completely missing from this host SCM."
     }
 
-    # Inspect master service initialization configuration properties using pre-declared helper
     $TargetSystemSvc = Get-ServiceManagementObject -SvcName $ExpectedServiceName
     if ($null -eq $TargetSystemSvc) {
         throw "[ERROR] [STORAGE] Failed to fetch host service management attributes for service: $ExpectedServiceName"
     }
 
-    # Normalize properties because WMI maps property name to 'StartMode' while CIM uses standard string representation
-    $TargetStartMode = if ($null -ne $TargetSystemSvc.StartMode) { $TargetSystemSvc.StartMode } else { $TargetSystemSvc.StartMode }
+    $TargetStartMode = $TargetSystemSvc.StartMode
     if ($TargetStartMode -eq "Disabled") {
         throw "[ERROR] [STORAGE] Cannot orchestrate target instance lifecycle. Service startup configuration is currently marked as Disabled."
     }
 
-    # 5. Read-Only Detailed Dependency Diagnostic Verification Matrix
+    # 5. Dependency Diagnostic Verification Matrix
     $Dependencies = $ServiceController.ServicesDependedOn
     if ($null -ne $Dependencies -and $Dependencies.Count -gt 0) {
         Write-Output "[STORAGE] Discovered root service operational dependencies. Evaluation profiles commencing..."
-        
+
         foreach ($DepService in $Dependencies) {
             $DepSvcName = $DepService.ServiceName
             $DepMgmtObj = Get-ServiceManagementObject -SvcName $DepSvcName
-            
+
             if ($null -eq $DepMgmtObj) {
                 Write-Output "[WARNING] [STORAGE] Dependency Service '$DepSvcName' registration data could not be verified via management layer. SCM handling active."
                 continue
             }
-            
+
             $DepState = $DepMgmtObj.State
             $DepStartMode = $DepMgmtObj.StartMode
             Write-Output "[STORAGE] Dependency Diagnostic -> Name: '$DepSvcName' | Current State: '$DepState' | Start Mode: '$DepStartMode'"
-            
+
             if ($DepStartMode -eq "Disabled") {
                 throw "[ERROR] [STORAGE] Critical Dependency Failure: Required dependency service '$DepSvcName' is DISABLED. SCM cannot launch the target engine execution thread."
             }
@@ -187,13 +192,21 @@ else {
     else {
         if ($InitialStatus -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
             Write-Output "[START] Issuing live hardware engine invocation signal to SCM framework..."
-            
+
             try {
-                # Rely on the SCM engine to cascade internal startup operations safely to system dependencies natively
                 $ServiceController.Start()
             }
             catch [System.InvalidOperationException] {
-                throw "[ERROR] [START] SCM Kernel rejected the service start request for '$ExpectedServiceName'. Reason: $($_.Exception.Message)"
+                throw @"
+[ERROR] [START] SCM Kernel rejected the service start request for '$ExpectedServiceName'.
+
+This usually means the current account lacks rights to start Windows
+services. PERMANENT FIX: Run the Jenkins agent service under an account
+with local Administrator rights on this machine (Services.msc -> Jenkins
+-> Log On tab). One-time, per-machine setting.
+
+Reason: $($_.Exception.Message)
+"@
             }
             catch {
                 throw "[ERROR] [START] Fatal system error encountered during service start sequence initiation. Details: $_"
@@ -203,7 +216,7 @@ else {
             Write-Output "[START] Service is currently in a transitional state ($InitialStatus). Advancing straight to stabilization pool..."
         }
 
-        # 7. Dynamic SCM Refresh Polling Loop with Hardened Diagnostics
+        # 7. Dynamic SCM Refresh Polling Loop
         Write-Output "[VERIFY] Commencing operational stabilization polling tracking sequence..."
         $MaxWaitTimeSeconds = 60
         $PollIntervalSeconds = 3
@@ -214,10 +227,9 @@ else {
         while (-not $IsOperational -and $IterationCounter -lt $MaxIterations) {
             $IterationCounter++
             Start-Sleep -Seconds $PollIntervalSeconds
-            
-            # Mandated internal state cache invalidation to clear cached process variables
+
             $ServiceController = Get-Service -Name $ExpectedServiceName -ErrorAction Stop
-            
+
             $CurrentStatus = $ServiceController.Status
             if ($CurrentStatus -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {
                 $IsOperational = $true
@@ -229,7 +241,6 @@ else {
         }
 
         if (-not $IsOperational) {
-            # Inject comprehensive diagnostic tokens to ensure deterministic debugging inside Jenkins console environments
             $FinalStatusValue = $ServiceController.Status
             throw "[FATAL] [VERIFY] Lifecycle threshold reached! Service '$ExpectedServiceName' failed to transition to a functional state. Final Status: '$FinalStatusValue' after a timeout constraint window of $MaxWaitTimeSeconds seconds."
         }
@@ -239,12 +250,10 @@ else {
     Write-Output "[CLEANUP] Executing decoupled end-to-end status persistence check..."
     $ServiceController = Get-Service -Name $ExpectedServiceName -ErrorAction Stop
     if ($ServiceController.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
-    
         throw "[ERROR] [CLEANUP] Post-stabilization lifecycle audit failed. Instance dropped operational state immediately post loop execution."
     }
 }
 finally {
-    # 9. Hardened Resource Cleanup Phase (Double-Guarded Isolated Release Lifecycle)
     if ($null -ne $ServiceController) {
         try {
             $ServiceController.Close()
@@ -252,7 +261,7 @@ finally {
         catch {
             # Suppress unexpected RPC or handle connection severance failures during aggressive disposal
         }
-        
+
         try {
             if ($ServiceController -is [System.IDisposable]) {
                 $ServiceController.Dispose()
@@ -261,7 +270,7 @@ finally {
         catch {
             # Suppress secondary object tracking reference disposal errors
         }
-        
+
         Write-Output "[CLEANUP] Safely closed handles and disposed of all active Windows SCM components."
     }
 }

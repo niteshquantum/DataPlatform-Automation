@@ -10,7 +10,8 @@ echo.
 call "%~dp0..\..\common\set_project_root.bat"
 
 powershell -ExecutionPolicy Bypass ^
-    -File "%PROJECT_ROOT%\scripts\powershell\mssql\start_mssql.ps1"
+    -File "%PROJECT_ROOT%\scripts\powershell\mssql\common\invoke_elevated.ps1" ^
+    -ScriptPath "%PROJECT_ROOT%\scripts\powershell\mssql\start_mssql.ps1"
 
 if errorlevel 1 (
     echo.
