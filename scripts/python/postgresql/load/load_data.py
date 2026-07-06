@@ -1,14 +1,21 @@
+#!/usr/bin/env python
+
 """
-load_data.py - Entry point for Jenkins 'Load Data' stage.
-Delegates to load_all.py which handles dataset generation + loading.
+PostgreSQL Data Load Wrapper
+
+Calls the generic data loader for PostgreSQL.
 """
+
 import sys
-from load_all import load_all
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[4]
+
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from data_loader import main
 
 
 if __name__ == "__main__":
-    try:
-        load_all()
-    except Exception as e:
-        print(f"ERROR: {e}")
-        sys.exit(1)
+    sys.argv = ["data_loader.py", "postgresql"]
+    main()

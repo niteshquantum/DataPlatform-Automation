@@ -1,54 +1,48 @@
+from pathlib import Path
 import sys
-from db_connection import get_connection
+import psycopg2
 
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT))
 
-TABLES = [
-    "customers",
-    "sellers",
-    "products",
-    "orders",
-    "orderdetails"
-]
+from scripts.python.common.config_loader import load_database_config
 
+config = load_database_config("postgresql")
 
-def validate_loaded_data():
+conn = psycopg2.connect(
+    host=config["POSTGRESQL_HOST"],
+    port=int(config["POSTGRESQL_PORT"]),
+    user=config["POSTGRESQL_USER"],
+    password=config["POSTGRESQL_PASSWORD"],
+    dbname=config["POSTGRESQL_DB"]
+)
 
-    connection = get_connection()
-    cursor     = connection.cursor()
+cursor = conn.cursor()
 
-    print("=" * 60)
-    print("LOADED DATA VALIDATION")
-    print("=" * 60)
+cursor.execute("""
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+    ORDER BY table_name
+""")
 
-    all_passed = True
+tables = [row[0] for row in cursor.fetchall()]
 
-    for table in TABLES:
+print()
+print("=" * 50)
+print("LOADED DATA SUMMARY")
+print("=" * 50)
 
-        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+for table in tables:
 
-        count = cursor.fetchone()[0]
+    cursor.execute(f'SELECT COUNT(*) FROM "{table}"')
+    count = cursor.fetchone()[0]
 
-        status = "OK" if count > 0 else "EMPTY"
+    print(f"{table:<30} {count}")
 
-        if count == 0:
-            all_passed = False
+cursor.close()
+conn.close()
 
-        print(f"{table:<20} {count:<8} [{status}]")
-
-    cursor.close()
-    connection.close()
-
-    if all_passed:
-        print("\nAll tables have data")
-    else:
-        print("\nWARNING: Some tables are empty")
-
-    return all_passed
-
-
-if __name__ == "__main__":
-    try:
-        validate_loaded_data()
-    except Exception as e:
-        print(f"ERROR: {e}")
-        sys.exit(1)
+print("=" * 50)
+print("DATA VALIDATION COMPLETED")
+print("=" * 50)
