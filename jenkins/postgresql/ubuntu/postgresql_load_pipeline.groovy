@@ -2,76 +2,71 @@ pipeline {
 
     agent any
 
-    environment {
-        PIPELINE_TYPE = "POSTGRESQL_LOAD"
-        DATABASE      = "POSTGRESQL"
-    }
-
     stages {
 
-        stage('Repository Audit') {
+        stage('Set Permissions') {
             steps {
-                sh 'ls -la'
+                sh '''
+                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
             }
         }
 
-        stage('Set Script Permissions') {
-    steps {
-        sh 'chmod -R +x scripts/bash/'
-    }
-}
-
-stage('Validate Python Runtime') {
-    steps {
-        sh 'scripts/bash/common/validate_python_runtime.sh'
-    }
-}
-
-
-        stage('Validate Environment') {
+        stage('Validate Python Runtime') {
             steps {
-                sh 'scripts/bash/postgresql/validate_environment.sh'
+                sh './scripts/bash/common/validate_python_runtime.sh'
             }
         }
 
-        stage('Generate Datasets') {
+        stage('Install Python Requirements') {
             steps {
-                sh 'python3 scripts/python/postgresql/generate_dataset.py'
+                sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
             }
         }
 
-        stage('Validate CSV Schema') {
+        stage('Validate Python Requirements') {
             steps {
-                sh 'python3 scripts/python/postgresql/testcsvschema.py'
+                sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
             }
         }
 
-        stage('Load Data') {
+        stage('Start PostgreSQL') {
             steps {
-                sh 'scripts/bash/postgresql/load_data.sh'
-            }
-        }
-
-        stage('Validate Loaded Data') {
-            steps {
-                sh 'scripts/bash/postgresql/validate_loaded_data.sh'
+                sh './scripts/bash/postgresql/setup/start_postgresql.sh'
             }
         }
 
         stage('Validate PostgreSQL') {
             steps {
-                sh 'scripts/bash/postgresql/validate_postgresql.sh'
+                sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
             }
         }
 
+        stage('Load Data') {
+            steps {
+                sh './scripts/bash/postgresql/load/load_data.sh'
+            }
+        }
+
+        stage('Validate Loaded Data') {
+            steps {
+                sh './scripts/bash/postgresql/load/validate_loaded_data.sh'
+            }
+        }
     }
 
     post {
+
         success {
-            echo 'PostgreSQL Load Pipeline Completed Successfully'
+            echo 'UBUNTU POSTGRESQL LOAD SUCCESSFUL'
         }
+
         failure {
-            echo 'PostgreSQL Load Pipeline Failed'
+            echo 'UBUNTU POSTGRESQL LOAD FAILED'
+        }
+
+        always {
+            echo 'UBUNTU POSTGRESQL LOAD PIPELINE COMPLETED'
         }
     }
 }
