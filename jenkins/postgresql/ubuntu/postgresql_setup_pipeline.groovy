@@ -2,88 +2,101 @@ pipeline {
 
     agent any
 
-    environment {
-        PIPELINE_TYPE = "POSTGRESQL_SETUP"
-        DATABASE      = "POSTGRESQL"
-    }
-
     stages {
 
-        stage('Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Repository Audit') {
-            steps {
-                sh 'ls -la'
-            }
-        }
-
-        stage('Set Script Permissions') {
+        stage('Set Permissions') {
             steps {
                 sh '''
-                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
                 '''
             }
         }
 
         stage('Validate Python Runtime') {
             steps {
-                sh 'bash scripts/bash/common/validate_python_runtime.sh'
+                sh './scripts/bash/common/validate_python_runtime.sh'
             }
         }
 
         stage('Install Python Requirements') {
             steps {
-                sh 'bash scripts/bash/install_python_requirements.sh'
+                sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                sh 'bash scripts/bash/validate_python_requirements.sh'
+                sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
             }
         }
 
         stage('Validate Java Runtime') {
             steps {
-                sh 'bash scripts/bash/common/validate_java_runtime.sh'
+                sh './scripts/bash/common/validate_java_runtime.sh'
             }
         }
 
         stage('Install Tools') {
             steps {
-                sh 'bash scripts/bash/common/install_tools.sh'
+                sh './scripts/bash/postgresql/setup/install_tools.sh'
             }
         }
 
         stage('Deploy PostgreSQL') {
             steps {
-                sh 'bash scripts/bash/postgresql/deploy_postgresql.sh'
+                sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+            }
+        }
+
+	stage('Install PostgreSQL') {
+	    steps {
+	        sh './scripts/bash/postgresql/setup/install_postgresql.sh'
+	    }
+	}
+
+        stage('Start PostgreSQL') {
+            steps {
+                sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+            }
+        }
+
+	stage('Configure PostgreSQL User') {
+	   steps {
+		sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+		    }
+		}
+	  stage('Create Database') {
+            steps {
+                sh './scripts/bash/postgresql/setup/create_database.sh'
             }
         }
 
         stage('Validate PostgreSQL') {
             steps {
-                sh 'bash scripts/bash/postgresql/validate_postgresql.sh'
+                sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
             }
         }
 
+
+        stage('Validate Environment') {
+            steps {
+                sh './scripts/bash/postgresql/setup/validate_environment.sh'
+            }
+        }
     }
 
     post {
+
         success {
-            echo 'PostgreSQL Setup Pipeline Completed Successfully'
+            echo 'UBUNTU POSTGRESQL SETUP SUCCESSFUL'
         }
 
         failure {
-            echo 'PostgreSQL Setup Pipeline Failed'
+            echo 'UBUNTU POSTGRESQL SETUP FAILED'
         }
 
         always {
-            sh 'find scripts/bash -type f -name "*.sh" -exec ls -l {} \\;'
+            echo 'UBUNTU POSTGRESQL SETUP PIPELINE COMPLETED'
         }
     }
 }
