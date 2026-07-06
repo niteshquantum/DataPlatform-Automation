@@ -99,12 +99,13 @@ def get_database_connection(db_type, config):
     if db_type == 'postgresql':
         if psycopg2 is None:
             raise ImportError('psycopg2 is not installed')
+
         return psycopg2.connect(
-            host=config.get('POSTGRES_HOST', 'localhost'),
-            port=int(config.get('POSTGRES_PORT', 5432)),
-            user=config.get('POSTGRES_USER', 'postgres'),
-            password=config.get('POSTGRES_PASSWORD', ''),
-            dbname=config.get('POSTGRES_DB', '')
+            host=config.get('POSTGRESQL_HOST', 'localhost'),
+            port=int(config.get('POSTGRESQL_PORT', 5432)),
+            user=config.get('POSTGRESQL_USER', 'postgres'),
+            password=config.get('POSTGRESQL_PASSWORD', ''),
+            dbname=config.get('POSTGRESQL_DB', '')
         )
     if db_type == 'mssql':
         if pyodbc is None:
