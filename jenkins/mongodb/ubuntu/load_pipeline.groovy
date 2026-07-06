@@ -4,15 +4,15 @@ pipeline {
 
     stages {
 
-        stage('Set Permissions') {
-            steps {
-                
-                sh '''
-                chmod +x scripts/bash/common/*.sh
-                chmod +x scripts/bash/mongodb/*.sh
-                '''
-            }
-        }
+    stages {
+
+      stage('Set Permissions') {
+    steps {
+        sh '''
+        chmod -R +x scripts/bash
+        '''
+    }
+}
 
         stage('Install Python Requirements') {
             steps {
