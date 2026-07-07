@@ -3,7 +3,17 @@ pipeline {
 
     agent any
 
+    options {
+        disableConcurrentBuilds()
+    }
+
     parameters {
+
+        choice(
+            name: 'OPERATING_SYSTEM',
+            choices: ['UBUNTU', 'WINDOWS'],
+            description: 'Select Operating System'
+        )
 
         choice(
             name: 'DATABASE',
@@ -22,14 +32,15 @@ pipeline {
 
         /*
         ============================================================
-        MYSQL SETUP
+        UBUNTU - MYSQL SETUP
         ============================================================
         */
 
-        stage('MySQL Setup') {
+        stage('Ubuntu MySQL Setup') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
@@ -62,14 +73,15 @@ pipeline {
 
         /*
         ============================================================
-        MYSQL LOAD
+        UBUNTU - MYSQL LOAD
         ============================================================
         */
 
-        stage('MySQL Load') {
+        stage('Ubuntu MySQL Load') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
@@ -100,14 +112,15 @@ pipeline {
 
         /*
         ============================================================
-        MONGODB SETUP
+        UBUNTU - MONGODB SETUP
         ============================================================
         */
 
-        stage('MongoDB Setup') {
+        stage('Ubuntu MongoDB Setup') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MONGODB' }
                     expression { params.ACTION == 'SETUP' }
                 }
@@ -140,14 +153,15 @@ pipeline {
 
         /*
         ============================================================
-        MONGODB LOAD
+        UBUNTU - MONGODB LOAD
         ============================================================
         */
 
-        stage('MongoDB Load') {
+        stage('Ubuntu MongoDB Load') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MONGODB' }
                     expression { params.ACTION == 'LOAD' }
                 }
@@ -174,14 +188,15 @@ pipeline {
 
         /*
         ============================================================
-        POSTGRESQL SETUP
+        UBUNTU - POSTGRESQL SETUP
         ============================================================
         */
 
-        stage('PostgreSQL Setup') {
+        stage('Ubuntu PostgreSQL Setup') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'POSTGRESQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
@@ -224,14 +239,15 @@ pipeline {
 
         /*
         ============================================================
-        POSTGRESQL LOAD
+        UBUNTU - POSTGRESQL LOAD
         ============================================================
         */
 
-        stage('PostgreSQL Load') {
+        stage('Ubuntu PostgreSQL Load') {
 
             when {
                 allOf {
+                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'POSTGRESQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
@@ -258,21 +274,237 @@ pipeline {
                 '''
             }
         }
+
+
+        /*
+        ============================================================
+        WINDOWS - MYSQL SETUP
+        ============================================================
+        */
+
+        stage('Windows MySQL Setup') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'MYSQL' }
+                    expression { params.ACTION == 'SETUP' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
+            }
+        }
+
+
+        /*
+        ============================================================
+        WINDOWS - MYSQL LOAD
+        ============================================================
+        */
+
+        stage('Windows MySQL Load') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'MYSQL' }
+                    expression { params.ACTION == 'LOAD' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+
+                bat 'scripts\\batch\\mysql\\setup\\validate_mysql.bat'
+
+                bat 'scripts\\batch\\mysql\\load\\load_data.bat'
+
+                bat 'scripts\\batch\\mysql\\load\\validate_loaded_data.bat'
+            }
+        }
+
+
+        /*
+        ============================================================
+        WINDOWS - MONGODB SETUP
+        ============================================================
+        */
+
+        stage('Windows MongoDB Setup') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'MONGODB' }
+                    expression { params.ACTION == 'SETUP' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+            }
+        }
+
+
+        /*
+        ============================================================
+        WINDOWS - MONGODB LOAD
+        ============================================================
+        */
+
+        stage('Windows MongoDB Load') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'MONGODB' }
+                    expression { params.ACTION == 'LOAD' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+
+                bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
+
+                bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+            }
+        }
+
+
+        /*
+        ============================================================
+        WINDOWS - POSTGRESQL SETUP
+        ============================================================
+        */
+
+        stage('Windows PostgreSQL Setup') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'POSTGRESQL' }
+                    expression { params.ACTION == 'SETUP' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+            }
+        }
+
+
+        /*
+        ============================================================
+        WINDOWS - POSTGRESQL LOAD
+        ============================================================
+        */
+
+        stage('Windows PostgreSQL Load') {
+
+            when {
+                allOf {
+                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
+                    expression { params.DATABASE == 'POSTGRESQL' }
+                    expression { params.ACTION == 'LOAD' }
+                }
+            }
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
+
+                bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
+
+                bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
+            }
+        }
     }
+
 
     post {
 
         success {
-            echo "${params.DATABASE} ${params.ACTION} SUCCESSFUL"
+            echo "${params.OPERATING_SYSTEM} ${params.DATABASE} ${params.ACTION} SUCCESSFUL"
         }
 
         failure {
-            echo "${params.DATABASE} ${params.ACTION} FAILED"
+            echo "${params.OPERATING_SYSTEM} ${params.DATABASE} ${params.ACTION} FAILED"
         }
 
         always {
-            echo "PIPELINE COMPLETED"
+            echo "MASTER DATABASE PIPELINE COMPLETED"
         }
     }
 }
-
