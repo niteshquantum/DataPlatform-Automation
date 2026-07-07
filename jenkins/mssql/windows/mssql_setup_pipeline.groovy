@@ -1,6 +1,5 @@
 pipeline {
 
-   
     agent any
 
     stages {
@@ -13,13 +12,13 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                bat 'scripts\\batch\\install_python_requirements.bat'
+                bat 'scripts\\batch\\mssql\\setup\\install_python_requirements.bat'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\validate_python_requirements.bat'
+                bat 'scripts\\batch\\mssql\\setup\\validate_python_requirements.bat'
             }
         }
 
@@ -28,8 +27,6 @@ pipeline {
                 bat 'scripts\\batch\\common\\validate_java_runtime.bat'
             }
         }
-
-       
 
         stage('Install MSSQL Tools') {
             steps {
@@ -55,17 +52,9 @@ pipeline {
             }
         }
 
-      
-
         stage('Validate Environment') {
             steps {
                 bat 'scripts\\batch\\mssql\\setup\\validate_environment.bat'
-            }
-        }
-
-        stage('Validate MSSQL') {
-            steps {
-                bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
             }
         }
     }
@@ -84,6 +73,4 @@ pipeline {
             echo 'MSSQL SETUP PIPELINE COMPLETED'
         }
     }
-   
-
 }
