@@ -28,14 +28,14 @@ $DoneFile = Join-Path $WorkDir "job.done"
 # --- Centralized diagnostic snapshot helpers (used across all failure paths) ---
 function Get-DiagnosticSnapshot {
     $Snap = [ordered]@{
-        TaskState            = "unknown"
-        LastTaskResult       = "unknown"
-        LastRunTime          = "unknown"
+        TaskState             = "unknown"
+        LastTaskResult        = "unknown"
+        LastRunTime           = "unknown"
         WorkerExecutionStatus = "unknown"
-        JobFileExists        = (Test-Path -Path $JobFile)
-        DoneFileExists       = (Test-Path -Path $DoneFile)
-        ExitFileExists       = (Test-Path -Path $ExitFile)
-        LogFileExists        = (Test-Path -Path $LogFile)
+        JobFileExists         = (Test-Path -Path $JobFile)
+        DoneFileExists        = (Test-Path -Path $DoneFile)
+        ExitFileExists        = (Test-Path -Path $ExitFile)
+        LogFileExists         = (Test-Path -Path $LogFile)
     }
 
     try {
@@ -106,23 +106,14 @@ function Test-ElevatedTaskValid {
     #     using the repository-standard resolution order, then compare the
     #     Task Action's Execute value against the FULLY RESOLVED path -
     #     not just the leaf filename. ---
-    $ResolvedPowerShellExe = $null
-    $ResolvedPsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
-    if ($ResolvedPsCommand) {
-        $ResolvedPowerShellExe = $ResolvedPsCommand.Source
-    }
-    if (-not $ResolvedPowerShellExe) {
-        $ResolvedFallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-        if (Test-Path -Path $ResolvedFallbackPath) {
-            $ResolvedPowerShellExe = $ResolvedFallbackPath
-        }
-    }
-    if (-not $ResolvedPowerShellExe) { return $false }
-
     $TaskActionExecutePath = $TaskAction.Execute
     if ([string]::IsNullOrEmpty($TaskActionExecutePath)) { return $false }
 
-    if ($TaskActionExecutePath -ne $ResolvedPowerShellExe) { return $false }
+    $ExecuteName = Split-Path -Path $TaskActionExecutePath -Leaf
+    if ($ExecuteName -notmatch '(?i)^powershell\.exe$')
+    {
+        return $false
+    }
     # --- END FIX ---
 
     $ExpectedWorkerPath = Join-Path $WorkDir "elevated_runner.ps1"
@@ -210,9 +201,20 @@ if ($null -eq $ElevatedTaskCheck -or -not $ElevatedTaskValid) {
     }
     # --- END ---
 
-    # Re-check after the bootstrap attempt.
-    $ElevatedTaskCheck = Get-ElevatedTaskSafe
-    $ElevatedTaskValid = Test-ElevatedTaskValid -Task $ElevatedTaskCheck
+    # Re-check after the bootstrap attempt with a bounded retry loop to handle transient cache/timing issues.
+    $MaxRetries = 3
+    $RetryDelaySeconds = 2
+    for ($i = 1; $i -le $MaxRetries; $i++) {
+        $ElevatedTaskCheck = Get-ElevatedTaskSafe
+        $ElevatedTaskValid = Test-ElevatedTaskValid -Task $ElevatedTaskCheck
+        if ($ElevatedTaskCheck -and $ElevatedTaskValid) {
+            break
+        }
+        if ($i -lt $MaxRetries) {
+            Write-Output "[ELEVATED] Post-bootstrap validation failed on attempt $i. Retrying in $RetryDelaySeconds seconds..."
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
+    }
 
     if ($null -eq $ElevatedTaskCheck) {
         throw "[FATAL] Automatic bootstrap completed but elevated task '$TaskName' still could not be found. Check Task Scheduler and the [BOOTSTRAP] output above."
