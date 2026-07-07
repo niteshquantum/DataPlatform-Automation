@@ -199,7 +199,6 @@ if (Test-Path $PgCtlOutput) {
 if (Test-Path $PgCtlError) {
     Remove-Item $PgCtlError -Force
 }
-
 # =====================================================
 # START POSTGRESQL
 # =====================================================
@@ -227,51 +226,50 @@ $PgCtlProcess = Start-Process `
     -WindowStyle Hidden `
     -PassThru
 
-Write-Log "pg_ctl process started. Waiting for startup command to finish..."
-
-$PgCtlFinished = $PgCtlProcess.WaitForExit(60000)
-
-if (!$PgCtlFinished) {
-
-    Write-Log "pg_ctl did not exit within 60 seconds."
-
-    try {
-        $PgCtlProcess.Kill()
-    }
-    catch {}
-
-    throw "pg_ctl startup command timed out."
-}
-
-$PgCtlProcess.Refresh()
-
-$PgCtlExitCode = $PgCtlProcess.ExitCode
+Write-Log "pg_ctl process started."
 
 # =====================================================
-# DISPLAY PG_CTL OUTPUT
+# WAIT FOR POSTGRESQL READINESS
 # =====================================================
 
-if (Test-Path $PgCtlOutput) {
+$PostgreSQLReady = $false
 
-    $OutputContent = Get-Content $PgCtlOutput
+for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
 
-    foreach ($Line in $OutputContent) {
+    Start-Sleep -Seconds 1
 
-        if (![string]::IsNullOrWhiteSpace($Line)) {
-            Write-Log "pg_ctl: $Line"
+    & "$PgCtl" `
+        status `
+        -D "$PgData" *> $null
+
+    $StatusExitCode = $LASTEXITCODE
+
+    if ($StatusExitCode -eq 0) {
+
+        try {
+
+            $TcpClient = New-Object System.Net.Sockets.TcpClient
+
+            $TcpClient.Connect(
+                $PgHost,
+                $ExpectedPort
+            )
+
+            $TcpClient.Close()
+
+            $PostgreSQLReady = $true
+
+            Write-Log "PostgreSQL process is running."
+            Write-Log "PostgreSQL port is reachable."
+
+            break
+        }
+        catch {
+            Write-Log "PostgreSQL process started. Waiting for port... $Attempt/30"
         }
     }
-}
-
-if (Test-Path $PgCtlError) {
-
-    $ErrorContent = Get-Content $PgCtlError
-
-    foreach ($Line in $ErrorContent) {
-
-        if (![string]::IsNullOrWhiteSpace($Line)) {
-            Write-Log "pg_ctl error: $Line"
-        }
+    else {
+        Write-Log "Waiting for PostgreSQL startup... $Attempt/30"
     }
 }
 
@@ -279,40 +277,30 @@ if (Test-Path $PgCtlError) {
 # CHECK START RESULT
 # =====================================================
 
-if ($PgCtlExitCode -ne 0) {
+if (!$PostgreSQLReady) {
 
     Write-Host ""
     Write-Host "======================================="
     Write-Host "POSTGRESQL FAILED TO START"
     Write-Host "======================================="
 
-    if (Test-Path $PgLog) {
+    if (Test-Path $PgCtlOutput) {
 
         Write-Host ""
-        Write-Host "LAST POSTGRESQL LOG ENTRIES:"
+        Write-Host "PG_CTL OUTPUT:"
         Write-Host ""
 
-        Get-Content `
-            $PgLog `
-            -Tail 50
+        Get-Content $PgCtlOutput
     }
 
-    throw "PostgreSQL startup failed with exit code $PgCtlExitCode."
-}
+    if (Test-Path $PgCtlError) {
 
-Write-Log "pg_ctl completed successfully."
+        Write-Host ""
+        Write-Host "PG_CTL ERROR:"
+        Write-Host ""
 
-# =====================================================
-# VERIFY POSTGRESQL PROCESS
-# =====================================================
-
-Write-Log "Verifying PostgreSQL process..."
-
-& "$PgCtl" `
-    status `
-    -D "$PgData" *> $null
-
-if ($LASTEXITCODE -ne 0) {
+        Get-Content $PgCtlError
+    }
 
     if (Test-Path $PgLog) {
 
@@ -320,54 +308,13 @@ if ($LASTEXITCODE -ne 0) {
         Write-Host "LAST POSTGRESQL LOG ENTRIES:"
         Write-Host ""
 
-        Get-Content `
-            $PgLog `
-            -Tail 50
+        Get-Content $PgLog -Tail 50
     }
 
-    throw "PostgreSQL process verification failed."
+    throw "PostgreSQL failed to become ready within 30 seconds."
 }
 
-Write-Log "PostgreSQL process is running."
-
-# =====================================================
-# VERIFY PORT
-# =====================================================
-
-Write-Log "Verifying PostgreSQL port..."
-
-$PortReady = $false
-
-for ($Attempt = 1; $Attempt -le 15; $Attempt++) {
-
-    try {
-
-        $TcpClient = New-Object System.Net.Sockets.TcpClient
-
-        $TcpClient.Connect(
-            $PgHost,
-            $ExpectedPort
-        )
-
-        $TcpClient.Close()
-
-        $PortReady = $true
-
-        break
-    }
-    catch {
-
-        Write-Log "Waiting for PostgreSQL port... $Attempt/15"
-
-        Start-Sleep -Seconds 1
-    }
-}
-
-if (!$PortReady) {
-    throw "PostgreSQL started but port $ExpectedPort is not reachable."
-}
-
-Write-Log "PostgreSQL port is reachable."
+Write-Log "PostgreSQL startup completed successfully."
 
 # =====================================================
 # SUCCESS
