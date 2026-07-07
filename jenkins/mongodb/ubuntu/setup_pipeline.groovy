@@ -35,7 +35,11 @@ pipeline {
                 sh './scripts/bash/mongodb/setup/install_mongosh.sh'
             }
         }
-
+        stage('Configure Global Mongosh') {
+        steps {
+            sh './scripts/bash/mongodb/setup/configure_global_mongosh.sh'
+            }
+        }
         stage('Start MongoDB') {
             steps {
                 sh './scripts/bash/mongodb/setup/start_mongodb.sh'
