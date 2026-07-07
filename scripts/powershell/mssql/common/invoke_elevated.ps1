@@ -67,35 +67,46 @@ try {
         throw "[FATAL] Could not acquire the elevated runner lock within 5 minutes. Another elevated step appears to be stuck. Check Task Scheduler history for 'DataPlatformElevatedRunner'."
     }
 
-    # --- SYNC: keep the staged worker script up to date with the repository copy ---
+    # --- VERIFY: staged worker must match repository worker (read-only check) ---
+    # NOTE: This process (Jenkins/non-elevated account) does NOT have write
+    # access to C:\ProgramData\DataPlatformAutomation, which is owned by
+    # SYSTEM/Administrator. Therefore this dispatcher can only VERIFY the
+    # staged worker; it must never attempt to copy/overwrite it. If the
+    # staged copy is missing or out of date, fail fast with clear guidance
+    # instead of silently running a stale worker or crashing on access-denied.
     $WorkerScriptSource = Join-Path $PSScriptRoot "elevated_runner.ps1"
     $WorkerScriptTarget = Join-Path $WorkDir "elevated_runner.ps1"
-    if (Test-Path -Path $WorkerScriptSource) {
-        $SourceHash = (Get-FileHash -Path $WorkerScriptSource -Algorithm SHA256).Hash
-        $NeedsSync = $true
-        if (Test-Path -Path $WorkerScriptTarget) {
-            $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
-            $NeedsSync = ($SourceHash -ne $TargetHash)
-        }
-        if ($NeedsSync) {
-            Copy-Item -Path $WorkerScriptSource -Destination $WorkerScriptTarget -Force
-            Write-Output "[ELEVATED] Staged worker script was out of date; synchronized from repository."
 
-            # --- VERIFY: copy actually landed correctly (AV/permission/disk-full safe) ---
-            if (-not (Test-Path -Path $WorkerScriptTarget)) {
-                throw "[FATAL] Worker script sync failed: destination file does not exist after copy: $WorkerScriptTarget"
-            }
-            $PostCopyHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
-            if ($PostCopyHash -ne $SourceHash) {
-                throw "[FATAL] Worker script sync verification failed: hash mismatch after copy. The staged copy may have been blocked or altered (check antivirus/permissions/disk space). Source: $WorkerScriptSource, Target: $WorkerScriptTarget"
-            }
-            # --- END VERIFY ---
-        }
+    if (-not (Test-Path -Path $WorkerScriptSource)) {
+        throw "[FATAL] Repository worker script not found: $WorkerScriptSource"
+    }
+    if (-not (Test-Path -Path $WorkerScriptTarget)) {
+        throw @"
+[FATAL] Staged worker script not found: $WorkerScriptTarget
+
+ONE-TIME SETUP REQUIRED (only once, ever, per machine):
+  1. Open PowerShell as Administrator (right-click -> Run as Administrator)
+  2. Run: .\setup_elevated_task.ps1
+"@
     }
 
-    # 1. Clear any stale job state and hand off the new job
+    $SourceHash = (Get-FileHash -Path $WorkerScriptSource -Algorithm SHA256).Hash
+    $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
 
-     Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
+    if ($SourceHash -ne $TargetHash) {
+        throw @"
+[FATAL] Worker script is out of date.
+Staged copy ($WorkerScriptTarget) does not match the repository version ($WorkerScriptSource).
+
+Run setup_elevated_task.ps1 (as Administrator) to refresh the staged worker:
+  1. Open PowerShell as Administrator (right-click -> Run as Administrator)
+  2. Run: .\setup_elevated_task.ps1
+"@
+    }
+    # --- END VERIFY ---
+
+    # 1. Clear any stale job state and hand off the new job
+    Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
     Set-Content -Path $JobFile -Value $ScriptPath -Force
 
     # --- VERIFY: job handoff actually succeeded ---
@@ -135,8 +146,6 @@ try {
     }
     # --- END DIAGNOSTIC ---
 
-    
-
     # 2. Wait for the worker to signal completion
     $MaxWaitSeconds = 600
     $Waited = 0
@@ -145,8 +154,8 @@ try {
         $Waited += 2
     }
 
-   if (-not (Test-Path -Path $DoneFile)) {
-      # --- DIAGNOSTICS: capture task state before failing (locale-independent, best-effort) ---
+    if (-not (Test-Path -Path $DoneFile)) {
+        # --- DIAGNOSTICS: capture task state before failing (locale-independent, best-effort) ---
         $DiagCurrentStatus = "unknown"
         $DiagLastResultVal = "unknown"
         $DiagLastRunTimeVal = "unknown"
@@ -183,7 +192,7 @@ try {
     }
 
     # 3. Surface the captured output and exit code
-   # --- VERIFY: completion signalling is complete and well-formed ---
+    # --- VERIFY: completion signalling is complete and well-formed ---
     if (-not (Test-Path -Path $ExitFile)) {
         throw "[FATAL] Task signalled completion (DoneFile present) but ExitFile is missing: $ExitFile"
     }
@@ -197,7 +206,6 @@ try {
     }
     # --- END VERIFY ---
 
-    # 3. Surface the captured output and exit code
     if (Test-Path -Path $LogFile) {
         Get-Content -Path $LogFile
     }

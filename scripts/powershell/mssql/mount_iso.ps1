@@ -19,8 +19,33 @@ if ($env:DPA_ELEVATED -ne "1") {
     if (-not (Test-Path -Path $InvokeElevated)) {
         throw "[FATAL] invoke_elevated.ps1 not found at: $InvokeElevated. Ensure the 'common' folder exists alongside the mssql scripts folder."
     }
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InvokeElevated -ScriptPath $PSCommandPath
-    exit $LASTEXITCODE
+
+    # --- RESOLVE: locate the PowerShell executable instead of assuming it's on PATH ---
+    $PowerShellExe = $null
+    $PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
+    if ($PsCommand) {
+        $PowerShellExe = $PsCommand.Source
+    }
+    if (-not $PowerShellExe) {
+        $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+        if (Test-Path -Path $FallbackPath) {
+            $PowerShellExe = $FallbackPath
+        }
+    }
+    if (-not $PowerShellExe) {
+        throw "[FATAL] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
+    }
+    # --- END RESOLVE ---
+
+    & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $InvokeElevated -ScriptPath $PSCommandPath
+
+    # --- Deterministic exit code even if $LASTEXITCODE is null ---
+    $DispatchExitCode = 1
+    if ($null -ne $LASTEXITCODE) {
+        $DispatchExitCode = $LASTEXITCODE
+    }
+    exit $DispatchExitCode
+    # --- END ---
 }
 # === END ELEVATION AUTO-DISPATCH ===
 
@@ -76,6 +101,13 @@ if (-not $IsMounted) {
     Write-Output "[STORAGE] Invoking native loopback volume mount sequence..."
     Mount-DiskImage -ImagePath $TargetIso.FullName | Out-Null
 
+    # --- VERIFY: confirm the image actually reports Attached before polling for a drive letter ---
+    $PostMountImage = Get-DiskImage -ImagePath $TargetIso.FullName
+    if (-not $PostMountImage.Attached) {
+        throw "[FATAL] Mount-DiskImage completed but Get-DiskImage does not report the image as Attached for: $($TargetIso.FullName)"
+    }
+    # --- END VERIFY ---
+
     # 4. Asynchronous Plug-and-Play Race Condition Mitigation Loop
     $MaxRetries = 15
     $RetryCounter = 0
@@ -115,10 +147,36 @@ if (-not (Test-Path -Path $SetupPath)) {
     Dismount-DiskImage -ImagePath $TargetIso.FullName | Out-Null
     throw "[ERROR] Target installation media verification failed. Executable 'setup.exe' is completely missing from root of $DriveLetterToken"
 }
+
+# --- VERIFY: setup.exe is a non-zero-byte executable ---
+$SetupFileInfo = Get-Item -Path $SetupPath
+if ($SetupFileInfo.Length -le 0) {
+    Write-Output "[CLEANUP] 'setup.exe' found but is zero bytes. Initiating emergency rollback dismount..."
+    Dismount-DiskImage -ImagePath $TargetIso.FullName | Out-Null
+    throw "[ERROR] Target installation media verification failed. 'setup.exe' at $SetupPath is zero bytes (corrupt or incomplete media)."
+}
+# --- END VERIFY ---
+
 Write-Output "[VALIDATION] Setup vital installation binaries verified present at target location."
 
 # 6. Atomic State Telemetry Serialization Phase
 Write-Output "[TELEMETRY] Serializing state variable tracking layout contexts..."
+
+# --- VERIFY: target directory for mounted_drive.txt is writable ---
+$TrackingFileDir = Split-Path -Path $TrackingFile -Parent
+if (-not (Test-Path -Path $TrackingFileDir)) {
+    throw "[FATAL] Target directory for tracking file does not exist: $TrackingFileDir"
+}
+$WriteTestFile = Join-Path $TrackingFileDir ".write_test.tmp"
+try {
+    Set-Content -Path $WriteTestFile -Value "test" -Force -ErrorAction Stop
+    Remove-Item -Path $WriteTestFile -Force -ErrorAction Stop
+}
+catch {
+    throw "[FATAL] Target directory is not writable: $TrackingFileDir. Details: $($_.Exception.Message)"
+}
+# --- END VERIFY ---
+
 if (Test-Path -Path $TrackingFile) {
     Remove-Item -Path $TrackingFile -Force
 }
