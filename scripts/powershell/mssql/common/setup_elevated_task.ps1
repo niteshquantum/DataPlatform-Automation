@@ -19,8 +19,12 @@
       - Task exists, wrong   -> Re-register (only the mismatched parts)
       - Worker outdated      -> Refresh worker in place
       - Permissions missing  -> Repair permissions
-    Must be run from an elevated ('Run as Administrator') PowerShell window,
-    since registering/repairing a SYSTEM-owned task requires admin rights.
+    Must be run from an elevated context, since registering/repairing a
+    SYSTEM-owned task requires Administrator privileges.
+    This script may also be invoked automatically by invoke_elevated.ps1
+    when it detects the task is missing or misconfigured; in that case it
+    still requires the calling context to already hold Administrator
+    rights - no elevation is performed here.
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -32,40 +36,19 @@ $Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
 $IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $IsAdmin) {
+    # --- FIX (Correction 1): report only the technical reason. No manual
+    #     operational instructions (no "right-click", no "run manually",
+    #     no "execute setup_elevated_task.ps1 manually"). ---
     throw @"
-[SETUP ERROR] Administrator privileges are required to run this script.
-
-WHY THIS IS REQUIRED:
-This script registers (or repairs) a Windows Scheduled Task that runs as
-NT AUTHORITY\SYSTEM with the highest privilege level. Creating, modifying,
-or repairing a SYSTEM-level Scheduled Task - and setting its security
-descriptor so non-admin callers can trigger it - is a Windows security
-operation. The Windows security model requires the calling process itself
-to already hold Administrator rights to perform this operation; there is
-no supported way around this requirement, and this script will not attempt
-to silently elevate itself (e.g. via UAC self-elevation), since that would
-mask what is actually happening from whoever is running it.
+[SETUP ERROR] Administrator privileges are required to register a SYSTEM scheduled task.
 
 CURRENT CONTEXT (for diagnostics):
-  Running as user : $($Identity.Name)
+  Running as user  : $($Identity.Name)
   Is Administrator : False
-
-HOW TO FIX THIS:
-  Manual use:
-    1. Right-click PowerShell -> "Run as Administrator"
-    2. Re-run this script from that elevated window.
-
-  Future pipeline/automation use:
-    If this script is ever invoked from an automated pipeline (Jenkins,
-    a scheduled job, etc.) rather than run manually, the process that
-    launches PowerShell for this step must itself already be running
-    with Administrator (or SYSTEM) privileges. This script deliberately
-    does not attempt to acquire elevation on its own - the caller
-    (human or pipeline) is responsible for providing an already-elevated
-    execution context before invoking this script.
 
 This script will now stop. No changes have been made.
 "@
+    # --- END FIX ---
 }
 
 $TaskName = "DataPlatformElevatedRunner"
@@ -131,6 +114,26 @@ else {
     Write-Output "[SETUP] Worker script already up to date at: $WorkerScriptTarget"
 }
 
+# --- FIX (Correction 2): resolve the PowerShell executable using the same
+#     resolution logic already approved elsewhere in the repository
+#     (mount_iso.ps1 / invoke_elevated.ps1), instead of assuming
+#     powershell.exe is on PATH. Used below for the Scheduled Task Action. ---
+$PowerShellExe = $null
+$PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
+if ($PsCommand) {
+    $PowerShellExe = $PsCommand.Source
+}
+if (-not $PowerShellExe) {
+    $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+    if (Test-Path -Path $FallbackPath) {
+        $PowerShellExe = $FallbackPath
+    }
+}
+if (-not $PowerShellExe) {
+    throw "[SETUP ERROR] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
+}
+# --- END FIX ---
+
 # 3. Self-healing task registration.
 #    Only register/re-register when the task is genuinely missing or
 #    genuinely misconfigured - never unconditionally delete-and-recreate.
@@ -174,9 +177,12 @@ else {
 }
 
 if ($null -eq $ExistingTask -or -not $TaskIsValid) {
+    # --- FIX (Correction 2): use the resolved PowerShell executable path
+    #     instead of the hardcoded literal "powershell.exe". ---
     $Action = New-ScheduledTaskAction `
-        -Execute "powershell.exe" `
+        -Execute $PowerShellExe `
         -Argument $ExpectedArgument
+    # --- END FIX ---
 
     $TaskPrincipalObj = New-ScheduledTaskPrincipal `
         -UserId "SYSTEM" `
@@ -259,3 +265,10 @@ Write-Output "====================================="
 Write-Output "Task '$TaskName' is registered to run as SYSTEM, on-demand, and correctly configured."
 Write-Output "This script is safe to re-run at any time (idempotent) - it only changes what is actually missing or incorrect."
 Write-Output "The Jenkins service account itself was NOT modified - other pipelines are unaffected."
+
+# --- Explicit terminal exit code so callers that invoke this script via
+#     'powershell.exe -File' (e.g. the auto-bootstrap path in
+#     invoke_elevated.ps1) have a deterministic success signal via
+#     $LASTEXITCODE, rather than relying on whatever native command last
+#     set it. ---
+exit 0

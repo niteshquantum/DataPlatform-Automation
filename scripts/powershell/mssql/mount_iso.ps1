@@ -103,8 +103,60 @@ if ($IsMounted) {
 
 # 3. Storage Subsystem Execution Phase
 if (-not $IsMounted) {
+
+    # --- VERIFY: required Windows services for disk mounting (Issue 4) ---
+    $RequiredServices = @("vds", "PlugPlay")
+    foreach ($SvcName in $RequiredServices) {
+        try {
+            $Svc = Get-Service -Name $SvcName -ErrorAction Stop
+            if ($Svc.StartType -eq 'Disabled') {
+                throw "[FATAL] Required service '$SvcName' ($($Svc.DisplayName)) is DISABLED. Disk mounting cannot proceed. Enable this service before running this pipeline."
+            }
+            if ($Svc.Status -ne 'Running') {
+                Write-Output "[WARNING] Required service '$SvcName' ($($Svc.DisplayName)) is currently '$($Svc.Status)' (StartType: $($Svc.StartType)). This service is typically demand-started; continuing, but if mounting fails this may be the cause."
+            }
+            else {
+                Write-Output "[VALIDATION] Required service '$SvcName' ($($Svc.DisplayName)) is Running."
+            }
+        }
+        catch {
+            if ($_.Exception.Message -like "*is DISABLED*") { throw }
+            throw "[FATAL] Failed to query required service '$SvcName'. Details: $($_.Exception.Message)"
+        }
+    }
+    # --- END VERIFY ---
+
+    # --- VERIFY: re-validate ISO immediately before mount (Issue 3) ---
+    if (-not (Test-Path -Path $TargetIso.FullName)) {
+        throw "[FATAL] Pre-mount validation failed: ISO no longer exists at $($TargetIso.FullName)"
+    }
+    $PreMountIsoInfo = Get-Item -Path $TargetIso.FullName
+    if ($PreMountIsoInfo.Length -le 0) {
+        throw "[FATAL] Pre-mount validation failed: ISO size is 0 bytes at $($TargetIso.FullName)"
+    }
+    try {
+        $IsoReadStream = [System.IO.File]::Open($TargetIso.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $IsoReadStream.Close()
+    }
+    catch {
+        throw "[FATAL] Pre-mount validation failed: ISO is not readable at $($TargetIso.FullName). Details: $($_.Exception.Message)"
+    }
+    Write-Output "[VALIDATION] Pre-mount ISO validation passed (exists, size > 0, readable)."
+    # --- END VERIFY ---
+
     Write-Output "[STORAGE] Invoking native loopback volume mount sequence..."
+
+    # --- DIAGNOSTIC: mount start/end/duration (Issue 1) ---
+    $MountStartTime = Get-Date
+    Write-Output "[STORAGE] Mount start time: $($MountStartTime.ToString('yyyy-MM-dd HH:mm:ss.fff'))"
+
     Mount-DiskImage -ImagePath $TargetIso.FullName | Out-Null
+
+    $MountEndTime = Get-Date
+    $MountDuration = $MountEndTime - $MountStartTime
+    Write-Output "[STORAGE] Mount end time: $($MountEndTime.ToString('yyyy-MM-dd HH:mm:ss.fff'))"
+    Write-Output "[STORAGE] Total mount duration: $([math]::Round($MountDuration.TotalSeconds, 2)) seconds"
+    # --- END DIAGNOSTIC ---
 
     # --- VERIFY: confirm the image actually reports Attached before polling for a drive letter ---
     try {
@@ -124,9 +176,41 @@ catch {
     $VolumeReady = $false
 
     Write-Output "[STORAGE] Entering hardware device initialization verification polling loop..."
+    $PollStartTime = Get-Date
    while (-not $VolumeReady -and $RetryCounter -lt $MaxRetries) {
         $RetryCounter++
         Start-Sleep -Seconds 1
+
+        # --- DIAGNOSTIC: classify current attach/volume/drive-letter state (Issues 2 & 5) ---
+        $IterationDiagStatus = "Unable to determine (transient query failure)"
+        try {
+            $DiagDiskImage = Get-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop
+            if (-not $DiagDiskImage.Attached) {
+                $IterationDiagStatus = "Image not attached"
+            }
+            else {
+                try {
+                    $DiagVolume = $DiagDiskImage | Get-Volume -ErrorAction Stop
+                    if (-not $DiagVolume) {
+                        $IterationDiagStatus = "Image attached but volume not ready"
+                    }
+                    elseif ([string]::IsNullOrEmpty($DiagVolume.DriveLetter)) {
+                        $IterationDiagStatus = "Volume ready but drive letter missing"
+                    }
+                    else {
+                        $IterationDiagStatus = "Drive letter detected: $($DiagVolume.DriveLetter):"
+                    }
+                }
+                catch {
+                    $IterationDiagStatus = "Image attached but volume not ready (volume query failed)"
+                }
+            }
+        }
+        catch {
+            $IterationDiagStatus = "Unable to query disk image state (transient)"
+        }
+        Write-Output "[STORAGE] Polling iteration $RetryCounter / $MaxRetries : $IterationDiagStatus"
+        # --- END DIAGNOSTIC ---
 
         $CurrentVolume = $null
         try {
@@ -148,9 +232,41 @@ catch {
             }
         }
     }
+    $PollEndTime = Get-Date
+    $PollDuration = $PollEndTime - $PollStartTime
+    Write-Output "[STORAGE] Total polling duration: $([math]::Round($PollDuration.TotalSeconds, 2)) seconds"
 
     if (-not $VolumeReady -or [string]::IsNullOrEmpty($DriveLetterToken)) {
-        throw "[FATAL] Asynchronous storage loopback stabilization timeout. Windows PnP manager failed drive allocation."
+        # --- DIAGNOSTIC: enriched timeout diagnostics (Issue 6) ---
+        $FinalAttachedStatus = "Unknown"
+        $FinalDriveStatus = "Unknown"
+        try {
+            $FinalDiskImage = Get-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop
+            $FinalAttachedStatus = $FinalDiskImage.Attached
+            if ($FinalDiskImage.Attached) {
+                try {
+                    $FinalVolume = $FinalDiskImage | Get-Volume -ErrorAction Stop
+                    if ($FinalVolume -and -not [string]::IsNullOrEmpty($FinalVolume.DriveLetter)) {
+                        $FinalDriveStatus = "Drive letter present ($($FinalVolume.DriveLetter):) but Test-Path validation failed"
+                    }
+                    else {
+                        $FinalDriveStatus = "No drive letter allocated"
+                    }
+                }
+                catch {
+                    $FinalDriveStatus = "Volume query failed: $($_.Exception.Message)"
+                }
+            }
+            else {
+                $FinalDriveStatus = "N/A (image not attached)"
+            }
+        }
+        catch {
+            $FinalAttachedStatus = "Query failed: $($_.Exception.Message)"
+        }
+
+        throw "[FATAL] Asynchronous storage loopback stabilization timeout. Windows PnP manager failed drive allocation. Diagnostics -> Mount Duration: $([math]::Round($MountDuration.TotalSeconds, 2))s | Poll Duration: $([math]::Round($PollDuration.TotalSeconds, 2))s | Image Attached: $FinalAttachedStatus | Drive Allocation Status: $FinalDriveStatus"
+        # --- END DIAGNOSTIC ---
     }
 }
 
@@ -199,6 +315,10 @@ catch {
 if (Test-Path -Path $TrackingFile) {
     Remove-Item -Path $TrackingFile -Force
 }
+
+# --- DIAGNOSTIC: telemetry before writing tracking file (Issue 7) ---
+Write-Output "[TELEMETRY] Mounted Drive: $DriveLetterToken | ISO Path: $($TargetIso.FullName) | Timestamp: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))"
+# --- END DIAGNOSTIC ---
 
 Set-Content -Path $TrackingFile -Value $DriveLetterToken -Force
 

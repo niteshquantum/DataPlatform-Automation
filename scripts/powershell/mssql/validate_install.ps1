@@ -58,6 +58,36 @@ $InstanceName = $Config['MSSQL_INSTANCE']
 $ExpectedPort = $Config['MSSQL_PORT']
 $ExpectedVersionString = $Config['MSSQL_VERSION']
 
+# --- FIX (Issue 4): shared, non-fatal ERRORLOG locator used only on failure paths.
+#     Only reports file location; does not parse contents. Search strategy is a
+#     simple recursive scan under the SQL Server install root. ---
+function Get-LatestErrorLogLocation {
+    try {
+        $ErrorLogRoot = Join-Path $env:ProgramFiles "Microsoft SQL Server"
+        if (-not (Test-Path -Path $ErrorLogRoot)) {
+            Write-Output "[FAILURE-DIAGNOSTICS] SQL Server install root not found for ERRORLOG discovery: $ErrorLogRoot"
+            return
+        }
+        try {
+            $Candidate = Get-ChildItem -Path $ErrorLogRoot -Filter "ERRORLOG" -Recurse -ErrorAction Stop |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($Candidate) {
+                Write-Output "[FAILURE-DIAGNOSTICS] Latest SQL Server ERRORLOG path: $($Candidate.FullName)"
+            }
+            else {
+                Write-Output "[FAILURE-DIAGNOSTICS] No ERRORLOG file found under: $ErrorLogRoot"
+            }
+        }
+        catch {
+            Write-Output "[FAILURE-DIAGNOSTICS] Recursive ERRORLOG search failed. Search Root: $ErrorLogRoot | Exception: $($_.Exception.Message)"
+        }
+    }
+    catch {
+        Write-Output "[FAILURE-DIAGNOSTICS] ERRORLOG discovery failed non-fatally. Details: $($_.Exception.Message)"
+    }
+}
+# --- END FIX ---
+
 $RegHklm = $null
 $InstanceNamesKey = $null
 $SetupKey = $null
@@ -163,6 +193,13 @@ try {
     }
     Write-Output "[NETWORK] Dual-Layer Phase 1: Desired TCP/IP parameters successfully confirmed in the registry view layout."
 }
+catch {
+    # --- FIX (Issue 4): on registry-phase failure, attempt ERRORLOG discovery
+    #     before propagating the original error unchanged. ---
+    Get-LatestErrorLogLocation
+    throw
+    # --- END FIX ---
+}
 finally {
     if ($null -ne $IpAllKey) { $IpAllKey.Close() }
     if ($null -ne $TcpKey) { $TcpKey.Close() }
@@ -180,6 +217,7 @@ $PollIntervalSeconds = 2
 $MaxIterations = $MaxWaitTimeSeconds / $PollIntervalSeconds
 $IterationCounter = 0
 $SocketConnected = $false
+$SocketPollingStartTime = Get-Date
 
 while (-not $SocketConnected -and $IterationCounter -lt $MaxIterations) {
     $IterationCounter++
@@ -208,9 +246,54 @@ while (-not $SocketConnected -and $IterationCounter -lt $MaxIterations) {
 }
 
 if (-not $SocketConnected) {
+    # --- FIX (Issue 3): report target IP, target port, total polling duration,
+    #     and iteration count before throwing. Timeout/interval values unchanged. ---
+    $SocketPollingElapsedSeconds = [math]::Round(((Get-Date) - $SocketPollingStartTime).TotalSeconds, 2)
+    Write-Output "[FAILURE-DIAGNOSTICS] TCP listener validation failed."
+    Write-Output "[FAILURE-DIAGNOSTICS] Target IP: $LoopbackIp"
+    Write-Output "[FAILURE-DIAGNOSTICS] Target Port: $ExpectedPort"
+    Write-Output "[FAILURE-DIAGNOSTICS] Total polling duration: ${SocketPollingElapsedSeconds}s"
+    Write-Output "[FAILURE-DIAGNOSTICS] Polling iterations attempted: $IterationCounter"
+    # --- END FIX ---
+
+    # --- FIX (Issue 4) ---
+    Get-LatestErrorLogLocation
+    # --- END FIX ---
+
     throw "[FATAL] Network layer lifecycle threshold breached. Engine is online but engine failed to accept TCP connections on Port $ExpectedPort within the deterministic timeout window."
 }
 Write-Output "[NETWORK] Dual-Layer Phase 2: Loopback network connectivity established successfully on target Port $ExpectedPort."
+
+# 9. Dual-Layered TCP Binding Policy - Phase 3: Lightweight SQL Engine Connectivity Check
+# --- FIX (Issue 2): after socket validation, attempt a minimal SQL connectivity
+#     check using sqlcmd if it is available on this host. No DDL/DML is executed;
+#     only a trivial SELECT is used to confirm the engine accepts a login/connection.
+#     If sqlcmd is unavailable, existing behaviour (socket-only validation) is kept
+#     and only a diagnostic message is emitted. ---
+Write-Output "[NETWORK] Dual-Layer Phase 3: Attempting lightweight SQL Engine connectivity verification..."
+$SqlCmdTool = Get-Command "sqlcmd.exe" -ErrorAction SilentlyContinue
+if ($null -eq $SqlCmdTool) {
+    Write-Output "[SQL-CONNECT] sqlcmd.exe not found on this host. Skipping engine-level connectivity check; socket-level validation above remains the effective connectivity guarantee."
+}
+else {
+    $SqlCmdServerTarget = "$LoopbackIp,$ExpectedPort"
+    try {
+        $SqlCmdOutput = & $SqlCmdTool.Source -S $SqlCmdServerTarget -Q "SELECT 1" -b -l 15 2>&1
+        $SqlCmdExitCode = $LASTEXITCODE
+        if ($SqlCmdExitCode -eq 0) {
+            Write-Output "[SQL-CONNECT] sqlcmd successfully connected to $SqlCmdServerTarget and executed a read-only connectivity probe."
+        }
+        else {
+            Write-Output "[SQL-CONNECT] sqlcmd connectivity probe against $SqlCmdServerTarget returned a non-zero exit code ($SqlCmdExitCode). Output: $SqlCmdOutput"
+            Get-LatestErrorLogLocation
+        }
+    }
+    catch {
+        Write-Output "[SQL-CONNECT] sqlcmd connectivity probe failed non-fatally. Target: $SqlCmdServerTarget | Details: $($_.Exception.Message)"
+        Get-LatestErrorLogLocation
+    }
+}
+# --- END FIX ---
 
 Write-Output "====================================="
 Write-Output "SQL SERVER POST-INSTALL VALIDATION SUCCESSFUL"

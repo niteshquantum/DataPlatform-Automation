@@ -27,6 +27,145 @@ if ($env:DPA_ELEVATED -ne "1") {
 }
 # === END ELEVATION AUTO-DISPATCH ===
 
+# === ODBC DRIVER ORPHAN RECOVERY (Windows Installer Error 1706) ===
+# SQL Server's setup.exe bundles the Microsoft ODBC Driver as a prerequisite.
+# If a PRIOR install attempt (on this machine, at any point in its history)
+# left behind a Windows Installer product registration for that ODBC driver
+# whose cached source package (C:\Windows\Installer\<guid>.msi) has since
+# been deleted (disk cleanup, AV quarantine, manual cleanup, etc.), Windows
+# Installer will try to reuse that now-missing cached package during setup
+# and fail with error 1706: "An installation package ... cannot be found."
+#
+# This function dynamically discovers any such orphaned ODBC Driver
+# registration (no hardcoded ProductCodes - those differ per machine/version)
+# and, only when the cached source is genuinely missing, removes the stale
+# registration so SQL Server's own bundled ODBC installer can proceed
+# cleanly. Healthy, valid installations are left completely untouched.
+function Convert-CompressedGuidToStandard {
+    param([Parameter(Mandatory = $true)][string]$Compressed)
+
+    if ($Compressed.Length -ne 32) { return $null }
+
+    function Reverse-BytePairs {
+        param([string]$HexString)
+        $bytePairs = for ($i = 0; $i -lt $HexString.Length; $i += 2) { $HexString.Substring($i, 2) }
+        $reversed = $bytePairs[($bytePairs.Length - 1)..0]
+        return ($reversed -join '')
+    }
+
+    $g1 = Reverse-BytePairs $Compressed.Substring(0, 8)
+    $g2 = Reverse-BytePairs $Compressed.Substring(8, 4)
+    $g3 = Reverse-BytePairs $Compressed.Substring(12, 4)
+    $g4 = Reverse-BytePairs $Compressed.Substring(16, 4)
+    $g5 = Reverse-BytePairs $Compressed.Substring(20, 12)
+
+    return "{$g1-$g2-$g3-$g4-$g5}"
+}
+
+function Repair-OrphanedOdbcDriver {
+    Write-Output "[ODBC-RECOVERY] Scanning for orphaned Microsoft ODBC Driver registrations (Windows Installer error 1706 prevention)..."
+
+    # S-1-5-18 = LocalSystem. This script always runs elevated as SYSTEM
+    # (via the elevation auto-dispatch above), so this is the correct,
+    # machine-wide view of installed products.
+    $UserDataRoot = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products"
+
+    if (-not (Test-Path -Path $UserDataRoot)) {
+        Write-Output "[ODBC-RECOVERY] Windows Installer UserData root not found; nothing to scan."
+        return
+    }
+
+    $ProductKeys = Get-ChildItem -Path $UserDataRoot -ErrorAction SilentlyContinue
+    if ($null -eq $ProductKeys -or $ProductKeys.Count -eq 0) {
+        Write-Output "[ODBC-RECOVERY] No installed products found under Windows Installer UserData; nothing to scan."
+        return
+    }
+
+    $OrphanCount = 0
+
+    foreach ($ProductKey in $ProductKeys) {
+        $InstallPropsPath = Join-Path -Path $ProductKey.PSPath -ChildPath "InstallProperties"
+        if (-not (Test-Path -Path $InstallPropsPath)) { continue }
+
+        $Props = Get-ItemProperty -Path $InstallPropsPath -ErrorAction SilentlyContinue
+        if ($null -eq $Props) { continue }
+
+        $DisplayName = $Props.DisplayName
+        if ([string]::IsNullOrEmpty($DisplayName)) { continue }
+
+        # Dynamic match - covers "ODBC Driver 17 for SQL Server",
+        # "ODBC Driver 18 for SQL Server", future versions, etc.
+        if ($DisplayName -notmatch '(?i)ODBC Driver.*SQL Server') { continue }
+
+        Write-Output "[ODBC-RECOVERY] Found registered component: '$DisplayName'"
+
+        $CompressedCode = $ProductKey.PSChildName
+        $ProductCode = Convert-CompressedGuidToStandard -Compressed $CompressedCode
+
+        if ($null -eq $ProductCode) {
+            Write-Output "[ODBC-RECOVERY] Could not parse a valid ProductCode from registry key '$CompressedCode'; skipping this entry."
+            continue
+        }
+
+        Write-Output "[ODBC-RECOVERY] Resolved ProductCode: $ProductCode"
+
+        $LocalPackage = $Props.LocalPackage
+        $CacheValid = (-not [string]::IsNullOrEmpty($LocalPackage)) -and (Test-Path -Path $LocalPackage)
+
+        if ($CacheValid) {
+            Write-Output "[ODBC-RECOVERY] Cached installer package is present and valid ($LocalPackage). This installation is healthy - leaving it untouched."
+            continue
+        }
+
+        $OrphanCount++
+        Write-Output "[ODBC-RECOVERY] Cached installer package is MISSING (expected at: '$LocalPackage'). This is the exact condition that produces Windows Installer error 1706."
+        Write-Output "[ODBC-RECOVERY] Attempting silent removal via msiexec first..."
+
+        $UninstallArgs = "/X $ProductCode /qn REBOOT=ReallySuppress"
+        $UninstallProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList $UninstallArgs -Wait -PassThru -NoNewWindow
+        $UninstallExit = $UninstallProcess.ExitCode
+
+        if ($UninstallExit -eq 0 -or $UninstallExit -eq 3010) {
+            Write-Output "[ODBC-RECOVERY] Broken component removed successfully via msiexec (ExitCode: $UninstallExit)."
+            continue
+        }
+
+        Write-Output "[ODBC-RECOVERY] msiexec uninstall also failed (ExitCode: $UninstallExit) - expected here, since the cached package msiexec itself needs is missing."
+        Write-Output "[ODBC-RECOVERY] Falling back to direct Windows Installer registration cleanup (equivalent to Microsoft's install/uninstall troubleshooting remediation for this scenario)..."
+
+        try {
+            Remove-Item -Path $ProductKey.PSPath -Recurse -Force -ErrorAction Stop
+            Write-Output "[ODBC-RECOVERY] Removed orphaned UserData product registration for $ProductCode."
+
+            $InstallerProductsPath = "HKLM:\SOFTWARE\Classes\Installer\Products\$CompressedCode"
+            if (Test-Path -Path $InstallerProductsPath) {
+                Remove-Item -Path $InstallerProductsPath -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Output "[ODBC-RECOVERY] Removed orphaned Installer\Products advertisement entry."
+            }
+
+            $UninstallKeyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$ProductCode"
+            if (Test-Path -Path $UninstallKeyPath) {
+                Remove-Item -Path $UninstallKeyPath -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Output "[ODBC-RECOVERY] Removed orphaned Add/Remove Programs entry."
+            }
+
+            Write-Output "[ODBC-RECOVERY] Orphaned registration for '$DisplayName' ($ProductCode) fully cleared. SQL Server setup can now install the ODBC driver fresh from its own bundled media without hitting error 1706."
+        }
+        catch {
+            Write-Output "[ODBC-RECOVERY] WARNING: Could not fully clear orphaned registration for '$DisplayName' ($ProductCode). Details: $($_.Exception.Message)"
+            Write-Output "[ODBC-RECOVERY] Continuing with SQL Server installation anyway - if error 1706 recurs for this specific product, it will need targeted follow-up."
+        }
+    }
+
+    if ($OrphanCount -eq 0) {
+        Write-Output "[ODBC-RECOVERY] No orphaned ODBC Driver registrations found. Nothing to repair."
+    }
+    else {
+        Write-Output "[ODBC-RECOVERY] Orphan scan complete. $OrphanCount orphaned registration(s) processed."
+    }
+}
+# === END ODBC DRIVER ORPHAN RECOVERY ===
+
 # Define strict relative paths based on repository freeze structure
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $ConfigPath = Join-Path $PROJECT_ROOT "config\windows\mssql.conf"
@@ -114,6 +253,9 @@ if ($IsAlreadyInstalled) {
     Write-Output "=========================================================================================="
     exit 0
 }
+
+# 4.5. Preemptive ODBC Driver orphan recovery, before SQL Server setup runs.
+Repair-OrphanedOdbcDriver
 
 # 5. Volatile Configuration Artifact Lifecycle Engine
 try {
