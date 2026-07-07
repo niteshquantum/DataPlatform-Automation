@@ -10,7 +10,7 @@ CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mongodb.conf"
 MONGODB_HOST=$(grep "^MONGODB_HOST=" "$CONFIG_FILE" | cut -d'=' -f2)
 MONGODB_PORT=$(grep "^MONGODB_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
 
-MONGOSH_BINARY="$PROJECT_ROOT/databases/mongodb/mongosh/bin/mongosh"
+REAL_MONGOSH="$PROJECT_ROOT/databases/mongodb/mongosh/bin/mongosh"
 GLOBAL_MONGOSH="/usr/local/bin/mongosh"
 
 echo
@@ -19,23 +19,25 @@ echo "CONFIGURING GLOBAL MONGOSH COMMAND"
 echo "====================================="
 echo
 
-if [ ! -f "$MONGOSH_BINARY" ]; then
+if [ ! -f "$REAL_MONGOSH" ]; then
     echo "ERROR: mongosh binary not found"
-    echo "Expected: $MONGOSH_BINARY"
+    echo "Expected: $REAL_MONGOSH"
     exit 1
 fi
 
-echo "Creating global mongosh command..."
+echo "Creating global mongosh wrapper..."
 
-sudo ln -sf "$MONGOSH_BINARY" "$GLOBAL_MONGOSH"
+sudo rm -f "$GLOBAL_MONGOSH"
 
-echo
+sudo tee "$GLOBAL_MONGOSH" > /dev/null <<EOF
+#!/bin/bash
+
+exec "$REAL_MONGOSH" --host "$MONGODB_HOST" --port "$MONGODB_PORT" "\$@"
+EOF
+
+sudo chmod +x "$GLOBAL_MONGOSH"
+
 echo "Validating global mongosh command..."
-
-if ! command -v mongosh >/dev/null 2>&1; then
-    echo "ERROR: Global mongosh command configuration failed"
-    exit 1
-fi
 
 mongosh --version
 
@@ -45,9 +47,7 @@ echo "GLOBAL MONGOSH CONFIGURED SUCCESSFULLY"
 echo "====================================="
 echo
 
-echo "MongoDB connection command:"
-echo
-echo "mongosh --host $MONGODB_HOST --port $MONGODB_PORT"
-echo
+echo "Command:"
+echo "mongosh"
 
 exit 0
