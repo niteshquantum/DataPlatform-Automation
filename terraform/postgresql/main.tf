@@ -20,38 +20,45 @@ locals {
 # WINDOWS DEPLOYMENT PIPELINE
 #############################################################
 
-
 resource "null_resource" "install_postgresql_windows" {
 
-  # count remove
-
- 
-
   provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
 
-    command = "powershell -ExecutionPolicy Bypass -File \"${local.powershell_dir}/install_windows.ps1\""
+    interpreter = [
+      "powershell.exe",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File"
+    ]
+
+    command = "${local.powershell_dir}/install_windows.ps1"
   }
 }
 
 resource "null_resource" "start_postgresql_windows" {
-
-  # count remove
 
   depends_on = [
     null_resource.install_postgresql_windows
   ]
 
   provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
 
-    command = "powershell -ExecutionPolicy Bypass -File \"${local.powershell_dir}/start_postgresql.ps1\""
+    interpreter = [
+      "powershell.exe",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File"
+    ]
+
+    command = "${local.powershell_dir}/start_postgresql.ps1"
   }
 }
 
 resource "null_resource" "validate_postgresql_windows" {
-
-  # count remove
 
   depends_on = [
     null_resource.start_postgresql_windows
@@ -62,9 +69,17 @@ resource "null_resource" "validate_postgresql_windows" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["PowerShell", "-Command"]
 
-    command = "powershell -ExecutionPolicy Bypass -File \"${local.powershell_dir}/validate_postgresql.ps1\""
+    interpreter = [
+      "powershell.exe",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File"
+    ]
+
+    command = "${local.powershell_dir}/validate_postgresql.ps1"
   }
 }
 
@@ -74,7 +89,7 @@ resource "null_resource" "validate_postgresql_windows" {
 
 resource "null_resource" "postgresql_install_linux" {
 
-  # count remove
+  # LINUX UNCHANGED
 
   triggers = {
     always_run = timestamp()
@@ -89,7 +104,7 @@ resource "null_resource" "postgresql_install_linux" {
 
 resource "null_resource" "postgresql_start_linux" {
 
-  # count remove
+  # LINUX UNCHANGED
 
   depends_on = [
     null_resource.postgresql_install_linux
@@ -108,7 +123,7 @@ resource "null_resource" "postgresql_start_linux" {
 
 resource "null_resource" "postgresql_validate_linux" {
 
-   # count remove
+  # LINUX UNCHANGED
 
   depends_on = [
     null_resource.postgresql_start_linux
