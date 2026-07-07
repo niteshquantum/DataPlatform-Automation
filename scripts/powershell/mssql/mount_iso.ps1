@@ -77,7 +77,12 @@ if ($TargetIso.Length -lt 1MB) {
 Write-Output "[MEDIA] Pre-flight structural integrity boundary validation passed."
 
 # 2. Idempotency Check (Evaluate Existing Loopback Attachment)
-$DiskImage = Get-DiskImage -ImagePath $TargetIso.FullName
+try {
+    $DiskImage = Get-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop
+}
+catch {
+    throw "[FATAL] Failed to query disk image state for '$($TargetIso.FullName)'. Details: $($_.Exception.Message)"
+}
 $IsMounted = $DiskImage.Attached
 
 $DriveLetterToken = $null
@@ -102,7 +107,12 @@ if (-not $IsMounted) {
     Mount-DiskImage -ImagePath $TargetIso.FullName | Out-Null
 
     # --- VERIFY: confirm the image actually reports Attached before polling for a drive letter ---
-    $PostMountImage = Get-DiskImage -ImagePath $TargetIso.FullName
+    try {
+    $PostMountImage = Get-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop
+}
+catch {
+    throw "[FATAL] Failed to verify mounted disk image after Mount-DiskImage. Details: $($_.Exception.Message)"
+}
     if (-not $PostMountImage.Attached) {
         throw "[FATAL] Mount-DiskImage completed but Get-DiskImage does not report the image as Attached for: $($TargetIso.FullName)"
     }
@@ -114,11 +124,20 @@ if (-not $IsMounted) {
     $VolumeReady = $false
 
     Write-Output "[STORAGE] Entering hardware device initialization verification polling loop..."
-    while (-not $VolumeReady -and $RetryCounter -lt $MaxRetries) {
+   while (-not $VolumeReady -and $RetryCounter -lt $MaxRetries) {
         $RetryCounter++
         Start-Sleep -Seconds 1
 
-        $CurrentVolume = Get-DiskImage -ImagePath $TargetIso.FullName | Get-Volume
+        $CurrentVolume = $null
+        try {
+            $CurrentVolume = Get-DiskImage -ImagePath $TargetIso.FullName -ErrorAction Stop | Get-Volume -ErrorAction Stop
+        }
+        catch {
+            # Transient storage/WMI race - volume not ready yet. Do not
+            # terminate; just continue polling until MaxRetries is reached.
+            Write-Output "[STORAGE] Volume query not yet ready on iteration $RetryCounter (transient). Retrying..."
+        }
+
         if ($CurrentVolume -and -not [string]::IsNullOrEmpty($CurrentVolume.DriveLetter)) {
             $PotentialDrive = "$($CurrentVolume.DriveLetter):"
 
