@@ -1,7 +1,10 @@
+
 pipeline {
+
     agent any
 
     parameters {
+
         choice(
             name: 'DATABASE',
             choices: ['MYSQL', 'MONGODB', 'POSTGRESQL'],
@@ -17,205 +20,248 @@ pipeline {
 
     stages {
 
+        /*
+        ============================================================
+        MYSQL SETUP
+        ============================================================
+        */
+
         stage('MySQL Setup') {
+
             when {
                 allOf {
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
             }
-            steps {
-                sh '''
-                chmod +x scripts/bash/common/*.sh
-                chmod +x scripts/bash/mysql/*.sh
 
-                ./scripts/bash/common/validate_python_runtime.sh
-                ./scripts/bash/common/validate_java_runtime.sh
-                ./scripts/bash/common/install_tools.sh
-                ./scripts/bash/mysql/install_mysql.sh
-                ./scripts/bash/mysql/start_mysql.sh
-                ./scripts/bash/mysql/create_database.sh
-                ./scripts/bash/mysql/run_liquibase.sh
-                ./scripts/bash/mysql/validate_environment.sh
+            steps {
+
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+
+                    ./scripts/bash/common/validate_python_runtime.sh
+
+                    ./scripts/bash/common/validate_java_runtime.sh
+
+                    ./scripts/bash/mysql/setup/install_tools.sh
+
+                    ./scripts/bash/mysql/setup/install_mysql.sh
+
+                    ./scripts/bash/mysql/setup/deploy_mysql.sh
+
+                    ./scripts/bash/mysql/setup/start_mysql.sh
+
+                    ./scripts/bash/mysql/setup/create_database.sh
+
+                    ./scripts/bash/mysql/setup/validate_environment.sh
                 '''
             }
         }
 
+
+        /*
+        ============================================================
+        MYSQL LOAD
+        ============================================================
+        */
+
         stage('MySQL Load') {
+
             when {
                 allOf {
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
             }
-            steps {
-                sh '''
-                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
 
-                ./scripts/bash/common/validate_python_runtime.sh
-                ./scripts/bash/install_python_requirements.sh
-                ./scripts/bash/validate_python_requirements.sh
-                ./scripts/bash/common/install_tools.sh
-                ./scripts/bash/common/validate_tools.sh
-                ./scripts/bash/mysql/validate_mysql.sh
-                ./scripts/bash/mysql/load_data.sh
-                ./scripts/bash/mysql/validate_loaded_data.sh
+            steps {
+
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+
+                    ./scripts/bash/common/validate_python_runtime.sh
+
+                    ./scripts/bash/mysql/setup/install_python_requirements.sh
+
+                    ./scripts/bash/mysql/setup/validate_python_requirements.sh
+
+                    ./scripts/bash/mysql/setup/start_mysql.sh
+
+                    ./scripts/bash/mysql/setup/validate_mysql.sh
+
+                    ./scripts/bash/mysql/load/load_data.sh
+
+                    ./scripts/bash/mysql/load/validate_loaded_data.sh
                 '''
             }
         }
 
-/*
-============================================================
-MONGODB SETUP
-============================================================
-*/
 
-stage('MongoDB Setup') {
+        /*
+        ============================================================
+        MONGODB SETUP
+        ============================================================
+        */
 
-    when {
-        allOf {
-            expression { params.DATABASE == 'MONGODB' }
-            expression { params.ACTION == 'SETUP' }
+        stage('MongoDB Setup') {
+
+            when {
+                allOf {
+                    expression { params.DATABASE == 'MONGODB' }
+                    expression { params.ACTION == 'SETUP' }
+                }
+            }
+
+            steps {
+
+                sh '''
+                    chmod -R +x scripts/bash
+
+                    ./scripts/bash/common/validate_python_runtime.sh
+
+                    ./scripts/bash/common/install_python_requirements.sh
+
+                    ./scripts/bash/mongodb/setup/install_mongodb.sh
+
+                    ./scripts/bash/mongodb/setup/install_mongosh.sh
+
+                    ./scripts/bash/mongodb/setup/configure_global_mongosh.sh
+
+                    ./scripts/bash/mongodb/setup/start_mongodb.sh
+
+                    ./scripts/bash/mongodb/setup/configure_mongodb_service.sh
+
+                    ./scripts/bash/mongodb/setup/validate_mongodb.sh
+                '''
+            }
         }
-    }
 
-    steps {
 
-        sh '''
-            chmod +x scripts/bash/common/*.sh
-            chmod +x scripts/bash/mongodb/*.sh
+        /*
+        ============================================================
+        MONGODB LOAD
+        ============================================================
+        */
 
-            ./scripts/bash/common/validate_python_runtime.sh
+        stage('MongoDB Load') {
 
-            ./scripts/bash/common/install_python_requirements.sh
+            when {
+                allOf {
+                    expression { params.DATABASE == 'MONGODB' }
+                    expression { params.ACTION == 'LOAD' }
+                }
+            }
 
-            ./scripts/bash/mongodb/install_mongodb.sh
+            steps {
 
-            ./scripts/bash/mongodb/install_mongosh.sh
+                sh '''
+                    chmod -R +x scripts/bash
 
-            ./scripts/bash/mongodb/start_mongodb.sh
+                    ./scripts/bash/common/install_python_requirements.sh
 
-            ./scripts/bash/mongodb/validate_mongodb.sh
-        '''
+                    ./scripts/bash/mongodb/setup/start_mongodb.sh
 
-    }
-}
+                    ./scripts/bash/mongodb/setup/validate_mongodb.sh
 
-/*
-============================================================
-MONGODB LOAD
-============================================================
-*/
+                    ./scripts/bash/mongodb/load/load_data.sh
 
-stage('MongoDB Load') {
-
-    when {
-        allOf {
-            expression { params.DATABASE == 'MONGODB' }
-            expression { params.ACTION == 'LOAD' }
+                    ./scripts/bash/mongodb/load/validate_loaded_data.sh
+                '''
+            }
         }
-    }
 
-    steps {
 
-        sh '''
-            chmod +x scripts/bash/common/*.sh
-            chmod +x scripts/bash/mongodb/*.sh
+        /*
+        ============================================================
+        POSTGRESQL SETUP
+        ============================================================
+        */
 
-            ./scripts/bash/common/install_python_requirements.sh
+        stage('PostgreSQL Setup') {
 
-            ./scripts/bash/mongodb/start_mongodb.sh
+            when {
+                allOf {
+                    expression { params.DATABASE == 'POSTGRESQL' }
+                    expression { params.ACTION == 'SETUP' }
+                }
+            }
 
-            ./scripts/bash/mongodb/validate_mongodb.sh
+            steps {
 
-            ./scripts/bash/mongodb/load_data.sh
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
 
-            ./scripts/bash/mongodb/validate_loaded_data.sh
-        '''
+                    ./scripts/bash/common/validate_python_runtime.sh
 
-    }
-}
-/*
-============================================================
-POSTGRESQL SETUP
-============================================================
-*/
+                    ./scripts/bash/postgresql/setup/install_python_requirements.sh
 
-stage('PostgreSQL Setup') {
+                    ./scripts/bash/postgresql/setup/validate_python_requirements.sh
 
-    when {
-        allOf {
-            expression { params.DATABASE == 'POSTGRESQL' }
-            expression { params.ACTION == 'SETUP' }
+                    ./scripts/bash/common/validate_java_runtime.sh
+
+                    ./scripts/bash/postgresql/setup/install_tools.sh
+
+                    ./scripts/bash/postgresql/setup/deploy_postgresql.sh
+
+                    ./scripts/bash/postgresql/setup/install_postgresql.sh
+
+                    ./scripts/bash/postgresql/setup/start_postgresql.sh
+
+                    ./scripts/bash/postgresql/setup/configure_postgresql.sh
+
+                    ./scripts/bash/postgresql/setup/create_database.sh
+
+                    ./scripts/bash/postgresql/setup/configure_global_psql.sh
+
+                    ./scripts/bash/postgresql/setup/validate_postgresql.sh
+
+                    ./scripts/bash/postgresql/setup/validate_environment.sh
+                '''
+            }
         }
-    }
 
-    steps {
 
-        checkout scm
+        /*
+        ============================================================
+        POSTGRESQL LOAD
+        ============================================================
+        */
 
-        sh 'ls -la'
+        stage('PostgreSQL Load') {
 
-        sh '''
-            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-        '''
+            when {
+                allOf {
+                    expression { params.DATABASE == 'POSTGRESQL' }
+                    expression { params.ACTION == 'LOAD' }
+                }
+            }
 
-        sh 'bash scripts/bash/common/validate_python_runtime.sh'
+            steps {
 
-        sh 'bash scripts/bash/install_python_requirements.sh'
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
 
-        sh 'bash scripts/bash/validate_python_requirements.sh'
+                    ./scripts/bash/common/validate_python_runtime.sh
 
-        sh 'bash scripts/bash/common/validate_java_runtime.sh'
+                    ./scripts/bash/postgresql/setup/install_python_requirements.sh
 
-        sh 'bash scripts/bash/common/install_tools.sh'
+                    ./scripts/bash/postgresql/setup/validate_python_requirements.sh
 
-        sh 'bash scripts/bash/postgresql/deploy_postgresql.sh'
+                    ./scripts/bash/postgresql/setup/start_postgresql.sh
 
-        sh 'bash scripts/bash/postgresql/validate_postgresql.sh'
-    }
-}
+                    ./scripts/bash/postgresql/setup/validate_postgresql.sh
 
-/*
-============================================================
-POSTGRESQL LOAD
-============================================================
-*/
+                    ./scripts/bash/postgresql/load/load_data.sh
 
-stage('PostgreSQL Load') {
-
-    when {
-        allOf {
-            expression { params.DATABASE == 'POSTGRESQL' }
-            expression { params.ACTION == 'LOAD' }
+                    ./scripts/bash/postgresql/load/validate_loaded_data.sh
+                '''
+            }
         }
-    }
-
-    steps {
-
-        sh 'ls -la'
-
-        sh 'chmod -R +x scripts/bash/'
-
-        sh 'scripts/bash/common/validate_python_runtime.sh'
-
-        sh 'scripts/bash/postgresql/validate_environment.sh'
-
-        sh 'python3 scripts/python/postgresql/generate_dataset.py'
-
-        sh 'python3 scripts/python/postgresql/testcsvschema.py'
-
-        sh 'scripts/bash/postgresql/load_data.sh'
-
-        sh 'scripts/bash/postgresql/validate_loaded_data.sh'
-
-        sh 'scripts/bash/postgresql/validate_postgresql.sh'
-    }
-}
-        // ...same pattern...
     }
 
     post {
+
         success {
             echo "${params.DATABASE} ${params.ACTION} SUCCESSFUL"
         }
@@ -225,7 +271,8 @@ stage('PostgreSQL Load') {
         }
 
         always {
-            echo "Pipeline Completed"
+            echo "PIPELINE COMPLETED"
         }
     }
 }
+
