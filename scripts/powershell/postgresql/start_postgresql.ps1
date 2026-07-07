@@ -225,8 +225,25 @@ $PgCtlProcess = Start-Process `
     -RedirectStandardOutput $PgCtlOutput `
     -RedirectStandardError $PgCtlError `
     -WindowStyle Hidden `
-    -Wait `
     -PassThru
+
+Write-Log "pg_ctl process started. Waiting for startup command to finish..."
+
+$PgCtlFinished = $PgCtlProcess.WaitForExit(60000)
+
+if (!$PgCtlFinished) {
+
+    Write-Log "pg_ctl did not exit within 60 seconds."
+
+    try {
+        $PgCtlProcess.Kill()
+    }
+    catch {}
+
+    throw "pg_ctl startup command timed out."
+}
+
+$PgCtlProcess.Refresh()
 
 $PgCtlExitCode = $PgCtlProcess.ExitCode
 
