@@ -34,6 +34,24 @@ pipeline {
             }
         }
 
+        stage('Debug Worker Hash') {
+    steps {
+        bat '''
+        echo ===== WORKSPACE =====
+        cd
+
+        echo ===== REPOSITORY HASH =====
+        powershell -Command "Get-FileHash scripts\\powershell\\mssql\\common\\elevated_runner.ps1"
+
+        echo ===== PROGRAMDATA HASH =====
+        powershell -Command "Get-FileHash C:\\ProgramData\\DataPlatformAutomation\\elevated_runner.ps1"
+
+        echo ===== GIT COMMIT =====
+        git rev-parse HEAD
+        '''
+    }
+}
+
         stage('Deploy MSSQL') {
             steps {
                 bat 'scripts\\batch\\mssql\\setup\\deploy_mssql.bat'
