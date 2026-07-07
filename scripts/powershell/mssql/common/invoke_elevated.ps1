@@ -93,6 +93,16 @@ ONE-TIME SETUP REQUIRED (only once, ever, per machine):
     $SourceHash = (Get-FileHash -Path $WorkerScriptSource -Algorithm SHA256).Hash
     $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
 
+    # --- TEMPORARY DIAGNOSTIC PATCH: print paths and hashes before comparison ---
+    # This block is diagnostic-only. It does not affect the comparison logic
+    # or workflow below and can be removed once the stale-worker mismatch
+    # investigation is complete.
+    Write-Output "[DIAGNOSTIC] Repository worker path : $WorkerScriptSource"
+    Write-Output "[DIAGNOSTIC] Staged worker path     : $WorkerScriptTarget"
+    Write-Output "[DIAGNOSTIC] Repository worker hash : $SourceHash"
+    Write-Output "[DIAGNOSTIC] Staged worker hash     : $TargetHash"
+    # --- END TEMPORARY DIAGNOSTIC PATCH ---
+
     if ($SourceHash -ne $TargetHash) {
         throw @"
 [FATAL] Worker script is out of date.
