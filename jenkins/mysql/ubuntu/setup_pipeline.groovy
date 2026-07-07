@@ -54,7 +54,11 @@ pipeline {
             }
         }
 
-
+        stage('Configure Global MySQL') {
+             steps {
+                sh './scripts/bash/mysql/setup/configure_global_mysql.sh'
+            }
+        }
         stage('Validate Environment') {
             steps {
                 sh './scripts/bash/mysql/setup/validate_environment.sh'
