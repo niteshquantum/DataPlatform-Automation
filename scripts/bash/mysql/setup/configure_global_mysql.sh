@@ -1,10 +1,9 @@
-
+```bash
 #!/bin/bash
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../common/set_project_root.sh"
+. "$(dirname "$0")/../../common/set_project_root.sh"
 
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.conf"
 
@@ -14,7 +13,7 @@ MYSQL_DB=$(grep "^MYSQL_DB=" "$CONFIG_FILE" | cut -d'=' -f2)
 MYSQL_USER=$(grep "^MYSQL_USER=" "$CONFIG_FILE" | cut -d'=' -f2)
 MYSQL_PASSWORD=$(grep "^MYSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
 
-REAL_MYSQL=$(command -v mysql)
+REAL_MYSQL="/usr/bin/mysql"
 GLOBAL_MYSQL="/usr/local/bin/mysql"
 
 echo
@@ -23,8 +22,9 @@ echo "CONFIGURING GLOBAL MYSQL COMMAND"
 echo "====================================="
 echo
 
-if [ -z "$REAL_MYSQL" ]; then
+if [ ! -x "$REAL_MYSQL" ]; then
     echo "ERROR: mysql client binary not found"
+    echo "Expected: $REAL_MYSQL"
     exit 1
 fi
 
@@ -68,3 +68,4 @@ echo "Command:"
 echo "mysql"
 
 exit 0
+```
