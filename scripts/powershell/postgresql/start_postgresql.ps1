@@ -24,9 +24,6 @@ $PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
 
 $PgCtl = Join-Path $PgBin "pg_ctl.exe"
 
-# Stable Windows service name
-$ServiceName = "DataPlatformPostgreSQL"
-
 # =====================================================
 # CREATE LOG DIRECTORY
 # =====================================================
@@ -55,10 +52,7 @@ $Config = @{}
 Get-Content $ConfigFile | ForEach-Object {
 
     if ($_ -match "^([^#=]+)=(.*)$") {
-
-        $Config[
-            $Matches[1].Trim()
-        ] = $Matches[2].Trim()
+        $Config[$Matches[1].Trim()] = $Matches[2].Trim()
     }
 }
 
@@ -103,9 +97,15 @@ if (!(Test-Path (Join-Path $PgData "PG_VERSION"))) {
     throw "PostgreSQL data directory is not initialized: $PgData"
 }
 
+$env:PATH = "$PgBin;$env:PATH"
+
+# =====================================================
+# START REPORT
+# =====================================================
+
 Write-Log ""
 Write-Log "======================================="
-Write-Log "POSTGRESQL SERVICE START"
+Write-Log "POSTGRESQL START"
 Write-Log "======================================="
 
 Write-Log "Project Root : $ProjectRoot"
@@ -113,67 +113,45 @@ Write-Log "Host         : $PgHost"
 Write-Log "Port         : $ExpectedPort"
 Write-Log "Database     : $PgDatabase"
 Write-Log "User         : $PgUser"
-Write-Log "Service      : $ServiceName"
+Write-Log "pg_ctl       : $PgCtl"
 Write-Log "Data Dir     : $PgData"
+Write-Log "Log File     : $PgLog"
 
 # =====================================================
-# CHECK WINDOWS SERVICE
+# CHECK CURRENT PROJECT INSTANCE
 # =====================================================
 
-$Service = Get-Service `
-    -Name $ServiceName `
-    -ErrorAction SilentlyContinue
+Write-Log "Checking current PostgreSQL instance..."
 
-# =====================================================
-# IF SERVICE EXISTS
-# =====================================================
+& "$PgCtl" `
+    status `
+    -D "$PgData" *> $null
 
-if ($Service) {
+if ($LASTEXITCODE -eq 0) {
 
-    Write-Log "PostgreSQL Windows Service already exists."
+    Write-Log "Current project PostgreSQL is already running."
 
-    # -------------------------------------------------
-    # STOP SERVICE IF RUNNING
-    # -------------------------------------------------
+    Write-Log ""
+    Write-Log "======================================="
+    Write-Log "POSTGRESQL START COMPLETED"
+    Write-Log "======================================="
 
-    if ($Service.Status -eq "Running") {
+    Write-Log "Host      : $PgHost"
+    Write-Log "Port      : $ExpectedPort"
+    Write-Log "Database  : $PgDatabase"
+    Write-Log "User      : $PgUser"
+    Write-Log "Data Dir  : $PgData"
 
-        Write-Log "Stopping existing PostgreSQL service..."
-
-        Stop-Service `
-            -Name $ServiceName `
-            -Force
-
-        $Service.WaitForStatus(
-            "Stopped",
-            (New-TimeSpan -Seconds 60)
-        )
-
-        Write-Log "Existing service stopped."
-    }
-
-    # -------------------------------------------------
-    # REMOVE OLD SERVICE REGISTRATION
-    # -------------------------------------------------
-
-    Write-Log "Removing old PostgreSQL service registration..."
-
-    & "$PgCtl" `
-        unregister `
-        -N "$ServiceName"
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Unable to unregister old PostgreSQL service."
-    }
-
-    Start-Sleep -Seconds 2
-
-    Write-Log "Old service registration removed."
+    exit 0
 }
+
+Write-Log "Current project PostgreSQL is not running."
 
 # =====================================================
 # CHECK PORT
 # =====================================================
+
+Write-Log "Checking configured port $ExpectedPort..."
 
 $PortConnection = Get-NetTCPConnection `
     -LocalPort $ExpectedPort `
@@ -204,48 +182,142 @@ if ($PortConnection) {
     throw "Port $ExpectedPort is already occupied."
 }
 
+Write-Log "Port $ExpectedPort is available."
+
 # =====================================================
-# REGISTER WINDOWS SERVICE
+# PREPARE PG_CTL OUTPUT FILES
 # =====================================================
 
-Write-Log "Registering PostgreSQL Windows Service..."
+$PgCtlOutput = Join-Path $LogDirectory "pg_ctl_start_output.log"
 
-& "$PgCtl" `
-    register `
-    -N "$ServiceName" `
-    -D "$PgData" `
-    -o "-p $ExpectedPort"
+$PgCtlError = Join-Path $LogDirectory "pg_ctl_start_error.log"
 
-if ($LASTEXITCODE -ne 0) {
-    throw "PostgreSQL Windows Service registration failed."
+if (Test-Path $PgCtlOutput) {
+    Remove-Item $PgCtlOutput -Force
 }
 
-Write-Log "PostgreSQL Windows Service registered successfully."
+if (Test-Path $PgCtlError) {
+    Remove-Item $PgCtlError -Force
+}
 
 # =====================================================
-# START WINDOWS SERVICE
+# START POSTGRESQL
 # =====================================================
 
-Write-Log "Starting PostgreSQL Windows Service..."
+Write-Log "Starting PostgreSQL..."
 
-Start-Service `
-    -Name $ServiceName
-
-$Service = Get-Service `
-    -Name $ServiceName
-
-$Service.WaitForStatus(
-    "Running",
-    (New-TimeSpan -Seconds 60)
+$PgCtlArguments = @(
+    "start"
+    "-D"
+    "`"$PgData`""
+    "-l"
+    "`"$PgLog`""
+    "-o"
+    "`"-p $ExpectedPort`""
+    "-w"
+    "-t"
+    "60"
 )
 
-Write-Log "PostgreSQL Windows Service is running."
+$PgCtlProcess = Start-Process `
+    -FilePath $PgCtl `
+    -ArgumentList $PgCtlArguments `
+    -RedirectStandardOutput $PgCtlOutput `
+    -RedirectStandardError $PgCtlError `
+    -WindowStyle Hidden `
+    -Wait `
+    -PassThru
+
+$PgCtlExitCode = $PgCtlProcess.ExitCode
+
+# =====================================================
+# DISPLAY PG_CTL OUTPUT
+# =====================================================
+
+if (Test-Path $PgCtlOutput) {
+
+    $OutputContent = Get-Content $PgCtlOutput
+
+    foreach ($Line in $OutputContent) {
+
+        if (![string]::IsNullOrWhiteSpace($Line)) {
+            Write-Log "pg_ctl: $Line"
+        }
+    }
+}
+
+if (Test-Path $PgCtlError) {
+
+    $ErrorContent = Get-Content $PgCtlError
+
+    foreach ($Line in $ErrorContent) {
+
+        if (![string]::IsNullOrWhiteSpace($Line)) {
+            Write-Log "pg_ctl error: $Line"
+        }
+    }
+}
+
+# =====================================================
+# CHECK START RESULT
+# =====================================================
+
+if ($PgCtlExitCode -ne 0) {
+
+    Write-Host ""
+    Write-Host "======================================="
+    Write-Host "POSTGRESQL FAILED TO START"
+    Write-Host "======================================="
+
+    if (Test-Path $PgLog) {
+
+        Write-Host ""
+        Write-Host "LAST POSTGRESQL LOG ENTRIES:"
+        Write-Host ""
+
+        Get-Content `
+            $PgLog `
+            -Tail 50
+    }
+
+    throw "PostgreSQL startup failed with exit code $PgCtlExitCode."
+}
+
+Write-Log "pg_ctl completed successfully."
+
+# =====================================================
+# VERIFY POSTGRESQL PROCESS
+# =====================================================
+
+Write-Log "Verifying PostgreSQL process..."
+
+& "$PgCtl" `
+    status `
+    -D "$PgData" *> $null
+
+if ($LASTEXITCODE -ne 0) {
+
+    if (Test-Path $PgLog) {
+
+        Write-Host ""
+        Write-Host "LAST POSTGRESQL LOG ENTRIES:"
+        Write-Host ""
+
+        Get-Content `
+            $PgLog `
+            -Tail 50
+    }
+
+    throw "PostgreSQL process verification failed."
+}
+
+Write-Log "PostgreSQL process is running."
 
 # =====================================================
 # VERIFY PORT
 # =====================================================
 
-Write-Log "Checking PostgreSQL port..."
+Write-Log "Verifying PostgreSQL port..."
 
 $PortReady = $false
 
@@ -275,20 +347,10 @@ for ($Attempt = 1; $Attempt -le 15; $Attempt++) {
 }
 
 if (!$PortReady) {
-    throw "PostgreSQL service started but port $ExpectedPort is not reachable."
+    throw "PostgreSQL started but port $ExpectedPort is not reachable."
 }
 
-# =====================================================
-# FINAL SERVICE VALIDATION
-# =====================================================
-
-$Service = Get-Service `
-    -Name $ServiceName `
-    -ErrorAction Stop
-
-if ($Service.Status -ne "Running") {
-    throw "PostgreSQL Windows Service is not running."
-}
+Write-Log "PostgreSQL port is reachable."
 
 # =====================================================
 # SUCCESS
@@ -299,12 +361,11 @@ Write-Log "======================================="
 Write-Log "POSTGRESQL START COMPLETED"
 Write-Log "======================================="
 
-Write-Log "Service   : $ServiceName"
-Write-Log "Status    : $($Service.Status)"
 Write-Log "Host      : $PgHost"
 Write-Log "Port      : $ExpectedPort"
 Write-Log "Database  : $PgDatabase"
 Write-Log "User      : $PgUser"
 Write-Log "Data Dir  : $PgData"
+Write-Log "Log File  : $PgLog"
 
 exit 0
