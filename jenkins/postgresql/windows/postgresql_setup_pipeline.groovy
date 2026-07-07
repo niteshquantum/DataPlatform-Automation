@@ -1,6 +1,9 @@
 pipeline {
 
     agent any
+    options {
+        disableConcurrentBuilds()
+    }
 
     stages {
 
@@ -40,11 +43,7 @@ pipeline {
             }
         }
 
-        stage('Start PostgreSQL') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
-            }
-        }
+        
 
         stage('Create Database') {
             steps {
