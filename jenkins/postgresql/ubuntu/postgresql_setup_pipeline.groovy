@@ -60,15 +60,23 @@ pipeline {
             }
         }
 
-	stage('Configure PostgreSQL User') {
-	   steps {
-		sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+	    stage('Configure PostgreSQL User') {
+	        steps {
+		        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
 		    }
 		}
+
+
 	  stage('Create Database') {
             steps {
                 sh './scripts/bash/postgresql/setup/create_database.sh'
             }
+        }
+
+        stage('Configure Global PSQL') {
+        steps {
+            sh './scripts/bash/postgresql/setup/configure_global_psql.sh'
+        }
         }
 
         stage('Validate PostgreSQL') {
