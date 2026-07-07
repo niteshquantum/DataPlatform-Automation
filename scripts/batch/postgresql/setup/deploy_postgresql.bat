@@ -13,6 +13,11 @@ REM =====================================
 
 call "%~dp0..\..\common\set_project_root.bat"
 
+if errorlevel 1 (
+    echo ERROR: Unable to determine project root.
+    exit /b 1
+)
+
 set "ROOT=%PROJECT_ROOT%"
 set "TF=%ROOT%\tools\terraform\terraform.exe"
 
@@ -21,7 +26,8 @@ REM CHECK TERRAFORM
 REM =====================================
 
 if not exist "%TF%" (
-    echo ERROR: Terraform not found.
+    echo ERROR: Terraform not found:
+    echo %TF%
     exit /b 1
 )
 
@@ -36,6 +42,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM =====================================
+REM TERRAFORM INIT
+REM =====================================
+
 echo.
 echo =====================================
 echo TERRAFORM INIT
@@ -48,7 +58,27 @@ if errorlevel 1 (
     echo ERROR: Terraform initialization failed.
     exit /b 1
 )
+
+REM =====================================
+REM TERRAFORM VALIDATE
+REM =====================================
+
+echo.
+echo =====================================
+echo TERRAFORM VALIDATE
+echo =====================================
+echo.
+
 "%TF%" validate
+
+if errorlevel 1 (
+    echo ERROR: Terraform validation failed.
+    exit /b 1
+)
+
+REM =====================================
+REM TERRAFORM APPLY
+REM =====================================
 
 echo.
 echo =====================================
@@ -58,8 +88,6 @@ echo.
 
 "%TF%" apply ^
 -target=null_resource.install_postgresql_windows ^
--target=null_resource.start_postgresql_windows ^
--target=null_resource.validate_postgresql_windows ^
 -auto-approve
 
 if errorlevel 1 (
@@ -74,4 +102,3 @@ echo =====================================
 echo.
 
 exit /b 0
-
