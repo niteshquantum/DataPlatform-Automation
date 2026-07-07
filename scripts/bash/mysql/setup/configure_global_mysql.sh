@@ -3,8 +3,7 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+source "$(dirname "$0")/../../common/set_project_root.sh"
 
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.conf"
 
@@ -23,9 +22,6 @@ echo "CONFIGURING GLOBAL MYSQL COMMAND"
 echo "====================================="
 echo
 
-echo "Project Root : $PROJECT_ROOT"
-echo "Config File  : $CONFIG_FILE"
-
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "ERROR: MySQL config file not found"
     echo "Expected: $CONFIG_FILE"
@@ -38,12 +34,10 @@ if [ ! -x "$REAL_MYSQL" ]; then
     exit 1
 fi
 
-echo
-echo "MySQL Binary : $REAL_MYSQL"
-echo "Host         : $MYSQL_HOST"
-echo "Port         : $MYSQL_PORT"
-echo "Database     : $MYSQL_DB"
-echo "User         : $MYSQL_USER"
+echo "Host     : $MYSQL_HOST"
+echo "Port     : $MYSQL_PORT"
+echo "Database : $MYSQL_DB"
+echo "User     : $MYSQL_USER"
 
 echo
 echo "Creating global mysql wrapper..."
@@ -54,12 +48,12 @@ sudo tee "$GLOBAL_MYSQL" > /dev/null <<EOF
 #!/bin/bash
 
 exec "$REAL_MYSQL" \
-    --host="$MYSQL_HOST" \
-    --port="$MYSQL_PORT" \
-    --user="$MYSQL_USER" \
-    --password="$MYSQL_PASSWORD" \
-    "$MYSQL_DB" \
-    "\$@"
+--host="$MYSQL_HOST" \
+--port="$MYSQL_PORT" \
+--user="$MYSQL_USER" \
+--password="$MYSQL_PASSWORD" \
+"$MYSQL_DB" \
+"\$@"
 EOF
 
 sudo chmod +x "$GLOBAL_MYSQL"
