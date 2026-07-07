@@ -34,6 +34,20 @@ if (-not (Test-Path -Path $WorkDir)) {
     New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 }
 
+# --- VERIFY: work directory exists and is writable ---
+if (-not (Test-Path -Path $WorkDir)) {
+    throw "[SETUP ERROR] Work directory could not be created or found: $WorkDir"
+}
+$TestFile = Join-Path $WorkDir ".write_test.tmp"
+try {
+    Set-Content -Path $TestFile -Value "test" -Force -ErrorAction Stop
+    Remove-Item -Path $TestFile -Force -ErrorAction Stop
+}
+catch {
+    throw "[SETUP ERROR] Work directory is not writable: $WorkDir. Details: $($_.Exception.Message)"
+}
+# --- END VERIFY ---
+
 # 2. Copy the worker script into a stable, version-independent location
 #    so the Scheduled Task action never breaks if the repo folder moves.
 $WorkerScriptSource = Join-Path $PSScriptRoot "elevated_runner.ps1"
@@ -43,6 +57,16 @@ if (-not (Test-Path -Path $WorkerScriptSource)) {
     throw "[SETUP ERROR] elevated_runner.ps1 not found next to this bootstrap script at: $WorkerScriptSource"
 }
 Copy-Item -Path $WorkerScriptSource -Destination $WorkerScriptTarget -Force
+
+# --- VERIFY: worker copy actually succeeded ---
+if (-not (Test-Path -Path $WorkerScriptTarget)) {
+    throw "[SETUP ERROR] Worker script copy failed. Destination does not exist: $WorkerScriptTarget"
+}
+$WorkerScriptTargetItem = Get-Item -Path $WorkerScriptTarget
+if ($WorkerScriptTargetItem.Length -le 0) {
+    throw "[SETUP ERROR] Worker script copy produced an empty file: $WorkerScriptTarget"
+}
+# --- END VERIFY ---
 
 Write-Output "[SETUP] Worker script staged at: $WorkerScriptTarget"
 
@@ -75,6 +99,31 @@ Register-ScheduledTask `
     -Settings $Settings `
     -Description "DataPlatform-Automation: on-demand elevated runner for Jenkins pipeline steps requiring Administrator privileges (SQL Server service control, registry config)." `
     -Force | Out-Null
+
+# --- VERIFY: task was actually registered ---
+$VerifyTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($null -eq $VerifyTask) {
+    throw "[SETUP ERROR] Task '$TaskName' registration could not be verified. Get-ScheduledTask returned nothing."
+}
+
+# --- VERIFY: task configuration matches expected values ---
+$VerifyPrincipal = $VerifyTask.Principal
+if ($VerifyPrincipal.UserId -ne "SYSTEM") {
+    throw "[SETUP ERROR] Task principal mismatch. Expected UserId 'SYSTEM', found '$($VerifyPrincipal.UserId)'."
+}
+if ($VerifyPrincipal.RunLevel.ToString() -ne "Highest") {
+    throw "[SETUP ERROR] Task RunLevel mismatch. Expected 'Highest', found '$($VerifyPrincipal.RunLevel.ToString())'."
+}
+
+$VerifyAction = $VerifyTask.Actions[0]
+$VerifyExecuteName = Split-Path -Path $VerifyAction.Execute -Leaf
+if ($VerifyExecuteName -notmatch '(?i)^powershell\.exe$') {
+    throw "[SETUP ERROR] Task Execute mismatch. Expected an executable named 'powershell.exe', found '$($VerifyAction.Execute)'."
+}
+if ($VerifyAction.Arguments -notmatch [regex]::Escape($WorkerScriptTarget)) {
+    throw "[SETUP ERROR] Task Arguments do not reference expected worker script path: $WorkerScriptTarget"
+}
+# --- END VERIFY ---
 
 # 4. Grant "Authenticated Users" read + execute rights on this specific task.
 #    By default, a SYSTEM-owned task's security descriptor restricts query/run

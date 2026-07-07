@@ -67,15 +67,75 @@ try {
         throw "[FATAL] Could not acquire the elevated runner lock within 5 minutes. Another elevated step appears to be stuck. Check Task Scheduler history for 'DataPlatformElevatedRunner'."
     }
 
+    # --- SYNC: keep the staged worker script up to date with the repository copy ---
+    $WorkerScriptSource = Join-Path $PSScriptRoot "elevated_runner.ps1"
+    $WorkerScriptTarget = Join-Path $WorkDir "elevated_runner.ps1"
+    if (Test-Path -Path $WorkerScriptSource) {
+        $SourceHash = (Get-FileHash -Path $WorkerScriptSource -Algorithm SHA256).Hash
+        $NeedsSync = $true
+        if (Test-Path -Path $WorkerScriptTarget) {
+            $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
+            $NeedsSync = ($SourceHash -ne $TargetHash)
+        }
+        if ($NeedsSync) {
+            Copy-Item -Path $WorkerScriptSource -Destination $WorkerScriptTarget -Force
+            Write-Output "[ELEVATED] Staged worker script was out of date; synchronized from repository."
+
+            # --- VERIFY: copy actually landed correctly (AV/permission/disk-full safe) ---
+            if (-not (Test-Path -Path $WorkerScriptTarget)) {
+                throw "[FATAL] Worker script sync failed: destination file does not exist after copy: $WorkerScriptTarget"
+            }
+            $PostCopyHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256).Hash
+            if ($PostCopyHash -ne $SourceHash) {
+                throw "[FATAL] Worker script sync verification failed: hash mismatch after copy. The staged copy may have been blocked or altered (check antivirus/permissions/disk space). Source: $WorkerScriptSource, Target: $WorkerScriptTarget"
+            }
+            # --- END VERIFY ---
+        }
+    }
+
     # 1. Clear any stale job state and hand off the new job
-    Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
+
+     Remove-Item -Path $ExitFile, $DoneFile, $LogFile -Force -ErrorAction SilentlyContinue
     Set-Content -Path $JobFile -Value $ScriptPath -Force
 
+    # --- VERIFY: job handoff actually succeeded ---
+    if (-not (Test-Path -Path $JobFile)) {
+        throw "[FATAL] Job handoff failed: $JobFile was not created."
+    }
+    $WrittenJobContent = (Get-Content -Path $JobFile -Raw).Trim()
+    if ($WrittenJobContent -ne $ScriptPath) {
+        throw "[FATAL] Job handoff verification failed. Expected: '$ScriptPath', Found: '$WrittenJobContent'."
+    }
+    # --- END VERIFY ---
+
     Write-Output "[ELEVATED] Dispatching '$ScriptPath' to SYSTEM-privileged task runner..."
+
     $RunOutput = & schtasks.exe /run /tn $TaskName 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "[FATAL] Failed to trigger elevated task '$TaskName'. schtasks output: $RunOutput"
     }
+
+    # --- DIAGNOSTIC: best-effort post-dispatch status check (non-fatal) ---
+    # NOTE: schtasks /query output labels are locale-dependent; this parsing
+    # is best-effort only and must never fail the run if it doesn't match.
+    Start-Sleep -Seconds 2
+    try {
+        $PostRunQuery = & schtasks.exe /query /tn $TaskName /v /fo list 2>&1
+        $StatusLine = ($PostRunQuery | Select-String "^Status:\s*(.+)$")
+        if ($StatusLine) {
+            $ObservedStatus = $StatusLine.Matches[0].Groups[1].Value.Trim()
+            Write-Output "[ELEVATED] Post-dispatch task status: $ObservedStatus"
+        }
+        else {
+            Write-Output "[ELEVATED] Post-dispatch task status could not be determined (non-English locale or unexpected output format); continuing normally."
+        }
+    }
+    catch {
+        Write-Output "[ELEVATED] Post-dispatch status check skipped due to an error: $($_.Exception.Message)"
+    }
+    # --- END DIAGNOSTIC ---
+
+    
 
     # 2. Wait for the worker to signal completion
     $MaxWaitSeconds = 600
@@ -85,19 +145,64 @@ try {
         $Waited += 2
     }
 
-    if (-not (Test-Path -Path $DoneFile)) {
-        throw "[FATAL] Elevated task did not complete within $MaxWaitSeconds seconds. Check Task Scheduler history for '$TaskName'."
+   if (-not (Test-Path -Path $DoneFile)) {
+      # --- DIAGNOSTICS: capture task state before failing (locale-independent, best-effort) ---
+        $DiagCurrentStatus = "unknown"
+        $DiagLastResultVal = "unknown"
+        $DiagLastRunTimeVal = "unknown"
+
+        # Primary: Get-ScheduledTask / Get-ScheduledTaskInfo expose fixed
+        # (non-localized) object properties, unlike schtasks.exe text output.
+        try {
+            $CimTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+            $CimTaskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
+            $DiagCurrentStatus = $CimTask.State.ToString()
+            $DiagLastResultVal = $CimTaskInfo.LastTaskResult.ToString()
+            $DiagLastRunTimeVal = $CimTaskInfo.LastRunTime.ToString()
+        }
+        catch {
+            # Fallback: schtasks.exe text parsing (English-locale only, best-effort)
+            try {
+                $DiagInfo = & schtasks.exe /query /tn $TaskName /v /fo list 2>&1
+                $DiagStatus = ($DiagInfo | Select-String "^Status:\s*(.+)$")
+                $DiagLastResult = ($DiagInfo | Select-String "^Last Result:\s*(.+)$")
+                $DiagLastRunTime = ($DiagInfo | Select-String "^Last Run Time:\s*(.+)$")
+                if ($DiagStatus) { $DiagCurrentStatus = $DiagStatus.Matches[0].Groups[1].Value.Trim() }
+                if ($DiagLastResult) { $DiagLastResultVal = $DiagLastResult.Matches[0].Groups[1].Value.Trim() }
+                if ($DiagLastRunTime) { $DiagLastRunTimeVal = $DiagLastRunTime.Matches[0].Groups[1].Value.Trim() }
+            }
+            catch {
+                # Both methods failed - diagnostics remain "unknown", never fatal
+            }
+        }
+
+        $DiagText = "Current Status: $DiagCurrentStatus | Last Result: $DiagLastResultVal | Last Run Time: $DiagLastRunTimeVal"
+        # --- END DIAGNOSTICS ---
+
+        throw "[FATAL] Elevated task did not complete within $MaxWaitSeconds seconds. Check Task Scheduler history for '$TaskName'. Diagnostics -> $DiagText"
     }
+
+    # 3. Surface the captured output and exit code
+   # --- VERIFY: completion signalling is complete and well-formed ---
+    if (-not (Test-Path -Path $ExitFile)) {
+        throw "[FATAL] Task signalled completion (DoneFile present) but ExitFile is missing: $ExitFile"
+    }
+    $RawExitContent = (Get-Content -Path $ExitFile -Raw).Trim()
+    $ParsedExitCode = 0
+    if (-not [int]::TryParse($RawExitContent, [ref]$ParsedExitCode)) {
+        throw "[FATAL] ExitFile does not contain a valid integer. Found: '$RawExitContent' in $ExitFile"
+    }
+    if (-not (Test-Path -Path $LogFile)) {
+        Write-Output "[WARNING] Task completed but LogFile was not found: $LogFile"
+    }
+    # --- END VERIFY ---
 
     # 3. Surface the captured output and exit code
     if (Test-Path -Path $LogFile) {
         Get-Content -Path $LogFile
     }
 
-    $ExitCode = 1
-    if (Test-Path -Path $ExitFile) {
-        $ExitCode = [int](Get-Content -Path $ExitFile -Raw).Trim()
-    }
+    $ExitCode = $ParsedExitCode
 }
 finally {
     if ($LockAcquired) {
