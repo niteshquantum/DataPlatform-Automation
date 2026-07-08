@@ -1,4 +1,4 @@
-```powershell
+
 $ErrorActionPreference = "Stop"
 
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
@@ -137,4 +137,4 @@ Write-Host "mysql"
 Write-Host ""
 Write-Host "Open a NEW CMD window before testing."
 Write-Host ""
-```
+
