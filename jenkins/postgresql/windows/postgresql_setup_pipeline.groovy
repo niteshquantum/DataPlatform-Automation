@@ -38,29 +38,35 @@ pipeline {
             }
         }
 
-        stage('Deploy PostgreSQL') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+       stage('Deploy PostgreSQL') {
+                steps {
+                    bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+                }
             }
-        }
-
-        stage('Start PostgreSQL') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+            
+            stage('Configure PostgreSQL Service') {
+                steps {
+                    bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+                }
             }
-        }
-
-        stage('Create Database') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+            
+            stage('Create Database') {
+                steps {
+                    bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+                }
             }
-        }
-
-        stage('Validate Environment') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+            
+            stage('Configure Global PSQL') {
+                steps {
+                    bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
+                }
             }
-        }
+            
+            stage('Validate Environment') {
+                steps {
+                    bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+                }
+            }
     }
 
     post {
