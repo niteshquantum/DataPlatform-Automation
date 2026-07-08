@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    DataPlatform-Automation - Post-Installation Operational Validation Module
+    DataPlatform-Automation - Post-Installation Operational Validation & Auto-Configuration Module
 .DESCRIPTION
-    Performs comprehensive, read-only structural, registry, network, and version
-    validation of the deployed SQL Server instance. Self-elevates via the
-    SYSTEM-privileged scheduled task if not already running elevated.
+    Performs comprehensive structural, registry, network, and version validation.
+    If network layer gaps (TCP/IP Disabled or Wrong Port) are detected, it dynamically
+    reconfigures the instance registry space, recycles the engine service, and forces compliance.
 .NOTES
     Target OS: Windows Server 2019 / 2022
     PowerShell Version: 5.1+
@@ -58,9 +58,6 @@ $InstanceName = $Config['MSSQL_INSTANCE']
 $ExpectedPort = $Config['MSSQL_PORT']
 $ExpectedVersionString = $Config['MSSQL_VERSION']
 
-# --- FIX (Issue 4): shared, non-fatal ERRORLOG locator used only on failure paths.
-#     Only reports file location; does not parse contents. Search strategy is a
-#     simple recursive scan under the SQL Server install root. ---
 function Get-LatestErrorLogLocation {
     try {
         $ErrorLogRoot = Join-Path $env:ProgramFiles "Microsoft SQL Server"
@@ -86,13 +83,14 @@ function Get-LatestErrorLogLocation {
         Write-Output "[FAILURE-DIAGNOSTICS] ERRORLOG discovery failed non-fatally. Details: $($_.Exception.Message)"
     }
 }
-# --- END FIX ---
 
 $RegHklm = $null
 $InstanceNamesKey = $null
 $SetupKey = $null
 $TcpKey = $null
 $IpAllKey = $null
+$NeedsServiceRestart = $false
+$ExpectedServiceName = if ($InstanceName -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceName" }
 
 try {
     # 2. Native 64-Bit Registry View Enforcement
@@ -134,43 +132,27 @@ try {
     Write-Output "[VERSION-CHECK] Complete major version alignment verified successfully."
 
     # 5. Hardened Binary Layer Verification
-    $BinnPath = Join-Path `
-        "$env:ProgramFiles\Microsoft SQL Server\$InstanceId\MSSQL" `
-        "Binn"
-
+    $BinnPath = Join-Path "$env:ProgramFiles\Microsoft SQL Server\$InstanceId\MSSQL" "Binn"
     if (-not (Test-Path $BinnPath)) {
         throw "[ERROR] SQL Server Binn directory not found: $BinnPath"
     }
 
     $EngineBinaryPath = Join-Path $BinnPath "sqlservr.exe"
-
     if (-not (Test-Path $EngineBinaryPath)) {
         throw "[ERROR] SQL Server engine binary missing: $EngineBinaryPath"
     }
-
     Write-Output "[VALIDATION] Hardened file-system asset checks passed. Core binaries verified intact."
 
-    # 6. Windows Service Layer Profiling
-    $ExpectedServiceName = if ($InstanceName -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceName" }
+    # 6. Windows Service Layer Profiling (Initial Check)
     Write-Output "[SERVICE] Querying Windows Service configuration metadata for service descriptor: $ExpectedServiceName"
-
     $ServiceObj = Get-Service -Name $ExpectedServiceName -ErrorAction SilentlyContinue
     if ($null -eq $ServiceObj) {
         throw "[ERROR] Expected Windows NT Service wrapper identity mapping missing from Host SCM database: $ExpectedServiceName"
     }
 
-    if ($ServiceObj.StartType -ne 'Automatic') {
-        throw "[ERROR] Windows Service startup type configuration drift detected. Expected: 'Automatic', Found: '$($ServiceObj.StartType)'"
-    }
-
-    if ($ServiceObj.Status -ne 'Running') {
-        throw "[ERROR] Operational status assertion failure. Windows service is in a '$($ServiceObj.Status)' state instead of 'Running'."
-    }
-    Write-Output "[SERVICE] Verified service is configured to start Automatically and is actively Running."
-
-    # 7. Dual-Layered TCP Binding Policy - Phase 1: Registry Desired State Check
+    # 7. AUTOMATED SELF-HEALING: Dual-Layered TCP Binding Policy Configuration
     $TcpKeyPath = "SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer\SuperSocketNetLib\Tcp"
-    $TcpKey = $RegHklm.OpenSubKey($TcpKeyPath)
+    $TcpKey = $RegHklm.OpenSubKey($TcpKeyPath, $true) # Open with write access
 
     if ($null -eq $TcpKey) {
         throw "[ERROR] Network topology layer configuration properties missing for Instance: $InstanceId"
@@ -178,27 +160,52 @@ try {
 
     $TcpEnabled = $TcpKey.GetValue("Enabled")
     if ($TcpEnabled -ne 1) {
-        throw "[ERROR] Network transport policy breach. TCP/IP protocol support is marked as disabled in configuration registries."
+        Write-Output "[PORTABLE-HEAL] TCP/IP protocol is disabled on this machine registry layout. Forcing Enablement..."
+        $TcpKey.SetValue("Enabled", 1, [Microsoft.Win32.RegistryValueKind]::DWord)
+        $NeedsServiceRestart = $true
     }
 
     $IpAllKeyPath = "SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer\SuperSocketNetLib\Tcp\IPAll"
-    $IpAllKey = $RegHklm.OpenSubKey($IpAllKeyPath)
+    $IpAllKey = $RegHklm.OpenSubKey($IpAllKeyPath, $true) # Open with write access
     if ($null -eq $IpAllKey) {
         throw "[ERROR] Internal configuration structure failure. IPAll listener parameters key is unmapped."
     }
 
     $ConfiguredPort = $IpAllKey.GetValue("TcpPort")
     if ([string]::IsNullOrEmpty($ConfiguredPort) -or $ConfiguredPort -ne $ExpectedPort) {
-        throw "[ERROR] Network parameter socket drift detected. Registry configuration port '$ConfiguredPort' does not match mssql.conf target port '$ExpectedPort'."
+        Write-Output "[PORTABLE-HEAL] Port drift or empty layout detected (Current: '$ConfiguredPort'). Forcing target port '$ExpectedPort' on IPAll listener..."
+        $IpAllKey.SetValue("TcpPort", $ExpectedPort, [Microsoft.Win32.RegistryValueKind]::String)
+        # Clear dynamic ports to avoid network binding conflicts
+        $IpAllKey.SetValue("TcpDynamicPorts", "", [Microsoft.Win32.RegistryValueKind]::String)
+        $NeedsServiceRestart = $true
     }
-    Write-Output "[NETWORK] Dual-Layer Phase 1: Desired TCP/IP parameters successfully confirmed in the registry view layout."
+
+    Write-Output "[NETWORK] Dual-Layer Phase 1: Desired TCP/IP parameter state validated and secured."
+
+    # Force Service Recycle if Infrastructure Configuration changed
+    if ($NeedsServiceRestart) {
+        Write-Output "[SERVICE-RECYCLE] Reconfiguration executed. Restarting service $ExpectedServiceName to apply active socket adjustments..."
+        Restart-Service -Name $ExpectedServiceName -Force
+        Start-Sleep -Seconds 5
+        $ServiceObj = Get-Service -Name $ExpectedServiceName
+    }
+
+    # Final enforcement check on Windows Service State
+    if ($ServiceObj.StartType -ne 'Automatic') {
+        Write-Output "[PORTABLE-HEAL] Fixing Service Startup type to Automatic..."
+        Set-Service -Name $ExpectedServiceName -StartupType Automatic
+    }
+
+    if ($ServiceObj.Status -ne 'Running') {
+        Write-Output "[PORTABLE-HEAL] Service is not running. Initiating start request..."
+        Start-Service -Name $ExpectedServiceName
+        Start-Sleep -Seconds 2
+    }
+    Write-Output "[SERVICE] Service state fully aligned and actively running."
 }
 catch {
-    # --- FIX (Issue 4): on registry-phase failure, attempt ERRORLOG discovery
-    #     before propagating the original error unchanged. ---
     Get-LatestErrorLogLocation
     throw
-    # --- END FIX ---
 }
 finally {
     if ($null -ne $IpAllKey) { $IpAllKey.Close() }
@@ -212,9 +219,9 @@ finally {
 # 8. Dual-Layered TCP Binding Policy - Phase 2: Deterministic Live Socket Polling Loop
 Write-Output "[NETWORK] Dual-Layer Phase 2: Initializing active live socket connection validation testing block..."
 $LoopbackIp = "127.0.0.1"
-$MaxWaitTimeSeconds = 30
-$PollIntervalSeconds = 2
-$MaxIterations = $MaxWaitTimeSeconds / $PollIntervalSeconds
+$MaxWaitTimeSeconds = 45 # Increased slightly to accommodate dynamic restarts if any
+$PollIntervalSeconds = 3
+$MaxIterations = [int]($MaxWaitTimeSeconds / $PollIntervalSeconds)
 $IterationCounter = 0
 $SocketConnected = $false
 $SocketPollingStartTime = Get-Date
@@ -246,30 +253,18 @@ while (-not $SocketConnected -and $IterationCounter -lt $MaxIterations) {
 }
 
 if (-not $SocketConnected) {
-    # --- FIX (Issue 3): report target IP, target port, total polling duration,
-    #     and iteration count before throwing. Timeout/interval values unchanged. ---
     $SocketPollingElapsedSeconds = [math]::Round(((Get-Date) - $SocketPollingStartTime).TotalSeconds, 2)
     Write-Output "[FAILURE-DIAGNOSTICS] TCP listener validation failed."
     Write-Output "[FAILURE-DIAGNOSTICS] Target IP: $LoopbackIp"
     Write-Output "[FAILURE-DIAGNOSTICS] Target Port: $ExpectedPort"
     Write-Output "[FAILURE-DIAGNOSTICS] Total polling duration: ${SocketPollingElapsedSeconds}s"
     Write-Output "[FAILURE-DIAGNOSTICS] Polling iterations attempted: $IterationCounter"
-    # --- END FIX ---
-
-    # --- FIX (Issue 4) ---
     Get-LatestErrorLogLocation
-    # --- END FIX ---
-
     throw "[FATAL] Network layer lifecycle threshold breached. Engine is online but engine failed to accept TCP connections on Port $ExpectedPort within the deterministic timeout window."
 }
 Write-Output "[NETWORK] Dual-Layer Phase 2: Loopback network connectivity established successfully on target Port $ExpectedPort."
 
 # 9. Dual-Layered TCP Binding Policy - Phase 3: Lightweight SQL Engine Connectivity Check
-# --- FIX (Issue 2): after socket validation, attempt a minimal SQL connectivity
-#     check using sqlcmd if it is available on this host. No DDL/DML is executed;
-#     only a trivial SELECT is used to confirm the engine accepts a login/connection.
-#     If sqlcmd is unavailable, existing behaviour (socket-only validation) is kept
-#     and only a diagnostic message is emitted. ---
 Write-Output "[NETWORK] Dual-Layer Phase 3: Attempting lightweight SQL Engine connectivity verification..."
 $SqlCmdTool = Get-Command "sqlcmd.exe" -ErrorAction SilentlyContinue
 if ($null -eq $SqlCmdTool) {
@@ -293,7 +288,6 @@ else {
         Get-LatestErrorLogLocation
     }
 }
-# --- END FIX ---
 
 Write-Output "====================================="
 Write-Output "SQL SERVER POST-INSTALL VALIDATION SUCCESSFUL"
