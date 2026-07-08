@@ -47,6 +47,22 @@ function Get-ServiceManagementObject {
     return $Obj
 }
 
+# --- FIX (Root Cause Diagnostic): Identify the executing security context so
+#     that a registry-permission failure produces an actionable error instead
+#     of a bare "Requested registry access is not allowed" OS exception.
+#     This does not change instance/path discovery, which is already correct. ---
+function Test-CurrentUserContext {
+    $Identity  = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $Principal = New-Object System.Security.Principal.WindowsPrincipal($Identity)
+    $IsElevatedAdmin = $Principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    return [PSCustomObject]@{
+        UserName   = $Identity.Name
+        IsElevated = $IsElevatedAdmin
+    }
+}
+# --- END FIX ---
+
 # ==============================================================================
 # CORE EXECUTION PIPELINE
 # ==============================================================================
@@ -119,6 +135,45 @@ $IpAll   = Join-Path $TcpPath "IPAll"
 
 # 2. TCP/IP Static Port Configuration
 if (-not [string]::IsNullOrWhiteSpace($Port)) {
+
+    # --- FIX (Root Cause Diagnostic): Pre-flight elevation check.
+    #     This subtree is ACL-restricted to Administrators/SYSTEM by the SQL
+    #     Server installer, and Windows UAC token filtering means even a
+    #     member of the local Administrators group will be denied here
+    #     unless the process token is actually elevated. Surface this BEFORE
+    #     attempting the writes, instead of letting the OS throw a bare
+    #     "Requested registry access is not allowed" deep inside Set-ItemProperty.
+    #     Execution order and all downstream logic are unchanged. ---
+    $ExecutionContextInfo = Test-CurrentUserContext
+    Write-Output "[SECURITY] Executing identity: $($ExecutionContextInfo.UserName) | Elevated Administrator token: $($ExecutionContextInfo.IsElevated)"
+
+    if (-not $ExecutionContextInfo.IsElevated) {
+        throw @"
+[ERROR] [SECURITY] Insufficient privilege to modify protected SQL Server registry configuration.
+
+Executing Identity  : $($ExecutionContextInfo.UserName)
+Elevated Admin Token: False
+Target Registry Path: $TcpPath
+
+Writing to this HKLM subtree requires an elevated (Administrator or SYSTEM) access token,
+even for accounts that are members of the local Administrators group, because of Windows
+UAC token filtering combined with the default ACLs the SQL Server installer applies to
+this key.
+
+PERMANENT FIX (pick one, per-machine, one-time):
+  (a) Run the Jenkins agent service as the SYSTEM account, or
+  (b) Configure the Jenkins agent service to run as a local Administrator account
+      (Services.msc -> Jenkins -> Log On tab), ensuring the service itself carries
+      an elevated token (not just group membership), or
+  (c) Grant an explicit FullControl ACE on this specific registry subtree to the
+      Jenkins service account, e.g.:
+      `$Acl = Get-Acl -Path '$TcpPath'
+      # add an explicit access rule for the Jenkins service account, then:
+      Set-Acl -Path '$TcpPath' -AclObject `$Acl
+"@
+    }
+    # --- END FIX ---
+
     Write-Output "[NETWORK] Applying static TCP port configuration ($Port)..."
     $TcpConfigStartTime = Get-Date
     # --- FIX (Issue 3): Track which specific registry path is being acted
@@ -173,6 +228,8 @@ if (-not [string]::IsNullOrWhiteSpace($Port)) {
 
 Registry path involved in failure:
 $CurrentRegistryOperationPath
+
+Executing Identity: $($ExecutionContextInfo.UserName)
 
 Original Error:
 $($_.Exception.Message)
