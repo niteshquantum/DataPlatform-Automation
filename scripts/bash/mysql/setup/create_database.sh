@@ -26,7 +26,7 @@ echo
 
 echo "Creating database if not exists..."
 
-mysql \
+/usr/bin/mysql \
 -h "$MYSQL_HOST" \
 -P "$MYSQL_PORT" \
 -u "$MYSQL_USER" \
