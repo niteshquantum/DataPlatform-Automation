@@ -30,60 +30,56 @@ $IsCurrentlyElevated = $CurrentPrincipal.IsInRole([System.Security.Principal.Win
 
 if (-not $IsCurrentlyElevated -and -not $env:DPA_ELEVATED) {
 
-    Write-Output "[ELEVATION] Non-elevated token detected for '$($CurrentIdentity.Name)'. Bootstrapping silent elevation via Scheduled Task (S4U + Highest)..."
+    Write-Output "[ELEVATION] Non-elevated token detected for '$($CurrentIdentity.Name)'. Bootstrapping silent self-elevation via Start-Process -Verb RunAs..."
+
+    # PREREQUISITE (one-time, per-machine, not per-run): the host must have
+    # ConsentPromptBehaviorAdmin = 0 set at
+    # HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+    # so that Administrators-group accounts elevate silently, with no
+    # interactive UAC prompt (required anyway, since a Jenkins service
+    # running in a non-interactive session cannot render a UAC dialog).
+    # See: scripts/powershell/mssql/Enable-SilentElevation.ps1 (run once
+    # per build-agent machine as part of provisioning).
 
     $SelfScriptPath = $MyInvocation.MyCommand.Path
-    $TaskName  = "DPA-ElevatedRunner-$([guid]::NewGuid().ToString('N').Substring(0,10))"
-    $StdOutLog = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$TaskName.out.log")
-    $ExitCodeFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$TaskName.exitcode")
+    $RunId     = [guid]::NewGuid().ToString('N').Substring(0,10)
+    $StdOutLog = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "DPA-Elevated-$RunId.out.log")
 
     # DPA_ELEVATED marks the relaunched (elevated) invocation so it does not
     # attempt to re-bootstrap itself again (prevents infinite recursion).
-    $InnerCommand = "`$env:DPA_ELEVATED = '1'; & `"$SelfScriptPath`" *> `"$StdOutLog`"; `$LASTEXITCODE | Out-File -FilePath `"$ExitCodeFile`" -Encoding ascii"
+    # The child writes its own output to file via '*>' since Start-Process
+    # cannot combine -Verb RunAs with -RedirectStandardOutput.
+    $InnerCommand = "`$env:DPA_ELEVATED = '1'; & `"$SelfScriptPath`" *> `"$StdOutLog`"; exit `$LASTEXITCODE"
 
     try {
-        $Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"$InnerCommand`""
-        $TaskPrincipal = New-ScheduledTaskPrincipal -UserId $CurrentIdentity.Name -LogonType S4U -RunLevel Highest
-        $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+        $Proc = Start-Process -FilePath "powershell.exe" `
+            -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $InnerCommand) `
+            -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
 
-        Register-ScheduledTask -TaskName $TaskName -Action $Action -Principal $TaskPrincipal -Settings $Settings -Force -ErrorAction Stop | Out-Null
-        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-
-        $TimeoutSeconds = 300
-        $ElapsedSeconds = 0
-        do {
-            Start-Sleep -Seconds 2
-            $ElapsedSeconds += 2
-            $TaskState = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
-        } while ($TaskState -eq 'Running' -and $ElapsedSeconds -lt $TimeoutSeconds)
-
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+        $ElevatedExitCode = $Proc.ExitCode
 
         if (Test-Path -Path $StdOutLog) {
             Get-Content -Path $StdOutLog | ForEach-Object { Write-Output $_ }
-        }
-
-        $ElevatedExitCode = 1
-        if (Test-Path -Path $ExitCodeFile) {
-            $RawExit = (Get-Content -Path $ExitCodeFile -Raw).Trim()
-            if ($RawExit -match '^\d+$') { $ElevatedExitCode = [int]$RawExit }
+            Remove-Item -Path $StdOutLog -ErrorAction SilentlyContinue
         }
         else {
-            Write-Output "[ELEVATION] [ERROR] Elevated task did not produce an exit code within $TimeoutSeconds seconds (timeout or task failed to run)."
+            Write-Output "[ELEVATION] [WARNING] Elevated process produced no output log at '$StdOutLog'."
         }
 
-        Remove-Item -Path $StdOutLog, $ExitCodeFile -ErrorAction SilentlyContinue
         exit $ElevatedExitCode
     }
     catch {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
         throw @"
-[ERROR] [ELEVATION] Automatic silent elevation via Scheduled Task failed.
+[ERROR] [ELEVATION] Automatic silent elevation via Start-Process -Verb RunAs failed.
 
 Executing Identity: $($CurrentIdentity.Name)
 
-This typically means the Task Scheduler service is disabled, or the account
-is not a member of the local Administrators group on this host.
+This means one of the following:
+  1. The one-time host bootstrap has not been run on this machine yet.
+     Run scripts/powershell/mssql/Enable-SilentElevation.ps1 ONCE (elevated)
+     as part of this machine's provisioning, then re-run the pipeline.
+  2. '$($CurrentIdentity.Name)' is not a member of the local Administrators
+     group on this host.
 
 Original Error:
 $($_.Exception.Message)
