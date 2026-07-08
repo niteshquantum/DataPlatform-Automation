@@ -1,192 +1,420 @@
 <#
 .SYNOPSIS
-    DataPlatform-Automation - Elevated Task Worker
+    DataPlatform-Automation - Elevated Execution Dispatcher
 .DESCRIPTION
-    Runs as NT AUTHORITY\SYSTEM via a pre-registered Scheduled Task.
-    Reads the target script path from a job file, executes it with full
-    elevated privileges, and writes the exit code + captured output back
-    for the (non-elevated) caller to consume.
-.NOTES
-    This script is never called directly. It is only ever invoked by the
-    "DataPlatformElevatedRunner" Scheduled Task, registered once via
-    setup_elevated_task.ps1.
+    Triggers the pre-registered "DataPlatformElevatedRunner" Scheduled Task
+    to execute a target script with SYSTEM-level privileges, waits for
+    completion, streams its output, and exits with the same code the
+    target script produced. Use this INSTEAD OF calling admin-requiring
+    scripts (mount_iso.ps1, start_mssql.ps1) directly.
+.PARAMETER ScriptPath
+    Full path to the .ps1 script that needs elevated execution.
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File invoke_elevated.ps1 -ScriptPath "C:\...\mount_iso.ps1"
 #>
 
+param(
+    [Parameter(Mandatory = $true)][string]$ScriptPath
+)
+
 $ErrorActionPreference = 'Stop'
-$WorkDir = "C:\ProgramData\DataPlatformAutomation"
-$JobFile = Join-Path $WorkDir "job.txt"
-$LogFile = Join-Path $WorkDir "job.log"
+$TaskName = "DataPlatformElevatedRunner"
+$WorkDir  = "C:\ProgramData\DataPlatformAutomation"
+$JobFile  = Join-Path $WorkDir "job.txt"
+$LogFile  = Join-Path $WorkDir "job.log"
 $ExitFile = Join-Path $WorkDir "job.exitcode"
 $DoneFile = Join-Path $WorkDir "job.done"
 
-# --- Helper: write the exit code file and verify it landed correctly ---
-function Write-ExitFile {
-    param([int]$Code)
-    "$Code" | Set-Content -Path $ExitFile -Force
-    if (-not (Test-Path -Path $ExitFile)) {
-        try { "[WARNING] Failed to create ExitFile: $ExitFile" | Add-Content -Path $LogFile -Force -ErrorAction SilentlyContinue } catch {}
-        return
+# --- Centralized diagnostic snapshot helpers (used across all failure paths) ---
+function Get-DiagnosticSnapshot {
+    $Snap = [ordered]@{
+        TaskState            = "unknown"
+        LastTaskResult       = "unknown"
+        LastRunTime          = "unknown"
+        WorkerExecutionStatus = "unknown"
+        JobFileExists        = (Test-Path -Path $JobFile)
+        DoneFileExists       = (Test-Path -Path $DoneFile)
+        ExitFileExists       = (Test-Path -Path $ExitFile)
+        LogFileExists        = (Test-Path -Path $LogFile)
     }
-    $Verify = (Get-Content -Path $ExitFile -Raw -ErrorAction SilentlyContinue).Trim()
-    $ParsedCheck = 0
-    if (-not [int]::TryParse($Verify, [ref]$ParsedCheck)) {
-        try { "[WARNING] ExitFile did not contain a valid integer after write. Found: '$Verify'" | Add-Content -Path $LogFile -Force -ErrorAction SilentlyContinue } catch {}
-    }
-}
 
-# --- Helper: write the log file and verify it is readable ---
-function Write-LogFile {
-    param([string]$Content)
-    $Content | Set-Content -Path $LogFile -Force
-    if (-not (Test-Path -Path $LogFile)) {
-        return
-    }
     try {
-        $null = Get-Content -Path $LogFile -Raw -ErrorAction Stop
+        $CimTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+        $CimTaskInfo = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop
+        $Snap.TaskState = $CimTask.State.ToString()
+        $Snap.LastTaskResult = $CimTaskInfo.LastTaskResult.ToString()
+        $Snap.LastRunTime = $CimTaskInfo.LastRunTime.ToString()
     }
     catch {
-        # Log file exists but isn't readable; nothing further to do.
-    }
-}
-
-# --- Helper: signal completion and verify it was actually created ---
-function Write-DoneFile {
-    $Attempts = 0
-    $Created = $false
-    while (-not $Created -and $Attempts -lt 3) {
-        $Attempts++
         try {
-            "1" | Set-Content -Path $DoneFile -Force -ErrorAction Stop
-            if (Test-Path -Path $DoneFile) {
-                $Created = $true
-            }
+            $DiagInfo = & schtasks.exe /query /tn $TaskName /v /fo list 2>&1
+            $DiagStatus = ($DiagInfo | Select-String "^Status:\s*(.+)$")
+            $DiagLastResult = ($DiagInfo | Select-String "^Last Result:\s*(.+)$")
+            $DiagLastRunTime = ($DiagInfo | Select-String "^Last Run Time:\s*(.+)$")
+            if ($DiagStatus) { $Snap.TaskState = $DiagStatus.Matches[0].Groups[1].Value.Trim() }
+            if ($DiagLastResult) { $Snap.LastTaskResult = $DiagLastResult.Matches[0].Groups[1].Value.Trim() }
+            if ($DiagLastRunTime) { $Snap.LastRunTime = $DiagLastRunTime.Matches[0].Groups[1].Value.Trim() }
         }
         catch {
-            Start-Sleep -Milliseconds 200
+            # Both methods failed - diagnostics remain "unknown", never fatal
         }
     }
-    if (-not $Created) {
-        try {
-            "[FATAL] elevated_runner.ps1 could not create DoneFile at $DoneFile after $Attempts attempts. The caller (invoke_elevated.ps1) will time out waiting for this file." | Add-Content -Path $LogFile -Force -ErrorAction SilentlyContinue
-        }
-        catch {}
+
+    if ($Snap.DoneFileExists) {
+        $Snap.WorkerExecutionStatus = "Completed (DoneFile present)"
     }
-}
-
-# Clean any stale completion markers from a previous run before starting
-Remove-Item -Path $ExitFile, $DoneFile -Force -ErrorAction SilentlyContinue
-
-# --- VALIDATE: job.txt must exist and contain a non-empty, non-whitespace path ---
-if (-not (Test-Path -Path $JobFile)) {
-    Write-LogFile "[FATAL] No job file found at $JobFile"
-    Write-ExitFile 9999
-    Write-DoneFile
-    exit 1
-}
-
-$TargetScript = (Get-Content -Path $JobFile -Raw -ErrorAction SilentlyContinue)
-if ($null -ne $TargetScript) { $TargetScript = $TargetScript.Trim() }
-
-if ([string]::IsNullOrWhiteSpace($TargetScript)) {
-    Write-LogFile "[FATAL] Job file $JobFile exists but contains an empty or whitespace-only script path."
-    Write-ExitFile 9999
-    Write-DoneFile
-    exit 1
-}
-
-if (-not (Test-Path -Path $TargetScript)) {
-    Write-LogFile "[FATAL] Target script does not exist: $TargetScript"
-    Write-ExitFile 9999
-    Write-DoneFile
-    exit 1
-}
-# --- END VALIDATE ---
-
-# --- RESOLVE: locate the PowerShell executable instead of assuming it's on PATH ---
-$PowerShellExe = $null
-$PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
-if ($PsCommand) {
-    $PowerShellExe = $PsCommand.Source
-}
-if (-not $PowerShellExe) {
-    $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-    if (Test-Path -Path $FallbackPath) {
-        $PowerShellExe = $FallbackPath
-    }
-}
-if (-not $PowerShellExe) {
-    Write-LogFile "[FATAL] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
-    Write-ExitFile 9999
-    Write-DoneFile
-    exit 1
-}
-# --- END RESOLVE ---
-
-$ExitCode = 1  # deterministic default; only ever overwritten by a real result below
-
-try {
-    $env:DPA_ELEVATED = "1"
-
-    # --- VERIFY: target script still exists immediately before execution ---
-    if (-not (Test-Path -Path $TargetScript)) {
-        throw "[FATAL] Target script disappeared before execution could start: $TargetScript"
-    }
-    # --- END VERIFY ---
-
-    # Execute the real script (mount_iso.ps1, start_mssql.ps1, etc.) with full
-    # SYSTEM-level privileges. Output is captured to the log file so the
-    # caller can surface it in the Jenkins console.
-    #
-    # IMPORTANT: temporarily relax ErrorActionPreference to 'Continue' for
-    # just this invocation. With 'Stop' in effect, ANY text the child
-    # process writes to its error stream (stderr) - even benign status
-    # output from setup.exe or a non-fatal warning inside the target
-    # script - gets promoted by PowerShell into a script-terminating
-    # exception here, aborting the whole elevated run and masking the
-    # real result with a confusing "term not recognized" style message.
-    # 'Continue' captures that output as plain text (via 2>&1) without
-    # treating it as fatal; the actual success/failure of the target
-    # script is still determined purely by its real process exit code
-    # ($LASTEXITCODE) immediately below, so no failure detection is lost.
-    $PreviousEap = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    $Output = & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $TargetScript 2>&1
-    $ErrorActionPreference = $PreviousEap
-
-    # --- Deterministic exit-code resolution ---
-    if ($null -ne $LASTEXITCODE) {
-        $ExitCode = $LASTEXITCODE
+    elseif ($Snap.TaskState -eq 'Running') {
+        $Snap.WorkerExecutionStatus = "In progress (task still running)"
     }
     else {
-        $ExitCode = 0
+        $Snap.WorkerExecutionStatus = "Not completed / unknown"
     }
-    # --- END ---
 
-    Write-LogFile ($Output | Out-String)
-    Write-ExitFile $ExitCode
+    return $Snap
+}
+
+function Format-DiagnosticSnapshot {
+    param($Snap)
+    return "Task State: $($Snap.TaskState) | Last Result: $($Snap.LastTaskResult) | Last Run Time: $($Snap.LastRunTime) | Worker Status: $($Snap.WorkerExecutionStatus) | JobFile Exists: $($Snap.JobFileExists) | DoneFile Exists: $($Snap.DoneFileExists) | ExitFile Exists: $($Snap.ExitFileExists) | LogFile Exists: $($Snap.LogFileExists)"
+}
+# --- END diagnostic helpers ---
+
+# --- Shared task-configuration validator used by the auto-bootstrap pre-flight below. ---
+function Test-ElevatedTaskValid {
+    param($Task)
+
+    if ($null -eq $Task) { return $false }
+
+    if ($Task.State.ToString() -eq 'Disabled') { return $false }
+
+    $TaskPrincipal = $Task.Principal
+    if ($TaskPrincipal.UserId -ne "SYSTEM") { return $false }
+    if ($TaskPrincipal.RunLevel.ToString() -ne "Highest") { return $false }
+
+    $TaskAction = $Task.Actions[0]
+    if ($null -eq $TaskAction) { return $false }
+
+    $ResolvedPowerShellExe = $null
+    $ResolvedPsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
+    if ($ResolvedPsCommand) {
+        $ResolvedPowerShellExe = $ResolvedPsCommand.Source
+    }
+    if (-not $ResolvedPowerShellExe) {
+        $ResolvedFallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+        if (Test-Path -Path $ResolvedFallbackPath) {
+            $ResolvedPowerShellExe = $ResolvedFallbackPath
+        }
+    }
+    if (-not $ResolvedPowerShellExe) { return $false }
+
+    $TaskActionExecutePath = $TaskAction.Execute
+    if ([string]::IsNullOrEmpty($TaskActionExecutePath)) { return $false }
+    if ($TaskActionExecutePath -ne $ResolvedPowerShellExe) { return $false }
+
+    $ExpectedWorkerPath = Join-Path $WorkDir "elevated_runner.ps1"
+    if ($TaskAction.Arguments -notmatch [regex]::Escape($ExpectedWorkerPath)) { return $false }
+
+    if (-not (Test-Path -Path $ExpectedWorkerPath)) { return $false }
+
+    if (-not [string]::IsNullOrEmpty($TaskAction.WorkingDirectory)) { return $false }
+
+    $TaskSettings = $Task.Settings
+    if ($TaskSettings.MultipleInstances.ToString() -ne "Queue") { return $false }
+
+    return $true
+}
+
+function Get-ElevatedTaskSafe {
+    try {
+        return Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    }
+    catch {
+        return $null
+    }
+}
+
+# 0. Pre-flight: confirm the elevated task is registered and correctly configured.
+$ElevatedTaskCheck = Get-ElevatedTaskSafe
+$ElevatedTaskValid = Test-ElevatedTaskValid -Task $ElevatedTaskCheck
+
+if ($null -eq $ElevatedTaskCheck) {
+    Write-Output "[ELEVATED] Elevated task '$TaskName' not found. Attempting automatic bootstrap..."
+}
+elseif (-not $ElevatedTaskValid) {
+    Write-Output "[ELEVATED] Elevated task '$TaskName' exists but is misconfigured. Attempting automatic bootstrap/repair..."
+}
+else {
+    Write-Output "[ELEVATED] Elevated task '$TaskName' found and correctly configured."
+}
+
+if ($null -eq $ElevatedTaskCheck -or -not $ElevatedTaskValid) {
+    $SetupScriptPath = Join-Path $PSScriptRoot "setup_elevated_task.ps1"
+    if (-not (Test-Path -Path $SetupScriptPath)) {
+        throw "[FATAL] Automatic bootstrap failed: setup_elevated_task.ps1 not found at expected path: $SetupScriptPath"
+    }
+
+    $PowerShellExe = $null
+    $PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
+    if ($PsCommand) {
+        $PowerShellExe = $PsCommand.Source
+    }
+    if (-not $PowerShellExe) {
+        $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+        if (Test-Path -Path $FallbackPath) {
+            $PowerShellExe = $FallbackPath
+        }
+    }
+    if (-not $PowerShellExe) {
+        throw "[FATAL] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
+    }
+
+    Write-Output "[ELEVATED] Invoking automatic bootstrap: $SetupScriptPath"
+    $BootstrapOutput = & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $SetupScriptPath 2>&1
+    $BootstrapExitCode = $LASTEXITCODE
+    $BootstrapOutput | ForEach-Object { Write-Output "[BOOTSTRAP] $_" }
+
+    if ($BootstrapExitCode -ne 0) {
+        throw "[FATAL] Automatic bootstrap of elevated task '$TaskName' failed (exit code $BootstrapExitCode). See [BOOTSTRAP] output above for the underlying reason."
+    }
+
+    $ElevatedTaskCheck = Get-ElevatedTaskSafe
+    $ElevatedTaskValid = Test-ElevatedTaskValid -Task $ElevatedTaskCheck
+
+    if ($null -eq $ElevatedTaskCheck) {
+        throw "[FATAL] Automatic bootstrap completed but elevated task '$TaskName' still could not be found. Check Task Scheduler and the [BOOTSTRAP] output above."
+    }
+    if (-not $ElevatedTaskValid) {
+        throw "[FATAL] Automatic bootstrap completed but elevated task '$TaskName' is still not correctly configured. Check Task Scheduler and the [BOOTSTRAP] output above."
+    }
+
+    Write-Output "[ELEVATED] Automatic bootstrap succeeded. Elevated task '$TaskName' is now registered and correctly configured."
+}
+
+# --- Pre-flight: verify task is enabled/ready before proceeding ---
+try {
+    $PreflightTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ($PreflightTask.State.ToString() -eq 'Disabled') {
+        throw "[FATAL] Elevated task '$TaskName' exists but is DISABLED. Enable it in Task Scheduler before running this pipeline."
+    }
 }
 catch {
-    # --- Full diagnostics on failure (not just Exception.Message) ---
-    $ErrObj = $_
-    $DiagLines = @()
-    $DiagLines += "[FATAL] elevated_runner.ps1 failed while executing target script: $TargetScript"
-    $DiagLines += "Exception: $($ErrObj.Exception.GetType().FullName): $($ErrObj.Exception.Message)"
-    if ($ErrObj.InvocationInfo) {
-        $DiagLines += "ScriptName: $($ErrObj.InvocationInfo.ScriptName)"
-        $DiagLines += "LineNumber: $($ErrObj.InvocationInfo.ScriptLineNumber)"
-        $DiagLines += "Line: $($ErrObj.InvocationInfo.Line)"
-        $DiagLines += "PositionMessage: $($ErrObj.InvocationInfo.PositionMessage)"
+    if ($_.Exception.Message -like "*is DISABLED*") { throw }
+    try {
+        $PreflightDetail = & schtasks.exe /query /tn $TaskName /v /fo list 2>&1
+        $PreflightStatusLine = ($PreflightDetail | Select-String "^Status:\s*(.+)$")
+        if ($PreflightStatusLine -and $PreflightStatusLine.Matches[0].Groups[1].Value.Trim() -eq 'Disabled') {
+            throw "[FATAL] Elevated task '$TaskName' exists but is DISABLED. Enable it in Task Scheduler before running this pipeline."
+        }
     }
-    if ($ErrObj.ScriptStackTrace) {
-        $DiagLines += "StackTrace:`n$($ErrObj.ScriptStackTrace)"
+    catch {
+        if ($_.Exception.Message -like "*is DISABLED*") { throw }
+        Write-Output "[ELEVATED] Pre-flight: could not confirm task enabled/ready state; continuing."
     }
-    Write-LogFile ($DiagLines -join "`n")
-    $ExitCode = 1
-    Write-ExitFile $ExitCode
-    # --- END DIAGNOSTICS ---
+}
+# --- END pre-flight task state check ---
+
+if (-not (Test-Path -Path $ScriptPath)) {
+    throw "[FATAL] Target script not found: $ScriptPath"
+}
+
+$PreflightWorkerSource = Join-Path $PSScriptRoot "elevated_runner.ps1"
+if (-not (Test-Path -Path $PreflightWorkerSource)) {
+    throw "[FATAL] Repository worker script not found (pre-flight check): $PreflightWorkerSource"
+}
+
+if (-not (Test-Path -Path $WorkDir)) {
+    New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
+}
+
+try {
+    $PreflightProbe = Join-Path $WorkDir "._writetest_$([guid]::NewGuid().ToString('N')).tmp"
+    Set-Content -Path $PreflightProbe -Value "test" -Force -ErrorAction Stop
+    Remove-Item -Path $PreflightProbe -Force -ErrorAction SilentlyContinue
+}
+catch {
+    throw "[FATAL] Work directory is not accessible/writable: $WorkDir. Exception: $($_.Exception.Message)"
+}
+
+$Mutex = New-Object System.Threading.Mutex($false, "Global\DataPlatformElevatedMutex")
+$LockAcquired = $false
+try {
+    Write-Output "[ELEVATED] Waiting for exclusive access to the elevated runner (in case another step is using it)..."
+    $LockAcquired = $Mutex.WaitOne(300000)
+    if (-not $LockAcquired) {
+        throw "[FATAL] Could not acquire the elevated runner lock within 5 minutes. Current Script :
+$ScriptPath
+
+Task :
+DataPlatformElevatedRunner. Check Task Scheduler history for 'DataPlatformElevatedRunner'."
+    }
+
+    $WorkerScriptSource = Join-Path $PSScriptRoot "elevated_runner.ps1"
+    $WorkerScriptTarget = Join-Path $WorkDir "elevated_runner.ps1"
+
+    if (-not (Test-Path -Path $WorkerScriptSource)) {
+        throw "[FATAL] Repository worker script not found: $WorkerScriptSource"
+    }
+
+    try {
+        $SourceHash = (Get-FileHash -Path $WorkerScriptSource -Algorithm SHA256 -ErrorAction Stop).Hash
+    }
+    catch {
+        throw "[FATAL] Failed to compute hash for repository worker script. Path: $WorkerScriptSource. Exception: $($_.Exception.Message)"
+    }
+
+    $TargetExists = Test-Path -Path $WorkerScriptTarget
+    $NeedsCopy = $true
+
+    if ($TargetExists) {
+        try {
+            $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256 -ErrorAction Stop).Hash
+        }
+        catch {
+            throw "[FATAL] Failed to compute hash for staged worker script. Path: $WorkerScriptTarget. Exception: $($_.Exception.Message)"
+        }
+        $NeedsCopy = ($SourceHash -ne $TargetHash)
+    }
+
+    if ($NeedsCopy) {
+        if (-not $TargetExists) {
+            Write-Output "[SELF-HEAL] Staged worker not found. Copying automatically..."
+        }
+        else {
+            Write-Output "[SELF-HEAL] Staged worker is out of date relative to the repository. Copying automatically..."
+        }
+
+        $WorkerScriptTargetDir = Split-Path -Path $WorkerScriptTarget -Parent
+        if (-not (Test-Path -Path $WorkerScriptTargetDir)) {
+            New-Item -ItemType Directory -Path $WorkerScriptTargetDir -Force | Out-Null
+        }
+
+        try {
+            Copy-Item -Path $WorkerScriptSource -Destination $WorkerScriptTarget -Force -ErrorAction Stop
+        }
+        catch {
+            throw @"
+[FATAL] Automatic worker copy failed.
+Source      : $WorkerScriptSource
+Destination : $WorkerScriptTarget
+Exception   : $($_.Exception.Message)
+"@
+        }
+
+        if (-not (Test-Path -Path $WorkerScriptTarget)) {
+            throw @"
+[FATAL] Automatic worker copy did not produce a destination file.
+Source      : $WorkerScriptSource
+Destination : $WorkerScriptTarget
+"@
+        }
+
+        Start-Sleep -Milliseconds 300
+
+        try {
+            $TargetHash = (Get-FileHash -Path $WorkerScriptTarget -Algorithm SHA256 -ErrorAction Stop).Hash
+        }
+        catch {
+            throw "[FATAL] Failed to compute hash for staged worker script after copy. Path: $WorkerScriptTarget. Exception: $($_.Exception.Message)"
+        }
+
+        if ($SourceHash -ne $TargetHash) {
+            throw @"
+[FATAL] Worker copy verification failed: hash mismatch after copy.
+Source      : $WorkerScriptSource ($SourceHash)
+Destination : $WorkerScriptTarget ($TargetHash)
+"@
+        }
+
+        Write-Output "[SELF-HEAL] Staged worker verified up to date after copy."
+    }
+
+    Remove-Item -Path $JobFile, $ExitFile, $DoneFile, $LogFile `
+    -Force `
+    -ErrorAction SilentlyContinue
+    Set-Content -Path $JobFile -Value $ScriptPath -Force -Encoding UTF8
+
+    if (-not (Test-Path -Path $JobFile)) {
+        throw "[FATAL] Job handoff failed: $JobFile was not created."
+    }
+    $WrittenJobContent = (Get-Content -Path $JobFile -Raw).Trim()
+    if ($WrittenJobContent -ne $ScriptPath) {
+        throw "[FATAL] Job handoff verification failed. Expected: '$ScriptPath', Found: '$WrittenJobContent'."
+    }
+
+    $DispatchStartTime = Get-Date
+    Write-Output "[ELEVATED] Dispatch start time: $($DispatchStartTime.ToString('yyyy-MM-dd HH:mm:ss'))"
+    Write-Output "[ELEVATED] Dispatching '$ScriptPath' to SYSTEM-privileged task runner..."
+
+    $RunOutput = & schtasks.exe /run /tn $TaskName 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $FailSnap = Get-DiagnosticSnapshot
+        throw "[FATAL] Failed to trigger elevated task '$TaskName'. schtasks output: $RunOutput. Diagnostics -> $(Format-DiagnosticSnapshot $FailSnap)"
+    }
+
+    Start-Sleep -Seconds 2
+    try {
+        $PostRunQuery = & schtasks.exe /query /tn $TaskName /v /fo list 2>&1
+        $StatusLine = ($PostRunQuery | Select-String "^Status:\s*(.+)$")
+        if ($StatusLine) {
+            $ObservedStatus = $StatusLine.Matches[0].Groups[1].Value.Trim()
+            Write-Output "[ELEVATED] Post-dispatch task status: $ObservedStatus"
+        }
+        else {
+            Write-Output "[ELEVATED] Post-dispatch task status could not be determined (non-English locale or unexpected output format); continuing normally."
+        }
+    }
+    catch {
+        Write-Output "[ELEVATED] Post-dispatch status check skipped due to an error: $($_.Exception.Message)"
+    }
+
+    $MaxWaitSeconds = 600
+    $Waited = 0
+    while (-not (Test-Path -Path $DoneFile) -and $Waited -lt $MaxWaitSeconds) {
+        Start-Sleep -Seconds 2
+        $Waited += 2
+        if (($Waited % 30) -eq 0) {
+            Write-Output "[ELEVATED] Still waiting for elevated task to complete... Elapsed: ${Waited}s / ${MaxWaitSeconds}s"
+        }
+    }
+
+    if (-not (Test-Path -Path $DoneFile)) {
+        $TimeoutSnap = Get-DiagnosticSnapshot
+        $DiagText = Format-DiagnosticSnapshot $TimeoutSnap
+
+        throw "[FATAL] Elevated task did not complete within $MaxWaitSeconds seconds. Check Task Scheduler history for '$TaskName'. Diagnostics -> $DiagText"
+    }
+
+    $DispatchEndTime = Get-Date
+    $TotalDuration = $DispatchEndTime - $DispatchStartTime
+    Write-Output "[ELEVATED] Dispatch end time: $($DispatchEndTime.ToString('yyyy-MM-dd HH:mm:ss'))"
+    Write-Output "[ELEVATED] Wait duration: $Waited seconds"
+    Write-Output "[ELEVATED] Total execution duration: $([math]::Round($TotalDuration.TotalSeconds, 2)) seconds"
+
+    if (-not (Test-Path -Path $ExitFile)) {
+        $ExitMissingSnap = Get-DiagnosticSnapshot
+        throw "[FATAL] Task signalled completion (DoneFile present) but ExitFile is missing: $ExitFile. Diagnostics -> $(Format-DiagnosticSnapshot $ExitMissingSnap)"
+    }
+    $RawExitContent = (Get-Content -Path $ExitFile -Raw).Trim()
+    $ParsedExitCode = 0
+    if (-not [int]::TryParse($RawExitContent, [ref]$ParsedExitCode)) {
+        $BadExitSnap = Get-DiagnosticSnapshot
+        throw "[FATAL] ExitFile does not contain a valid integer. Found: '$RawExitContent' in $ExitFile. Diagnostics -> $(Format-DiagnosticSnapshot $BadExitSnap)"
+    }
+    if (-not (Test-Path -Path $LogFile)) {
+        Write-Output "[WARNING] Task completed but LogFile was not found: $LogFile"
+    }
+
+    if (Test-Path -Path $LogFile) {
+        Get-Content -Path $LogFile -ReadCount 100 | ForEach-Object { $_ }
+    }
+
+    $ExitCode = $ParsedExitCode
 }
 finally {
-    Write-DoneFile
+    if ($LockAcquired) {
+        $Mutex.ReleaseMutex()
+    }
+    $Mutex.Dispose()
 }
 
 exit $ExitCode
