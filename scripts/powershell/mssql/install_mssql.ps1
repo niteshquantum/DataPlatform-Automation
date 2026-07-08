@@ -247,16 +247,35 @@ if (Test-Path -Path $RegistryKeyPath) {
 }
 
 if ($IsAlreadyInstalled) {
-    Write-Output "=========================================================================================="
-    Write-Output "[IDEMPOTENCY] Match Detected. SQL Server Named Instance '$InstanceName' is already installed on this machine."
-    Write-Output "[IDEMPOTENCY] Bypassing installation execution pipeline block cleanly."
-    Write-Output "=========================================================================================="
+
+    Write-Output ...
+
+    Repair-SqlAuthentication
+
     exit 0
 }
 
 # 4.5. Preemptive ODBC Driver orphan recovery, before SQL Server setup runs.
 Repair-OrphanedOdbcDriver
+function Repair-OrphanedOdbcDriver {
 
+    ...
+}
+
+# ============================
+# NEW FUNCTION
+# ============================
+
+function Repair-SqlAuthentication {
+
+    ...
+}
+
+# ============================
+# Existing code continues
+# ============================
+
+$PROJECT_ROOT = ...
 # 5. Volatile Configuration Artifact Lifecycle Engine
 try {
     Write-Output "[CONFIG-ENGINE] Generating dynamic installation configuration context..."
@@ -300,6 +319,7 @@ try {
     # 7. Advanced Windows Installer 3010 Lifecycle State Management Evaluation
     if ($ExitCode -eq 0) {
         Write-Output "[SUCCESS] SQL Server setup engine transaction completed successfully (ExitCode: 0)."
+        Repair-SqlAuthentication
     }
     elseif ($ExitCode -eq 3010) {
         Write-Output "=========================================================================================="
