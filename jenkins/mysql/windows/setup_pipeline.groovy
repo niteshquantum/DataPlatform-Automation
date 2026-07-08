@@ -40,11 +40,6 @@ pipeline {
             }
         }
         
-        stage('Configure MySQL Service') {
-            steps {
-                bat 'scripts\\batch\\mysql\\setup\\configure_mysql_service.bat'
-            }
-        }
         
         stage('Create Database') {
             steps {
