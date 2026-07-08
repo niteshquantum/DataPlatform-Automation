@@ -346,8 +346,29 @@ exit 0
             }
 
             if (Test-Path -Path $DoneFile) {
-                $RefreshSucceeded = $true
-                Write-Output "[SELF-HEAL] Staged worker refresh dispatched and completed via elevated task."
+                # DoneFile only means the SYSTEM-context worker finished
+                # running (success OR failure) - it does NOT by itself mean
+                # the copy succeeded. Check the real exit code before
+                # declaring success, and surface the worker's own log if it
+                # failed, so the actual reason is visible instead of being
+                # silently swallowed.
+                $RefreshExitCode = 1
+                if (Test-Path -Path $ExitFile) {
+                    $RefreshExitRaw = (Get-Content -Path $ExitFile -Raw -ErrorAction SilentlyContinue).Trim()
+                    [void][int]::TryParse($RefreshExitRaw, [ref]$RefreshExitCode)
+                }
+
+                if ($RefreshExitCode -eq 0) {
+                    $RefreshSucceeded = $true
+                    Write-Output "[SELF-HEAL] Staged worker refresh dispatched and completed successfully via elevated task (exit code 0)."
+                }
+                else {
+                    Write-Output "[SELF-HEAL] Elevated refresh attempt ran but FAILED (exit code: $RefreshExitCode). This means SYSTEM itself could not write to the staging folder - not just this caller's account."
+                    if (Test-Path -Path $LogFile) {
+                        Write-Output "[SELF-HEAL] Elevated refresh worker log:"
+                        Get-Content -Path $LogFile | ForEach-Object { Write-Output "[SELF-HEAL]   $_" }
+                    }
+                }
             }
             else {
                 Write-Output "[SELF-HEAL] Elevated refresh attempt did not signal completion within $RefreshMaxWaitSeconds seconds."
