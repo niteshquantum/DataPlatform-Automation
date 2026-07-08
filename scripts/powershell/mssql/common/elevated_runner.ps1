@@ -24,8 +24,6 @@ function Write-ExitFile {
     param([int]$Code)
     "$Code" | Set-Content -Path $ExitFile -Force
     if (-not (Test-Path -Path $ExitFile)) {
-        # Nothing more we can do here (ExitFile write itself is failing),
-        # but we still want the log to reflect this if possible.
         try { "[WARNING] Failed to create ExitFile: $ExitFile" | Add-Content -Path $LogFile -Force -ErrorAction SilentlyContinue } catch {}
         return
     }
@@ -41,22 +39,17 @@ function Write-LogFile {
     param([string]$Content)
     $Content | Set-Content -Path $LogFile -Force
     if (-not (Test-Path -Path $LogFile)) {
-        # Can't do much more - there is nowhere else to report this.
         return
     }
     try {
         $null = Get-Content -Path $LogFile -Raw -ErrorAction Stop
     }
     catch {
-        # Log file exists but isn't readable; nothing further to do, this
-        # is surfaced only via the missing/garbled log on the caller side.
+        # Log file exists but isn't readable; nothing further to do.
     }
 }
 
 # --- Helper: signal completion and verify it was actually created ---
-# invoke_elevated.ps1 polls for this exact file; if it never appears the
-# caller waits for the full timeout with no other diagnostic, so we make a
-# best-effort retry here before giving up.
 function Write-DoneFile {
     $Attempts = 0
     $Created = $false
@@ -73,9 +66,6 @@ function Write-DoneFile {
         }
     }
     if (-not $Created) {
-        # Last-ditch diagnostic attempt: try to at least extend the log with
-        # the failure, even though the caller has no way to read it without
-        # DoneFile existing. This does not change caller behaviour/timeout.
         try {
             "[FATAL] elevated_runner.ps1 could not create DoneFile at $DoneFile after $Attempts attempts. The caller (invoke_elevated.ps1) will time out waiting for this file." | Add-Content -Path $LogFile -Force -ErrorAction SilentlyContinue
         }
@@ -138,8 +128,6 @@ try {
     $env:DPA_ELEVATED = "1"
 
     # --- VERIFY: target script still exists immediately before execution ---
-    # (it was checked above, but time may have passed between validation and
-    # this point, e.g. while another job was queued behind the mutex)
     if (-not (Test-Path -Path $TargetScript)) {
         throw "[FATAL] Target script disappeared before execution could start: $TargetScript"
     }
@@ -148,7 +136,22 @@ try {
     # Execute the real script (mount_iso.ps1, start_mssql.ps1, etc.) with full
     # SYSTEM-level privileges. Output is captured to the log file so the
     # caller can surface it in the Jenkins console.
+    #
+    # IMPORTANT: temporarily relax ErrorActionPreference to 'Continue' for
+    # just this invocation. With 'Stop' in effect, ANY text the child
+    # process writes to its error stream (stderr) - even benign status
+    # output from setup.exe or a non-fatal warning inside the target
+    # script - gets promoted by PowerShell into a script-terminating
+    # exception here, aborting the whole elevated run and masking the
+    # real result with a confusing "term not recognized" style message.
+    # 'Continue' captures that output as plain text (via 2>&1) without
+    # treating it as fatal; the actual success/failure of the target
+    # script is still determined purely by its real process exit code
+    # ($LASTEXITCODE) immediately below, so no failure detection is lost.
+    $PreviousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $Output = & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $TargetScript 2>&1
+    $ErrorActionPreference = $PreviousEap
 
     # --- Deterministic exit-code resolution ---
     if ($null -ne $LASTEXITCODE) {
@@ -178,9 +181,6 @@ catch {
         $DiagLines += "StackTrace:`n$($ErrObj.ScriptStackTrace)"
     }
     Write-LogFile ($DiagLines -join "`n")
-    # A terminating error here means execution did not complete successfully;
-    # exit code is deterministically 1 unless a more specific code was
-    # already captured above (it wasn't, since we're in the catch block).
     $ExitCode = 1
     Write-ExitFile $ExitCode
     # --- END DIAGNOSTICS ---
