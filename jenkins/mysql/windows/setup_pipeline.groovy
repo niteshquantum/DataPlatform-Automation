@@ -34,29 +34,30 @@ pipeline {
             }
         }
 
-        stage('Deploy MySQL') {
-            steps {
-                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+       stage('Deploy MySQL') {
+    steps {
+        bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
             }
         }
-
-        stage('Start MySQL') {
+        
+        stage('Configure MySQL Service') {
             steps {
-                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+                bat 'scripts\\batch\\mysql\\setup\\configure_mysql_service.bat'
             }
         }
-
+        
         stage('Create Database') {
             steps {
                 bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
             }
         }
+        
         stage('Configure Global MySQL') {
             steps {
-            bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
+                bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
+            }
         }
-    }
-
+        
         stage('Validate Environment') {
             steps {
                 bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
