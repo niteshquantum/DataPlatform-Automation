@@ -73,13 +73,13 @@ if (!(Test-Path $globalDirectory)) {
 # CREATE MYSQL COMMAND
 # =====================================
 
-$mysqlBin = "$ROOT\databases\mysql\server\bin"
+$mysqlPluginDir = "$ROOT\databases\mysql\server\lib\plugin"
 
 $commandContent = @"
 @echo off
-set "PATH=$mysqlBin;%PATH%"
 
 "$mysqlExe" ^
+--plugin-dir="$mysqlPluginDir" ^
 --host="$hostName" ^
 --port="$port" ^
 --user="$user" ^
