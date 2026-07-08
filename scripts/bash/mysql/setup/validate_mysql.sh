@@ -18,7 +18,7 @@ echo "VALIDATING MYSQL"
 echo "====================================="
 echo
 
-mysql \
+/usr/bin/mysql \
 -h "$MYSQL_HOST" \
 -P "$MYSQL_PORT" \
 -u "$MYSQL_USER" \
