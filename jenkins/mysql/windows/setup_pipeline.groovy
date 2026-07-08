@@ -51,7 +51,11 @@ pipeline {
                 bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
             }
         }
-
+        stage('Configure Global MySQL') {
+            steps {
+            bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
+        }
+    }
 
         stage('Validate Environment') {
             steps {
