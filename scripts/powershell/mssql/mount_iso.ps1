@@ -322,6 +322,12 @@ Write-Output "[TELEMETRY] Mounted Drive: $DriveLetterToken | ISO Path: $($Target
 
 Set-Content -Path $TrackingFile -Value $DriveLetterToken -Force
 
+Write-Output "================ DEBUG ================"
+Write-Output "Mounted Drive : $DriveLetterToken"
+Write-Output "Tracking File : $TrackingFile"
+Write-Output "Tracking Value: $((Get-Content $TrackingFile -Raw).Trim())"
+Write-Output "======================================="
+
 $PersistedValue = (Get-Content -Path $TrackingFile -Raw).Trim()
 if ($PersistedValue -ne $DriveLetterToken) {
     throw "[ERROR] Persistent serialization state corruption detected. Expected: $DriveLetterToken, Written: $PersistedValue"
