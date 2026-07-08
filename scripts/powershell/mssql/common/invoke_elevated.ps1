@@ -147,6 +147,80 @@ function Get-ElevatedTaskSafe {
     }
 }
 
+# --- FIX (Root Cause): the auto-bootstrap call below invokes
+#     setup_elevated_task.ps1, which registers a SYSTEM-owned scheduled
+#     task and therefore REQUIRES an elevated (Administrator) token.
+#     invoke_elevated.ps1 itself normally runs as whatever non-admin
+#     account the CI/CD agent (Jenkins) uses, so calling it "plainly"
+#     always failed with:
+#       [SETUP ERROR] Administrator privileges are required to register
+#       a SYSTEM scheduled task.
+#     on any machine where the task hadn't already been created out of
+#     band. This is the exact same UAC token-filtering situation already
+#     solved (for the local Jenkins account) in start_mssql.ps1's
+#     "SELF-ELEVATION BOOTSTRAP" block - re-used here identically, so the
+#     one-time per-machine prerequisite (ConsentPromptBehaviorAdmin = 0,
+#     Jenkins account in local Administrators group) is the same one
+#     already required and documented for that script.
+#     No change to when/why bootstrap is triggered, no change to
+#     setup_elevated_task.ps1 itself - only HOW it gets invoked. ---
+function Invoke-BootstrapScript {
+    param([string]$SetupScriptPath)
+
+    $CurrentIdentity  = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $CurrentPrincipal = New-Object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
+    $IsCurrentlyElevated = $CurrentPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    if ($IsCurrentlyElevated) {
+        # Already elevated (e.g. invoked from within the SYSTEM task itself) -
+        # behave exactly as before, no change.
+        $Output = & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $SetupScriptPath 2>&1
+        return [PSCustomObject]@{ Output = $Output; ExitCode = $LASTEXITCODE }
+    }
+
+    Write-Output "[ELEVATED] Current token is not elevated. Silently self-elevating the bootstrap call via Start-Process -Verb RunAs (same mechanism already used by start_mssql.ps1)..."
+
+    $RunId     = [guid]::NewGuid().ToString('N').Substring(0, 10)
+    $StdOutLog = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "DPA-Bootstrap-$RunId.out.log")
+    $InnerCommand = "& `"$SetupScriptPath`" *> `"$StdOutLog`"; exit `$LASTEXITCODE"
+
+    try {
+        $Proc = Start-Process -FilePath $PowerShellExe `
+            -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $InnerCommand) `
+            -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
+
+        $CapturedOutput = @()
+        if (Test-Path -Path $StdOutLog) {
+            $CapturedOutput = Get-Content -Path $StdOutLog
+            Remove-Item -Path $StdOutLog -ErrorAction SilentlyContinue
+        }
+        else {
+            $CapturedOutput = @("[WARNING] Elevated bootstrap process produced no output log at '$StdOutLog'.")
+        }
+
+        return [PSCustomObject]@{ Output = $CapturedOutput; ExitCode = $Proc.ExitCode }
+    }
+    catch {
+        throw @"
+[FATAL] Automatic silent elevation of setup_elevated_task.ps1 via Start-Process -Verb RunAs failed.
+
+Executing Identity: $($CurrentIdentity.Name)
+
+This means one of the following:
+  1. The one-time host prerequisite has not been set on this machine yet:
+     ConsentPromptBehaviorAdmin = 0 at
+     HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+     (same prerequisite already documented for start_mssql.ps1's self-elevation).
+  2. '$($CurrentIdentity.Name)' is not a member of the local Administrators
+     group on this host.
+
+Original Error:
+$($_.Exception.Message)
+"@
+    }
+}
+# --- END FIX ---
+
 # 0. Pre-flight: confirm the elevated task is registered and correctly configured.
 $ElevatedTaskCheck = Get-ElevatedTaskSafe
 $ElevatedTaskValid = Test-ElevatedTaskValid -Task $ElevatedTaskCheck
@@ -168,8 +242,14 @@ if ($null -eq $ElevatedTaskCheck -or -not $ElevatedTaskValid) {
     }
 
     Write-Output "[ELEVATED] Invoking automatic bootstrap: $SetupScriptPath"
-    $BootstrapOutput = & $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $SetupScriptPath 2>&1
-    $BootstrapExitCode = $LASTEXITCODE
+
+    # --- FIX: replaced the old plain (non-elevated) invocation with
+    #     Invoke-BootstrapScript, which self-elevates when needed. ---
+    $BootstrapResult = Invoke-BootstrapScript -SetupScriptPath $SetupScriptPath
+    $BootstrapOutput = $BootstrapResult.Output
+    $BootstrapExitCode = $BootstrapResult.ExitCode
+    # --- END FIX ---
+
     $BootstrapOutput | ForEach-Object { Write-Output "[BOOTSTRAP] $_" }
 
     if ($BootstrapExitCode -ne 0) {
