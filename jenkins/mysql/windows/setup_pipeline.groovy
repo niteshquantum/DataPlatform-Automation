@@ -40,7 +40,11 @@ pipeline {
             }
         }
         
-        
+        stage('Start MySQL') {
+            steps {
+               bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+            }
+        }
         stage('Create Database') {
             steps {
                 bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
