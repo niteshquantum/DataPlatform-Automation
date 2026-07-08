@@ -1,3 +1,4 @@
+
 pipeline {
 
     agent any
@@ -40,29 +41,31 @@ pipeline {
             }
         }
 
-    stage('Deploy MongoDB') {
-    steps {
-        bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
-    }
-}
+        stage('Deploy MongoDB') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
+            }
+        }
 
-stage('Configure Global Mongosh') {
-    steps {
-        bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
-    }
-}
+        stage('Configure Global Mongosh') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+            }
+        }
 
-stage('Configure MongoDB Service') {
-    steps {
-        bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
-    }
-}
+        stage('Configure MongoDB Service') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
+            }
+        }
 
-stage('Validate MongoDB') {
-    steps {
-        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+        stage('Validate MongoDB') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+            }
+        }
+
     }
-}
 
     post {
 
