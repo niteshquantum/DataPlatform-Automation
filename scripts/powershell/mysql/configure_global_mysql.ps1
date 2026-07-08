@@ -73,8 +73,11 @@ if (!(Test-Path $globalDirectory)) {
 # CREATE MYSQL COMMAND
 # =====================================
 
+$mysqlBin = "$ROOT\databases\mysql\server\bin"
+
 $commandContent = @"
 @echo off
+set "PATH=$mysqlBin;%PATH%"
 
 "$mysqlExe" ^
 --host="$hostName" ^
