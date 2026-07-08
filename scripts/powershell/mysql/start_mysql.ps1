@@ -58,7 +58,7 @@ Start-Sleep -Seconds 3
 # =====================================
 # START MYSQL
 # =====================================
-
+$env:JENKINS_NODE_COOKIE = "MySQLAutomationProcess"
 Start-Process `
     -FilePath $mysqld `
     -ArgumentList @(
