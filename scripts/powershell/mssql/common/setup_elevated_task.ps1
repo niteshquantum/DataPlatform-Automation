@@ -36,9 +36,6 @@ $Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
 $IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $IsAdmin) {
-    # --- FIX (Correction 1): report only the technical reason. No manual
-    #     operational instructions (no "right-click", no "run manually",
-    #     no "execute setup_elevated_task.ps1 manually"). ---
     throw @"
 [SETUP ERROR] Administrator privileges are required to register a SYSTEM scheduled task.
 
@@ -48,7 +45,6 @@ CURRENT CONTEXT (for diagnostics):
 
 This script will now stop. No changes have been made.
 "@
-    # --- END FIX ---
 }
 
 $TaskName = "DataPlatformElevatedRunner"
@@ -72,6 +68,30 @@ catch {
     throw "[SETUP ERROR] Work directory is not writable: $WorkDir. Details: $($_.Exception.Message)"
 }
 # --- END VERIFY ---
+
+# --- FIX (Automatic ACL repair): grant "Authenticated Users" Modify rights on
+#     the work directory (and all files within it, recursively), so that a
+#     non-elevated caller (Jenkins, Terraform local-exec, invoke_elevated.ps1)
+#     can read/write job hand-off files (job.txt, job.log, job.exitcode,
+#     job.done) created by the SYSTEM-privileged worker without hitting
+#     UnauthorizedAccessException. Uses icacls, which is safe to re-run:
+#     re-granting an ACE that is already present does not fail or duplicate
+#     it. This runs every time (self-healing), same pattern as the existing
+#     Scheduled Task permission repair in Step 4 below. ---
+Write-Output "[SETUP] Verifying Authenticated Users Modify rights on work directory: $WorkDir..."
+$IcaclsOutput = & icacls.exe $WorkDir /grant "Authenticated Users:(OI)(CI)M" /T 2>&1
+$IcaclsExitCode = $LASTEXITCODE
+if ($IcaclsExitCode -ne 0) {
+    throw @"
+[SETUP ERROR] Failed to grant Authenticated Users Modify rights on work directory.
+
+Work Directory : $WorkDir
+icacls ExitCode : $IcaclsExitCode
+icacls Output    : $IcaclsOutput
+"@
+}
+Write-Output "[SETUP] Work directory permissions verified/repaired - non-elevated callers can read/write job hand-off files."
+# --- END FIX ---
 
 # 2. Self-heal the worker script: refresh only if outdated or missing.
 #    (This script runs elevated, so unlike invoke_elevated.ps1 it IS allowed
