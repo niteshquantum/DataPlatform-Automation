@@ -166,6 +166,187 @@ function Repair-OrphanedOdbcDriver {
 }
 # === END ODBC DRIVER ORPHAN RECOVERY ===
 
+# === SQL AUTHENTICATION / SA LOGIN REPAIR ===
+# Ensures the SQL Server instance is running in Mixed Mode (SQL + Windows
+# Authentication) and that the 'sa' login is enabled with its password
+# synced to mssql.conf's MSSQL_PASSWORD. This addresses a recurring issue
+# where 'sa' ends up disabled or with a stale/out-of-sync password (e.g.
+# after a manual server-side change, or a config file password rotation
+# that was never applied to the running instance). Safe to re-run: if
+# everything is already correct, it makes no changes.
+function Repair-SqlAuthentication {
+    param(
+        [Parameter(Mandatory = $true)][string]$InstanceNameParam,
+        [Parameter(Mandatory = $true)][string]$PortParam,
+        [Parameter(Mandatory = $true)][string]$SaPasswordParam
+    )
+
+    Write-Output "[SQL-AUTH] Starting SQL authentication / 'sa' login repair for instance '$InstanceNameParam'..."
+
+    # --- Resolve sqlcmd.exe. If it isn't available, this is a non-fatal
+    #     diagnostic-only situation: we cannot verify/repair 'sa' without it,
+    #     but installation itself already succeeded, so we warn and return
+    #     rather than failing the whole pipeline. ---
+    $SqlCmdTool = Get-Command "sqlcmd.exe" -ErrorAction SilentlyContinue
+    if ($null -eq $SqlCmdTool) {
+        Write-Output "[SQL-AUTH] WARNING: sqlcmd.exe not found on this host. Cannot verify/repair 'sa' login automatically. Skipping this step non-fatally."
+        return
+    }
+
+    # --- Resolve the Windows Service name for this instance, same pattern
+    #     used in start_mssql.ps1 / validate_install.ps1. ---
+    $ExpectedServiceName = if ($InstanceNameParam -eq "MSSQLSERVER") { "MSSQLSERVER" } else { "MSSQL`$$InstanceNameParam" }
+
+    # --- Resolve InstanceId from registry, needed to read/set LoginMode. ---
+    $InstanceId = $null
+    try {
+        $InstanceId = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" -ErrorAction Stop).$InstanceNameParam
+    }
+    catch {
+        Write-Output "[SQL-AUTH] WARNING: Could not resolve InstanceId for '$InstanceNameParam' from registry. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
+        return
+    }
+    if ([string]::IsNullOrWhiteSpace($InstanceId)) {
+        Write-Output "[SQL-AUTH] WARNING: InstanceId for '$InstanceNameParam' resolved empty. Skipping 'sa' repair non-fatally."
+        return
+    }
+
+    $MssqlServerRegPath = "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer"
+
+    # --- Step 1: Ensure Mixed Mode authentication (LoginMode = 2). Value 1
+    #     is Windows Authentication only, under which 'sa' cannot log in at
+    #     all regardless of its enabled/disabled state or password. ---
+    $CurrentLoginMode = $null
+    try {
+        $CurrentLoginMode = (Get-ItemProperty -Path $MssqlServerRegPath -Name "LoginMode" -ErrorAction Stop).LoginMode
+    }
+    catch {
+        Write-Output "[SQL-AUTH] WARNING: Could not read LoginMode from registry at $MssqlServerRegPath. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
+        return
+    }
+
+    $LoginModeChanged = $false
+    if ($CurrentLoginMode -ne 2) {
+        Write-Output "[SQL-AUTH] LoginMode is currently '$CurrentLoginMode' (Windows Authentication only). Setting to Mixed Mode (2) so 'sa' can authenticate..."
+        try {
+            Set-ItemProperty -Path $MssqlServerRegPath -Name "LoginMode" -Value 2 -ErrorAction Stop
+            $LoginModeChanged = $true
+            Write-Output "[SQL-AUTH] LoginMode set to 2 (Mixed Mode)."
+        }
+        catch {
+            Write-Output "[SQL-AUTH] WARNING: Failed to set LoginMode to Mixed Mode. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
+            return
+        }
+    }
+    else {
+        Write-Output "[SQL-AUTH] LoginMode already set to 2 (Mixed Mode). No change needed."
+    }
+
+    # --- LoginMode changes only take effect after a SQL Server service
+    #     restart. Only restart if we actually changed it - never restart
+    #     an already-correctly-configured, running instance unnecessarily. ---
+    if ($LoginModeChanged) {
+        Write-Output "[SQL-AUTH] Restarting service '$ExpectedServiceName' to apply the LoginMode change..."
+        try {
+            Restart-Service -Name $ExpectedServiceName -Force -ErrorAction Stop
+
+            $RestartMaxWaitSeconds = 60
+            $RestartPollIntervalSeconds = 3
+            $RestartMaxIterations = $RestartMaxWaitSeconds / $RestartPollIntervalSeconds
+            $RestartIteration = 0
+            $RestartServiceRunning = $false
+
+            while (-not $RestartServiceRunning -and $RestartIteration -lt $RestartMaxIterations) {
+                $RestartIteration++
+                Start-Sleep -Seconds $RestartPollIntervalSeconds
+                $RestartSvcCheck = Get-Service -Name $ExpectedServiceName -ErrorAction SilentlyContinue
+                if ($RestartSvcCheck -and $RestartSvcCheck.Status -eq 'Running') {
+                    $RestartServiceRunning = $true
+                }
+            }
+
+            if (-not $RestartServiceRunning) {
+                Write-Output "[SQL-AUTH] WARNING: Service '$ExpectedServiceName' did not report Running within $RestartMaxWaitSeconds seconds after restart. Skipping 'sa' repair non-fatally."
+                return
+            }
+            Write-Output "[SQL-AUTH] Service '$ExpectedServiceName' restarted and confirmed Running."
+        }
+        catch {
+            Write-Output "[SQL-AUTH] WARNING: Failed to restart service '$ExpectedServiceName' after LoginMode change. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
+            return
+        }
+    }
+
+    # --- Step 2: Connect via Windows (Trusted) Authentication - this script
+    #     runs as NT AUTHORITY\SYSTEM, the same account that ran setup.exe,
+    #     which SQL Server setup automatically grants sysadmin to. Then
+    #     enable 'sa' and set its password to match mssql.conf. ---
+    $SqlServerTarget = "localhost,$PortParam"
+
+    # Escape single quotes in the password for safe inline T-SQL.
+    $EscapedSaPassword = $SaPasswordParam -replace "'", "''"
+
+    $SqlAuthQuery = "ALTER LOGIN [sa] WITH PASSWORD = '$EscapedSaPassword'; ALTER LOGIN [sa] ENABLE;"
+
+    $SqlAuthMaxRetries = 10
+    $SqlAuthRetryIntervalSeconds = 3
+    $SqlAuthAttempt = 0
+    $SqlAuthSucceeded = $false
+    $SqlAuthLastOutput = $null
+    $SqlAuthLastExitCode = $null
+
+    while (-not $SqlAuthSucceeded -and $SqlAuthAttempt -lt $SqlAuthMaxRetries) {
+        $SqlAuthAttempt++
+        try {
+            $SqlAuthLastOutput = & $SqlCmdTool.Source -S $SqlServerTarget -E -Q $SqlAuthQuery -b 2>&1
+            $SqlAuthLastExitCode = $LASTEXITCODE
+        }
+        catch {
+            $SqlAuthLastOutput = $_.Exception.Message
+            $SqlAuthLastExitCode = 1
+        }
+
+        if ($SqlAuthLastExitCode -eq 0) {
+            $SqlAuthSucceeded = $true
+        }
+        else {
+            Write-Output "[SQL-AUTH] Attempt $SqlAuthAttempt/$SqlAuthMaxRetries : sqlcmd did not yet succeed (ExitCode: $SqlAuthLastExitCode). Retrying in $SqlAuthRetryIntervalSeconds seconds..."
+            Start-Sleep -Seconds $SqlAuthRetryIntervalSeconds
+        }
+    }
+
+    if (-not $SqlAuthSucceeded) {
+        Write-Output "[SQL-AUTH] WARNING: Failed to enable/set 'sa' login password after $SqlAuthMaxRetries attempts. Last sqlcmd output: $SqlAuthLastOutput"
+        return
+    }
+    Write-Output "[SQL-AUTH] 'sa' login password set and login enabled successfully."
+
+    # --- Step 3: Verify 'sa' is actually enabled, as a final confirmation. ---
+    try {
+        $VerifyQuery = "SET NOCOUNT ON; SELECT is_disabled FROM sys.sql_logins WHERE name = 'sa';"
+        $VerifyOutput = & $SqlCmdTool.Source -S $SqlServerTarget -E -Q $VerifyQuery -h -1 -W 2>&1
+        $VerifyExitCode = $LASTEXITCODE
+        if ($VerifyExitCode -eq 0) {
+            $VerifyTrimmed = ($VerifyOutput | Out-String).Trim()
+            if ($VerifyTrimmed -eq "0") {
+                Write-Output "[SQL-AUTH] Verification confirmed: 'sa' login is enabled (is_disabled = 0)."
+            }
+            else {
+                Write-Output "[SQL-AUTH] WARNING: Verification query returned unexpected is_disabled value: '$VerifyTrimmed'. 'sa' may still be disabled."
+            }
+        }
+        else {
+            Write-Output "[SQL-AUTH] WARNING: Verification query failed (ExitCode: $VerifyExitCode). Could not confirm 'sa' status. Output: $VerifyOutput"
+        }
+    }
+    catch {
+        Write-Output "[SQL-AUTH] WARNING: Verification query threw an exception non-fatally. Details: $($_.Exception.Message)"
+    }
+
+    Write-Output "[SQL-AUTH] SQL authentication / 'sa' login repair complete."
+}
+# === END SQL AUTHENTICATION / SA LOGIN REPAIR ===
+
 # Define strict relative paths based on repository freeze structure
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $ConfigPath = Join-Path $PROJECT_ROOT "config\windows\mssql.conf"
@@ -247,35 +428,24 @@ if (Test-Path -Path $RegistryKeyPath) {
 }
 
 if ($IsAlreadyInstalled) {
+    Write-Output "=========================================================================================="
+    Write-Output "[IDEMPOTENCY] Match Detected. SQL Server Named Instance '$InstanceName' is already installed on this machine."
+    Write-Output "[IDEMPOTENCY] Bypassing installation execution pipeline block cleanly."
+    Write-Output "=========================================================================================="
 
-    Write-Output ...
-
-    Repair-SqlAuthentication
+    # Even on an idempotent skip, keep 'sa' authentication in sync with the
+    # current mssql.conf - this is exactly the case that motivated this
+    # function: an already-installed instance whose 'sa' login had drifted
+    # (disabled, or password out of sync) was never touched again by a
+    # re-run of this script until now.
+    Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
 
     exit 0
 }
 
 # 4.5. Preemptive ODBC Driver orphan recovery, before SQL Server setup runs.
 Repair-OrphanedOdbcDriver
-function Repair-OrphanedOdbcDriver {
 
-    ...
-}
-
-# ============================
-# NEW FUNCTION
-# ============================
-
-function Repair-SqlAuthentication {
-
-    ...
-}
-
-# ============================
-# Existing code continues
-# ============================
-
-$PROJECT_ROOT = ...
 # 5. Volatile Configuration Artifact Lifecycle Engine
 try {
     Write-Output "[CONFIG-ENGINE] Generating dynamic installation configuration context..."
@@ -319,7 +489,14 @@ try {
     # 7. Advanced Windows Installer 3010 Lifecycle State Management Evaluation
     if ($ExitCode -eq 0) {
         Write-Output "[SUCCESS] SQL Server setup engine transaction completed successfully (ExitCode: 0)."
-        Repair-SqlAuthentication
+
+        # SECURITYMODE="SQL" in the .ini above already requests Mixed Mode at
+        # install time, and /SAPWD already sets the initial 'sa' password.
+        # This call is a defense-in-depth confirmation pass - it re-asserts
+        # Mixed Mode and re-syncs 'sa' to mssql.conf, catching any case where
+        # setup silently didn't honor SECURITYMODE (e.g. certain upgrade or
+        # edition-specific paths).
+        Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
     }
     elseif ($ExitCode -eq 3010) {
         Write-Output "=========================================================================================="
