@@ -79,6 +79,29 @@ function Format-DiagnosticSnapshot {
 }
 # --- END diagnostic helpers ---
 
+# --- Resolve the PowerShell executable ONCE, up front, to its full path.
+#     Used both for the task-validity comparison below AND for invoking
+#     setup_elevated_task.ps1 during auto-bootstrap. Comparing against the
+#     SAME resolved value that setup_elevated_task.ps1 uses to register the
+#     task's Action is what keeps the two scripts' validators in permanent
+#     agreement (this is the exact class of bug that caused the earlier
+#     bootstrap loop). ---
+$PowerShellExe = $null
+$PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
+if ($PsCommand) {
+    $PowerShellExe = $PsCommand.Source
+}
+if (-not $PowerShellExe) {
+    $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+    if (Test-Path -Path $FallbackPath) {
+        $PowerShellExe = $FallbackPath
+    }
+}
+if (-not $PowerShellExe) {
+    throw "[FATAL] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
+}
+# --- END ---
+
 # --- Shared task-configuration validator used by the auto-bootstrap pre-flight below. ---
 function Test-ElevatedTaskValid {
     param($Task)
@@ -94,22 +117,13 @@ function Test-ElevatedTaskValid {
     $TaskAction = $Task.Actions[0]
     if ($null -eq $TaskAction) { return $false }
 
-    $ResolvedPowerShellExe = $null
-    $ResolvedPsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
-    if ($ResolvedPsCommand) {
-        $ResolvedPowerShellExe = $ResolvedPsCommand.Source
-    }
-    if (-not $ResolvedPowerShellExe) {
-        $ResolvedFallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-        if (Test-Path -Path $ResolvedFallbackPath) {
-            $ResolvedPowerShellExe = $ResolvedFallbackPath
-        }
-    }
-    if (-not $ResolvedPowerShellExe) { return $false }
-
-    $TaskActionExecutePath = $TaskAction.Execute
-    if ([string]::IsNullOrEmpty($TaskActionExecutePath)) { return $false }
-    if ($TaskActionExecutePath -ne $ResolvedPowerShellExe) { return $false }
+    # --- FIX: case-insensitive comparison against the fully resolved
+    #     PowerShell path, matching setup_elevated_task.ps1's validator
+    #     exactly, so a converged task is recognized as valid by both
+    #     scripts and no infinite bootstrap loop can occur. ---
+    if ([string]::IsNullOrEmpty($TaskAction.Execute)) { return $false }
+    if ($TaskAction.Execute.ToLowerInvariant() -ne $PowerShellExe.ToLowerInvariant()) { return $false }
+    # --- END FIX ---
 
     $ExpectedWorkerPath = Join-Path $WorkDir "elevated_runner.ps1"
     if ($TaskAction.Arguments -notmatch [regex]::Escape($ExpectedWorkerPath)) { return $false }
@@ -151,21 +165,6 @@ if ($null -eq $ElevatedTaskCheck -or -not $ElevatedTaskValid) {
     $SetupScriptPath = Join-Path $PSScriptRoot "setup_elevated_task.ps1"
     if (-not (Test-Path -Path $SetupScriptPath)) {
         throw "[FATAL] Automatic bootstrap failed: setup_elevated_task.ps1 not found at expected path: $SetupScriptPath"
-    }
-
-    $PowerShellExe = $null
-    $PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
-    if ($PsCommand) {
-        $PowerShellExe = $PsCommand.Source
-    }
-    if (-not $PowerShellExe) {
-        $FallbackPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-        if (Test-Path -Path $FallbackPath) {
-            $PowerShellExe = $FallbackPath
-        }
-    }
-    if (-not $PowerShellExe) {
-        throw "[FATAL] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
     }
 
     Write-Output "[ELEVATED] Invoking automatic bootstrap: $SetupScriptPath"

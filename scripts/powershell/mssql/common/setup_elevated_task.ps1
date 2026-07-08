@@ -69,15 +69,10 @@ catch {
 }
 # --- END VERIFY ---
 
-# --- FIX (Automatic ACL repair): grant "Authenticated Users" Modify rights on
-#     the work directory (and all files within it, recursively), so that a
-#     non-elevated caller (Jenkins, Terraform local-exec, invoke_elevated.ps1)
-#     can read/write job hand-off files (job.txt, job.log, job.exitcode,
-#     job.done) created by the SYSTEM-privileged worker without hitting
-#     UnauthorizedAccessException. Uses icacls, which is safe to re-run:
-#     re-granting an ACE that is already present does not fail or duplicate
-#     it. This runs every time (self-healing), same pattern as the existing
-#     Scheduled Task permission repair in Step 4 below. ---
+# --- Grant "Authenticated Users" Modify rights on the work directory (and all
+#     files within it, recursively), so a non-elevated caller (Jenkins,
+#     Terraform local-exec, invoke_elevated.ps1) can read/write job hand-off
+#     files created by the SYSTEM-privileged worker. Safe to re-run. ---
 Write-Output "[SETUP] Verifying Authenticated Users Modify rights on work directory: $WorkDir..."
 $IcaclsOutput = & icacls.exe $WorkDir /grant "Authenticated Users:(OI)(CI)M" /T 2>&1
 $IcaclsExitCode = $LASTEXITCODE
@@ -134,10 +129,10 @@ else {
     Write-Output "[SETUP] Worker script already up to date at: $WorkerScriptTarget"
 }
 
-# --- FIX (Correction 2): resolve the PowerShell executable using the same
-#     resolution logic already approved elsewhere in the repository
-#     (mount_iso.ps1 / invoke_elevated.ps1), instead of assuming
-#     powershell.exe is on PATH. Used below for the Scheduled Task Action. ---
+# --- Resolve the PowerShell executable to its FULL path. This resolved path
+#     is used both to register the task's Action AND to validate an existing
+#     task - keeping this script and invoke_elevated.ps1's validator in sync
+#     is what prevents the "bootstrap loop never converges" failure mode. ---
 $PowerShellExe = $null
 $PsCommand = Get-Command "powershell.exe" -ErrorAction SilentlyContinue
 if ($PsCommand) {
@@ -152,7 +147,7 @@ if (-not $PowerShellExe) {
 if (-not $PowerShellExe) {
     throw "[SETUP ERROR] Could not resolve powershell.exe on this machine. Checked PATH and $env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe."
 }
-# --- END FIX ---
+# --- END ---
 
 # 3. Self-healing task registration.
 #    Only register/re-register when the task is genuinely missing or
@@ -171,8 +166,14 @@ function Test-TaskConfigurationValid {
     $TaskAction = $Task.Actions[0]
     if ($null -eq $TaskAction) { return $false }
 
-    $ExecuteName = Split-Path -Path $TaskAction.Execute -Leaf
-    if ($ExecuteName -notmatch '(?i)^powershell\.exe$') { return $false }
+    # --- FIX: compare the FULLY RESOLVED executable path (case-insensitive),
+    #     not just the leaf filename. A task registered with a bare
+    #     "powershell.exe" (unresolved) must be treated as INVALID here so
+    #     it gets re-registered with the full resolved path - otherwise this
+    #     validator and invoke_elevated.ps1's validator disagree forever. ---
+    if ([string]::IsNullOrEmpty($TaskAction.Execute)) { return $false }
+    if ($TaskAction.Execute.ToLowerInvariant() -ne $PowerShellExe.ToLowerInvariant()) { return $false }
+    # --- END FIX ---
 
     if ($TaskAction.Arguments -notmatch [regex]::Escape($WorkerScriptTarget)) { return $false }
 
@@ -197,12 +198,9 @@ else {
 }
 
 if ($null -eq $ExistingTask -or -not $TaskIsValid) {
-    # --- FIX (Correction 2): use the resolved PowerShell executable path
-    #     instead of the hardcoded literal "powershell.exe". ---
     $Action = New-ScheduledTaskAction `
         -Execute $PowerShellExe `
         -Argument $ExpectedArgument
-    # --- END FIX ---
 
     $TaskPrincipalObj = New-ScheduledTaskPrincipal `
         -UserId "SYSTEM" `
@@ -242,9 +240,8 @@ if ($VerifyPrincipal.RunLevel.ToString() -ne "Highest") {
 }
 
 $VerifyAction = $VerifyTask.Actions[0]
-$VerifyExecuteName = Split-Path -Path $VerifyAction.Execute -Leaf
-if ($VerifyExecuteName -notmatch '(?i)^powershell\.exe$') {
-    throw "[SETUP ERROR] Task Execute mismatch. Expected an executable named 'powershell.exe', found '$($VerifyAction.Execute)'."
+if ($VerifyAction.Execute.ToLowerInvariant() -ne $PowerShellExe.ToLowerInvariant()) {
+    throw "[SETUP ERROR] Task Execute mismatch. Expected '$PowerShellExe', found '$($VerifyAction.Execute)'."
 }
 if ($VerifyAction.Arguments -notmatch [regex]::Escape($WorkerScriptTarget)) {
     throw "[SETUP ERROR] Task Arguments do not reference expected worker script path: $WorkerScriptTarget"
@@ -286,9 +283,4 @@ Write-Output "Task '$TaskName' is registered to run as SYSTEM, on-demand, and co
 Write-Output "This script is safe to re-run at any time (idempotent) - it only changes what is actually missing or incorrect."
 Write-Output "The Jenkins service account itself was NOT modified - other pipelines are unaffected."
 
-# --- Explicit terminal exit code so callers that invoke this script via
-#     'powershell.exe -File' (e.g. the auto-bootstrap path in
-#     invoke_elevated.ps1) have a deterministic success signal via
-#     $LASTEXITCODE, rather than relying on whatever native command last
-#     set it. ---
 exit 0
