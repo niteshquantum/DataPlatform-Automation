@@ -39,3 +39,19 @@ def load_database_config(database_name):
         )
 
     return load_config(config_file)
+
+
+def load_common_config(config_name):
+
+    config_file = (
+        ROOT /
+        "config" /
+        "common" /
+        f"{config_name}.conf"
+    )
+
+    return load_config(config_file)
+
+
+def get_project_root():
+    return ROOT
