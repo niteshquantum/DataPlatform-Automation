@@ -14,6 +14,85 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 # ==============================================================================
+# SELF-ELEVATION BOOTSTRAP (fully automatic, no manual steps, portable to any
+# host where the executing account is a member of the local Administrators
+# group). This solves the "Requested registry access is not allowed" root
+# cause at its source: Windows UAC token filtering denies HKLM writes to
+# non-elevated tokens even for Administrators-group accounts. Instead of
+# failing, the script silently re-launches itself with a full admin token
+# via a temporary Scheduled Task using LogonType=S4U + RunLevel=Highest,
+# which elevates without any interactive UAC prompt. No changes required to
+# Terraform, Jenkins service configuration, or per-machine registry ACLs.
+# ==============================================================================
+$CurrentIdentity  = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$CurrentPrincipal = New-Object System.Security.Principal.WindowsPrincipal($CurrentIdentity)
+$IsCurrentlyElevated = $CurrentPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $IsCurrentlyElevated -and -not $env:DPA_ELEVATED) {
+
+    Write-Output "[ELEVATION] Non-elevated token detected for '$($CurrentIdentity.Name)'. Bootstrapping silent elevation via Scheduled Task (S4U + Highest)..."
+
+    $SelfScriptPath = $MyInvocation.MyCommand.Path
+    $TaskName  = "DPA-ElevatedRunner-$([guid]::NewGuid().ToString('N').Substring(0,10))"
+    $StdOutLog = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$TaskName.out.log")
+    $ExitCodeFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "$TaskName.exitcode")
+
+    # DPA_ELEVATED marks the relaunched (elevated) invocation so it does not
+    # attempt to re-bootstrap itself again (prevents infinite recursion).
+    $InnerCommand = "`$env:DPA_ELEVATED = '1'; & `"$SelfScriptPath`" *> `"$StdOutLog`"; `$LASTEXITCODE | Out-File -FilePath `"$ExitCodeFile`" -Encoding ascii"
+
+    try {
+        $Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"$InnerCommand`""
+        $TaskPrincipal = New-ScheduledTaskPrincipal -UserId $CurrentIdentity.Name -LogonType S4U -RunLevel Highest
+        $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+
+        Register-ScheduledTask -TaskName $TaskName -Action $Action -Principal $TaskPrincipal -Settings $Settings -Force -ErrorAction Stop | Out-Null
+        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+
+        $TimeoutSeconds = 300
+        $ElapsedSeconds = 0
+        do {
+            Start-Sleep -Seconds 2
+            $ElapsedSeconds += 2
+            $TaskState = (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue).State
+        } while ($TaskState -eq 'Running' -and $ElapsedSeconds -lt $TimeoutSeconds)
+
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+
+        if (Test-Path -Path $StdOutLog) {
+            Get-Content -Path $StdOutLog | ForEach-Object { Write-Output $_ }
+        }
+
+        $ElevatedExitCode = 1
+        if (Test-Path -Path $ExitCodeFile) {
+            $RawExit = (Get-Content -Path $ExitCodeFile -Raw).Trim()
+            if ($RawExit -match '^\d+$') { $ElevatedExitCode = [int]$RawExit }
+        }
+        else {
+            Write-Output "[ELEVATION] [ERROR] Elevated task did not produce an exit code within $TimeoutSeconds seconds (timeout or task failed to run)."
+        }
+
+        Remove-Item -Path $StdOutLog, $ExitCodeFile -ErrorAction SilentlyContinue
+        exit $ElevatedExitCode
+    }
+    catch {
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+        throw @"
+[ERROR] [ELEVATION] Automatic silent elevation via Scheduled Task failed.
+
+Executing Identity: $($CurrentIdentity.Name)
+
+This typically means the Task Scheduler service is disabled, or the account
+is not a member of the local Administrators group on this host.
+
+Original Error:
+$($_.Exception.Message)
+"@
+    }
+}
+# --- END SELF-ELEVATION BOOTSTRAP ---
+
+# ==============================================================================
 # HELPER FUNCTIONS (Top-level scope declaration)
 # ==============================================================================
 
