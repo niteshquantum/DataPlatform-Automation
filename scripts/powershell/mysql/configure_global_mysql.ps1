@@ -1,4 +1,3 @@
-
 $ErrorActionPreference = "Stop"
 
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
@@ -73,13 +72,10 @@ if (!(Test-Path $globalDirectory)) {
 # CREATE MYSQL COMMAND
 # =====================================
 
-$mysqlPluginDir = "$ROOT\databases\mysql\server\lib\plugin"
-
 $commandContent = @"
 @echo off
 
 "$mysqlExe" ^
---plugin-dir="$mysqlPluginDir" ^
 --host="$hostName" ^
 --port="$port" ^
 --user="$user" ^
@@ -93,7 +89,8 @@ Set-Content `
     -Encoding ASCII
 
 # =====================================
-# ADD DIRECTORY TO SYSTEM PATH
+# ADD GLOBAL DIRECTORY TO BEGINNING
+# OF SYSTEM PATH
 # =====================================
 
 $machinePath = [Environment]::GetEnvironmentVariable(
@@ -101,26 +98,22 @@ $machinePath = [Environment]::GetEnvironmentVariable(
     "Machine"
 )
 
-$pathEntries = $machinePath -split ";"
+$pathEntries = $machinePath -split ";" |
+    Where-Object {
+        $_ -and
+        $_.Trim().TrimEnd("\") -ne $globalDirectory.TrimEnd("\")
+    }
 
-if ($pathEntries -notcontains $globalDirectory) {
+$newPath = $globalDirectory + ";" + ($pathEntries -join ";")
 
-    Write-Host ""
-    Write-Host "Adding MySQL command to System PATH..."
+[Environment]::SetEnvironmentVariable(
+    "Path",
+    $newPath,
+    "Machine"
+)
 
-    $newPath = $globalDirectory + ";" + $machinePath
-
-    [Environment]::SetEnvironmentVariable(
-        "Path",
-        $newPath,
-        "Machine"
-    )
-}
-else {
-
-    Write-Host ""
-    Write-Host "MySQL command already exists in System PATH"
-}
+Write-Host ""
+Write-Host "MySQL global command directory moved to beginning of System PATH"
 
 # =====================================
 # VALIDATE GLOBAL COMMAND FILE
@@ -141,3 +134,4 @@ Write-Host ""
 Write-Host "Open a NEW CMD window before testing."
 Write-Host ""
 
+exit 0
