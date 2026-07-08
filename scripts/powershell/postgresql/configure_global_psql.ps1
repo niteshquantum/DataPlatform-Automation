@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "====================================="
-Write-Host "CONFIGURING POSTGRESQL WINDOWS SERVICE"
+Write-Host "CONFIGURING GLOBAL PSQL COMMAND"
 Write-Host "====================================="
 Write-Host ""
 
@@ -13,24 +13,19 @@ Write-Host ""
 
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
-$PgBin  = "$PROJECT_ROOT\databases\postgresql\bin"
-$PgData = "$PROJECT_ROOT\databases\postgresql\data"
-$PgLogDir = "$PROJECT_ROOT\outputs\logs"
-$PgLog  = "$PgLogDir\postgresql_service.log"
-
-$PgCtl = "$PgBin\pg_ctl.exe"
-
-$ServiceName = "PostgreSQLAutomation"
-
-# =====================================
-# READ CONFIG
-# =====================================
-
 $ConfigFile = "$PROJECT_ROOT\config\windows\postgresql.conf"
+
+# =====================================
+# VALIDATE CONFIG
+# =====================================
 
 if (!(Test-Path $ConfigFile)) {
     throw "Config file not found: $ConfigFile"
 }
+
+# =====================================
+# READ CONFIG
+# =====================================
 
 $Config = @{}
 
@@ -43,7 +38,9 @@ Get-Content $ConfigFile | ForEach-Object {
         -not $Line.StartsWith("#") -and
         $Line.Contains("=")
     ) {
+
         $Key, $Value = $Line.Split("=", 2)
+
         $Config[$Key.Trim()] = $Value.Trim()
     }
 }
@@ -52,6 +49,11 @@ $PgHost     = $Config["POSTGRESQL_HOST"]
 $PgPort     = $Config["POSTGRESQL_PORT"]
 $PgDatabase = $Config["POSTGRESQL_DB"]
 $PgUser     = $Config["POSTGRESQL_USER"]
+$PgPassword = $Config["POSTGRESQL_PASSWORD"]
+
+# =====================================
+# VALIDATE CONFIG VALUES
+# =====================================
 
 if (-not $PgHost) {
     throw "POSTGRESQL_HOST not found in postgresql.conf"
@@ -61,188 +63,112 @@ if (-not $PgPort) {
     throw "POSTGRESQL_PORT not found in postgresql.conf"
 }
 
+if (-not $PgDatabase) {
+    throw "POSTGRESQL_DB not found in postgresql.conf"
+}
+
 if (-not $PgUser) {
     throw "POSTGRESQL_USER not found in postgresql.conf"
 }
 
-Write-Host "Project Root : $PROJECT_ROOT"
-Write-Host "PostgreSQL   : $PgCtl"
-Write-Host "Data Path    : $PgData"
-Write-Host "Log Path     : $PgLog"
-Write-Host "Host         : $PgHost"
-Write-Host "Port         : $PgPort"
-Write-Host "Database     : $PgDatabase"
-Write-Host "User         : $PgUser"
-Write-Host "Service      : $ServiceName"
-Write-Host ""
-
 # =====================================
-# VALIDATE FILES
+# PSQL PATH
 # =====================================
 
-if (!(Test-Path $PgCtl)) {
-    throw "pg_ctl.exe not found: $PgCtl"
+$PsqlExe = "$PROJECT_ROOT\databases\postgresql\bin\psql.exe"
+
+if (!(Test-Path $PsqlExe)) {
+    throw "psql.exe not found: $PsqlExe"
 }
 
-if (!(Test-Path "$PgData\PG_VERSION")) {
-    throw "PostgreSQL data directory is not initialized: $PgData"
-}
+Write-Host "psql.exe : $PsqlExe"
+Write-Host "Host     : $PgHost"
+Write-Host "Port     : $PgPort"
+Write-Host "Database : $PgDatabase"
+Write-Host "User     : $PgUser"
 
-if (!(Test-Path $PgLogDir)) {
+# =====================================
+# GLOBAL COMMAND DIRECTORY
+# =====================================
+
+$GlobalDirectory = "C:\ProgramData\DatabaseAutomation\postgresql"
+
+$GlobalCommand = "$GlobalDirectory\psql.cmd"
+
+if (!(Test-Path $GlobalDirectory)) {
+
     New-Item `
         -ItemType Directory `
-        -Path $PgLogDir `
+        -Path $GlobalDirectory `
         -Force | Out-Null
 }
 
 # =====================================
-# CHECK EXISTING SERVICE
+# CREATE GLOBAL PSQL COMMAND
 # =====================================
 
-$ExistingService = Get-Service `
-    -Name $ServiceName `
-    -ErrorAction SilentlyContinue
+$CommandContent = @"
+@echo off
 
-if ($ExistingService) {
+set "PGPASSWORD=$PgPassword"
 
-    Write-Host "Existing PostgreSQL service found."
+"$PsqlExe" ^
+--host="$PgHost" ^
+--port="$PgPort" ^
+--username="$PgUser" ^
+--dbname="$PgDatabase" %*
 
-    if ($ExistingService.Status -eq "Running") {
+set "PGPASSWORD="
+"@
 
-        Write-Host "Stopping existing PostgreSQL service..."
+Set-Content `
+    -Path $GlobalCommand `
+    -Value $CommandContent `
+    -Encoding ASCII
 
-        Stop-Service `
-            -Name $ServiceName `
-            -Force
-
-        Start-Sleep -Seconds 3
-    }
+if (!(Test-Path $GlobalCommand)) {
+    throw "Global psql command creation failed"
 }
 
 # =====================================
-# STOP CURRENT PROJECT INSTANCE
+# ADD TO MACHINE PATH
 # =====================================
 
-Write-Host "Checking current project PostgreSQL instance..."
+$MachinePath = [Environment]::GetEnvironmentVariable(
+    "Path",
+    "Machine"
+)
 
-& $PgCtl status -D $PgData *> $null
+$PathEntries = $MachinePath -split ";"
 
-if ($LASTEXITCODE -eq 0) {
+if ($PathEntries -notcontains $GlobalDirectory) {
 
-    Write-Host "Stopping standalone PostgreSQL instance..."
+    Write-Host ""
+    Write-Host "Adding psql command directory to System PATH..."
 
-    & $PgCtl stop -D $PgData -m fast -w
+    $NewPath = $MachinePath.TrimEnd(";") + ";" + $GlobalDirectory
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to stop standalone PostgreSQL instance"
-    }
-
-    Start-Sleep -Seconds 3
+    [Environment]::SetEnvironmentVariable(
+        "Path",
+        $NewPath,
+        "Machine"
+    )
 }
 else {
-    Write-Host "Standalone PostgreSQL instance is not running."
-}
 
-# =====================================
-# REMOVE OLD SERVICE
-# =====================================
-
-if ($ExistingService) {
-
-    Write-Host "Removing existing PostgreSQL service..."
-
-    & $PgCtl unregister -N $ServiceName
-
-    Start-Sleep -Seconds 3
-}
-
-# =====================================
-# REGISTER WINDOWS SERVICE
-# =====================================
-
-Write-Host ""
-Write-Host "Registering PostgreSQL Windows Service..."
-
-& $PgCtl register `
-    -N $ServiceName `
-    -D $PgData `
-    -S auto `
-    -o "-p $PgPort"
-
-if ($LASTEXITCODE -ne 0) {
-    throw "PostgreSQL service registration failed"
-}
-
-# =====================================
-# START WINDOWS SERVICE
-# =====================================
-
-Write-Host "Starting PostgreSQL Windows Service..."
-
-Start-Service -Name $ServiceName
-
-# =====================================
-# WAIT FOR SERVICE
-# =====================================
-
-$ServiceStarted = $false
-
-for ($i = 1; $i -le 30; $i++) {
-
-    $Service = Get-Service `
-        -Name $ServiceName `
-        -ErrorAction SilentlyContinue
-
-    if ($Service -and $Service.Status -eq "Running") {
-
-        $ServiceStarted = $true
-        break
-    }
-
-    Start-Sleep -Seconds 1
-}
-
-if (-not $ServiceStarted) {
-    throw "PostgreSQL Windows Service failed to start"
-}
-
-# =====================================
-# WAIT FOR PORT
-# =====================================
-
-$PortStarted = $false
-
-for ($i = 1; $i -le 30; $i++) {
-
-    $PortConnection = Get-NetTCPConnection `
-        -LocalPort $PgPort `
-        -State Listen `
-        -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-
-    if ($PortConnection) {
-
-        $PortStarted = $true
-        break
-    }
-
-    Start-Sleep -Seconds 1
-}
-
-if (-not $PortStarted) {
-    throw "PostgreSQL is not listening on port $PgPort"
+    Write-Host ""
+    Write-Host "psql command directory already exists in System PATH"
 }
 
 Write-Host ""
 Write-Host "====================================="
-Write-Host "POSTGRESQL WINDOWS SERVICE CONFIGURED"
+Write-Host "GLOBAL PSQL CONFIGURED SUCCESSFULLY"
 Write-Host "====================================="
 Write-Host ""
-Write-Host "Service : $ServiceName"
-Write-Host "Status  : Running"
-Write-Host "Startup : Automatic"
-Write-Host "Host    : $PgHost"
-Write-Host "Port    : $PgPort"
+Write-Host "Command:"
+Write-Host "psql"
+Write-Host ""
+Write-Host "Open a NEW CMD before testing."
 Write-Host ""
 
 exit 0
