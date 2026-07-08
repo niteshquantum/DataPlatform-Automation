@@ -1,7 +1,7 @@
 
 pipeline {
 
-    agent any
+    agent none
 
     options {
         disableConcurrentBuilds()
@@ -10,14 +10,8 @@ pipeline {
     parameters {
 
         choice(
-            name: 'OPERATING_SYSTEM',
-            choices: ['UBUNTU', 'WINDOWS'],
-            description: 'Select Operating System'
-        )
-
-        choice(
             name: 'DATABASE',
-            choices: ['MYSQL', 'MONGODB', 'POSTGRESQL'],
+            choices: ['MYSQL', 'MSSQL', 'MONGODB', 'POSTGRESQL'],
             description: 'Select Database'
         )
 
@@ -32,21 +26,23 @@ pipeline {
 
         /*
         ============================================================
-        UBUNTU - MYSQL SETUP
+        MYSQL SETUP  (runs on ubuntu-node)
         ============================================================
         */
 
-        stage('Ubuntu MySQL Setup') {
+        stage('MySQL Setup') {
+
+            agent { label 'ubuntu-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
             }
 
             steps {
+                checkout scm
 
                 sh '''
                     find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
@@ -65,6 +61,8 @@ pipeline {
 
                     ./scripts/bash/mysql/setup/create_database.sh
 
+                    ./scripts/bash/mysql/setup/configure_global_mysql.sh
+
                     ./scripts/bash/mysql/setup/validate_environment.sh
                 '''
             }
@@ -73,21 +71,23 @@ pipeline {
 
         /*
         ============================================================
-        UBUNTU - MYSQL LOAD
+        MYSQL LOAD  (runs on ubuntu-node)
         ============================================================
         */
 
-        stage('Ubuntu MySQL Load') {
+        stage('MySQL Load') {
+
+            agent { label 'ubuntu-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
                     expression { params.DATABASE == 'MYSQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
             }
 
             steps {
+                checkout scm
 
                 sh '''
                     find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
@@ -112,126 +112,47 @@ pipeline {
 
         /*
         ============================================================
-        UBUNTU - MONGODB SETUP
+        MSSQL SETUP  (runs on ubuntu-node)
         ============================================================
         */
 
-        stage('Ubuntu MongoDB Setup') {
+        stage('MSSQL Setup') {
+
+            agent { label 'ubuntu-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
-                    expression { params.DATABASE == 'MONGODB' }
+                    expression { params.DATABASE == 'MSSQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
             }
 
             steps {
+                checkout scm
 
                 sh '''
-                    chmod -R +x scripts/bash
+                    chmod +x scripts/bash/common/*.sh
+                    chmod +x scripts/bash/mssql/*.sh
 
                     ./scripts/bash/common/validate_python_runtime.sh
-
-                    ./scripts/bash/common/install_python_requirements.sh
-
-                    ./scripts/bash/mongodb/setup/install_mongodb.sh
-
-                    ./scripts/bash/mongodb/setup/install_mongosh.sh
-
-                    ./scripts/bash/mongodb/setup/configure_global_mongosh.sh
-
-                    ./scripts/bash/mongodb/setup/start_mongodb.sh
-
-                    ./scripts/bash/mongodb/setup/configure_mongodb_service.sh
-
-                    ./scripts/bash/mongodb/setup/validate_mongodb.sh
-                '''
-            }
-        }
-
-
-        /*
-        ============================================================
-        UBUNTU - MONGODB LOAD
-        ============================================================
-        */
-
-        stage('Ubuntu MongoDB Load') {
-
-            when {
-                allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
-                    expression { params.DATABASE == 'MONGODB' }
-                    expression { params.ACTION == 'LOAD' }
-                }
-            }
-
-            steps {
-
-                sh '''
-                    chmod -R +x scripts/bash
-
-                    ./scripts/bash/common/install_python_requirements.sh
-
-                    ./scripts/bash/mongodb/setup/start_mongodb.sh
-
-                    ./scripts/bash/mongodb/setup/validate_mongodb.sh
-
-                    ./scripts/bash/mongodb/load/load_data.sh
-
-                    ./scripts/bash/mongodb/load/validate_loaded_data.sh
-                '''
-            }
-        }
-
-
-        /*
-        ============================================================
-        UBUNTU - POSTGRESQL SETUP
-        ============================================================
-        */
-
-        stage('Ubuntu PostgreSQL Setup') {
-
-            when {
-                allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
-                    expression { params.DATABASE == 'POSTGRESQL' }
-                    expression { params.ACTION == 'SETUP' }
-                }
-            }
-
-            steps {
-
-                sh '''
-                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-
-                    ./scripts/bash/common/validate_python_runtime.sh
-
-                    ./scripts/bash/postgresql/setup/install_python_requirements.sh
-
-                    ./scripts/bash/postgresql/setup/validate_python_requirements.sh
 
                     ./scripts/bash/common/validate_java_runtime.sh
 
-                    ./scripts/bash/postgresql/setup/install_tools.sh
+                    ./scripts/bash/common/install_tools.sh
 
-                    ./scripts/bash/postgresql/setup/deploy_postgresql.sh
+                    ./scripts/bash/common/install_mssql_driver.sh
 
-                    ./scripts/bash/postgresql/setup/install_postgresql.sh
+                    ./scripts/bash/mssql/install_mssql.sh
 
-                    ./scripts/bash/postgresql/setup/start_postgresql.sh
+                    ./scripts/bash/mssql/install_sqlcmd.sh
 
-                    ./scripts/bash/postgresql/setup/configure_postgresql.sh
+                    ./scripts/bash/mssql/start_mssql.sh
 
-                    ./scripts/bash/postgresql/setup/create_database.sh
+                    ./scripts/bash/mssql/create_database.sh
 
-                    ./scripts/bash/postgresql/setup/configure_global_psql.sh
+                    ./scripts/bash/mssql/run_liquibase.sh
 
-                    ./scripts/bash/postgresql/setup/validate_postgresql.sh
-
-                    ./scripts/bash/postgresql/setup/validate_environment.sh
+                    ./scripts/bash/mssql/validate_environment.sh
                 '''
             }
         }
@@ -239,38 +160,42 @@ pipeline {
 
         /*
         ============================================================
-        UBUNTU - POSTGRESQL LOAD
+        MSSQL LOAD  (runs on ubuntu-node)
         ============================================================
         */
 
-        stage('Ubuntu PostgreSQL Load') {
+        stage('MSSQL Load') {
+
+            agent { label 'ubuntu-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'UBUNTU' }
-                    expression { params.DATABASE == 'POSTGRESQL' }
+                    expression { params.DATABASE == 'MSSQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
             }
 
             steps {
+                checkout scm
 
                 sh '''
                     find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
 
                     ./scripts/bash/common/validate_python_runtime.sh
 
-                    ./scripts/bash/postgresql/setup/install_python_requirements.sh
+                    ./scripts/bash/install_python_requirements.sh
 
-                    ./scripts/bash/postgresql/setup/validate_python_requirements.sh
+                    ./scripts/bash/validate_python_requirements.sh
 
-                    ./scripts/bash/postgresql/setup/start_postgresql.sh
+                    ./scripts/bash/common/install_tools.sh
 
-                    ./scripts/bash/postgresql/setup/validate_postgresql.sh
+                    ./scripts/bash/mssql/validate_tools.sh
 
-                    ./scripts/bash/postgresql/load/load_data.sh
+                    ./scripts/bash/mssql/validate_mssql.sh
 
-                    ./scripts/bash/postgresql/load/validate_loaded_data.sh
+                    ./scripts/bash/mssql/load_data.sh
+
+                    ./scripts/bash/mssql/validate_loaded_data.sh
                 '''
             }
         }
@@ -278,93 +203,23 @@ pipeline {
 
         /*
         ============================================================
-        WINDOWS - MYSQL SETUP
+        MONGODB SETUP  (runs on windows-node)
         ============================================================
         */
 
-        stage('Windows MySQL Setup') {
+        stage('MongoDB Setup') {
+
+            agent { label 'windows-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
-                    expression { params.DATABASE == 'MYSQL' }
-                    expression { params.ACTION == 'SETUP' }
-                }
-            }
-
-            steps {
-
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
-
-                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
-            }
-        }
-
-
-        /*
-        ============================================================
-        WINDOWS - MYSQL LOAD
-        ============================================================
-        */
-
-        stage('Windows MySQL Load') {
-
-            when {
-                allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
-                    expression { params.DATABASE == 'MYSQL' }
-                    expression { params.ACTION == 'LOAD' }
-                }
-            }
-
-            steps {
-
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
-
-                bat 'scripts\\batch\\mysql\\setup\\validate_mysql.bat'
-
-                bat 'scripts\\batch\\mysql\\load\\load_data.bat'
-
-                bat 'scripts\\batch\\mysql\\load\\validate_loaded_data.bat'
-            }
-        }
-
-
-        /*
-        ============================================================
-        WINDOWS - MONGODB SETUP
-        ============================================================
-        */
-
-        stage('Windows MongoDB Setup') {
-
-            when {
-                allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
                     expression { params.DATABASE == 'MONGODB' }
                     expression { params.ACTION == 'SETUP' }
                 }
             }
 
             steps {
+                checkout scm
 
                 bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
@@ -380,7 +235,9 @@ pipeline {
 
                 bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
 
-                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+
+                bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
 
                 bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
             }
@@ -389,21 +246,23 @@ pipeline {
 
         /*
         ============================================================
-        WINDOWS - MONGODB LOAD
+        MONGODB LOAD  (runs on windows-node)
         ============================================================
         */
 
-        stage('Windows MongoDB Load') {
+        stage('MongoDB Load') {
+
+            agent { label 'windows-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
                     expression { params.DATABASE == 'MONGODB' }
                     expression { params.ACTION == 'LOAD' }
                 }
             }
 
             steps {
+                checkout scm
 
                 bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
@@ -422,21 +281,23 @@ pipeline {
 
         /*
         ============================================================
-        WINDOWS - POSTGRESQL SETUP
+        POSTGRESQL SETUP  (runs on windows-node)
         ============================================================
         */
 
-        stage('Windows PostgreSQL Setup') {
+        stage('PostgreSQL Setup') {
+
+            agent { label 'windows-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
                     expression { params.DATABASE == 'POSTGRESQL' }
                     expression { params.ACTION == 'SETUP' }
                 }
             }
 
             steps {
+                checkout scm
 
                 bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
@@ -450,9 +311,11 @@ pipeline {
 
                 bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
 
-                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
 
                 bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+
+                bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
 
                 bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
             }
@@ -461,21 +324,23 @@ pipeline {
 
         /*
         ============================================================
-        WINDOWS - POSTGRESQL LOAD
+        POSTGRESQL LOAD  (runs on windows-node)
         ============================================================
         */
 
-        stage('Windows PostgreSQL Load') {
+        stage('PostgreSQL Load') {
+
+            agent { label 'windows-node' }
 
             when {
                 allOf {
-                    expression { params.OPERATING_SYSTEM == 'WINDOWS' }
                     expression { params.DATABASE == 'POSTGRESQL' }
                     expression { params.ACTION == 'LOAD' }
                 }
             }
 
             steps {
+                checkout scm
 
                 bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
@@ -496,11 +361,11 @@ pipeline {
     post {
 
         success {
-            echo "${params.OPERATING_SYSTEM} ${params.DATABASE} ${params.ACTION} SUCCESSFUL"
+            echo "${params.DATABASE} ${params.ACTION} SUCCESSFUL"
         }
 
         failure {
-            echo "${params.OPERATING_SYSTEM} ${params.DATABASE} ${params.ACTION} FAILED"
+            echo "${params.DATABASE} ${params.ACTION} FAILED"
         }
 
         always {
