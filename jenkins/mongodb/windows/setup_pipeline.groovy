@@ -51,7 +51,11 @@ pipeline {
                 bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
             }
         }
-
+        stage('Configure Global Mongosh') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+        }
+    }
         stage('Validate MongoDB') {
             steps {
                 bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
