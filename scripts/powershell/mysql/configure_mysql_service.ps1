@@ -7,24 +7,15 @@ Write-Host "CONFIGURING MYSQL WINDOWS SERVICE"
 Write-Host "====================================="
 Write-Host ""
 
-# =====================================
-# PROJECT ROOT
-# =====================================
-
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
 $ConfigFile = "$ROOT\config\windows\mysql.conf"
-
-$BaseDir = "$ROOT\databases\mysql\server"
-$DataDir = "$ROOT\databases\mysql\data"
-
-$Mysqld = "$BaseDir\bin\mysqld.exe"
+$BaseDir    = "$ROOT\databases\mysql\server"
+$DataDir    = "$ROOT\databases\mysql\data"
+$Mysqld     = "$BaseDir\bin\mysqld.exe"
+$MyIni      = "$ROOT\databases\mysql\my.ini"
 
 $ServiceName = "MySQLAutomation"
-
-# =====================================
-# READ CONFIG
-# =====================================
 
 if (!(Test-Path $ConfigFile)) {
     throw "Config file not found: $ConfigFile"
@@ -41,9 +32,7 @@ Get-Content $ConfigFile | ForEach-Object {
         -not $Line.StartsWith("#") -and
         $Line.Contains("=")
     ) {
-
         $Key, $Value = $Line.Split("=", 2)
-
         $Config[$Key.Trim()] = $Value.Trim()
     }
 }
@@ -59,6 +48,14 @@ if (-not $MySQLPort) {
     throw "MYSQL_PORT not found in mysql.conf"
 }
 
+if (!(Test-Path $Mysqld)) {
+    throw "mysqld.exe not found: $Mysqld"
+}
+
+if (!(Test-Path $DataDir)) {
+    throw "MySQL data directory not found: $DataDir"
+}
+
 Write-Host "Project Root : $ROOT"
 Write-Host "MySQL        : $Mysqld"
 Write-Host "BaseDir      : $BaseDir"
@@ -69,16 +66,32 @@ Write-Host "Service      : $ServiceName"
 Write-Host ""
 
 # =====================================
-# VALIDATE
+# CREATE MY.INI
 # =====================================
 
-if (!(Test-Path $Mysqld)) {
-    throw "mysqld.exe not found: $Mysqld"
+Write-Host "Creating MySQL configuration file..."
+
+$BaseDirConfig = $BaseDir.Replace("\", "/")
+$DataDirConfig = $DataDir.Replace("\", "/")
+
+$MyIniContent = @"
+[mysqld]
+basedir=$BaseDirConfig
+datadir=$DataDirConfig
+port=$MySQLPort
+bind-address=$MySQLHost
+"@
+
+Set-Content `
+    -Path $MyIni `
+    -Value $MyIniContent `
+    -Encoding ASCII
+
+if (!(Test-Path $MyIni)) {
+    throw "Failed to create my.ini"
 }
 
-if (!(Test-Path $DataDir)) {
-    throw "MySQL data directory not found: $DataDir"
-}
+Write-Host "Configuration : $MyIni"
 
 # =====================================
 # STOP EXISTING SERVICE
@@ -105,7 +118,7 @@ if ($ExistingService) {
 }
 
 # =====================================
-# STOP STANDALONE MYSQL PROCESS
+# STOP STANDALONE MYSQL
 # =====================================
 
 Write-Host "Checking standalone MySQL processes..."
@@ -126,12 +139,11 @@ Start-Sleep -Seconds 3
 # REMOVE OLD SERVICE
 # =====================================
 
-if ($ExistingService) {
+if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
 
     Write-Host "Removing existing MySQL service..."
 
-    & $Mysqld `
-        --remove $ServiceName
+    & $Mysqld --remove $ServiceName
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to remove existing MySQL service"
@@ -141,36 +153,47 @@ if ($ExistingService) {
 }
 
 # =====================================
-# INSTALL MYSQL WINDOWS SERVICE
+# INSTALL MYSQL SERVICE
 # =====================================
 
 Write-Host ""
 Write-Host "Installing MySQL Windows Service..."
 
 & $Mysqld `
-    --install $ServiceName `
-    --basedir="$BaseDir" `
-    --datadir="$DataDir" `
-    --port=$MySQLPort
+    "--defaults-file=$MyIni" `
+    --install $ServiceName
 
 if ($LASTEXITCODE -ne 0) {
-    throw "MySQL Windows Service installation failed"
+    throw "MySQL Windows Service installation failed. Exit code: $LASTEXITCODE"
 }
 
 # =====================================
-# CONFIGURE AUTOMATIC START
+# VALIDATE SERVICE EXISTS
 # =====================================
 
-& sc.exe config $ServiceName start= auto | Out-Null
+$InstalledService = Get-Service `
+    -Name $ServiceName `
+    -ErrorAction SilentlyContinue
 
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to configure MySQL service automatic startup"
+if (-not $InstalledService) {
+    throw "MySQL service was not created"
 }
 
 # =====================================
-# START MYSQL SERVICE
+# CONFIGURE AUTO START
 # =====================================
 
+& sc.exe config $ServiceName start= auto
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to configure automatic startup"
+}
+
+# =====================================
+# START SERVICE
+# =====================================
+
+Write-Host ""
 Write-Host "Starting MySQL Windows Service..."
 
 Start-Service -Name $ServiceName
