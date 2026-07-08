@@ -108,7 +108,7 @@ if ($pathEntries -notcontains $globalDirectory) {
     Write-Host ""
     Write-Host "Adding MySQL command to System PATH..."
 
-    $newPath = $machinePath.TrimEnd(";") + ";" + $globalDirectory
+    $newPath = $globalDirectory + ";" + $machinePath
 
     [Environment]::SetEnvironmentVariable(
         "Path",
