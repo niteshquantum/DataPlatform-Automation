@@ -174,6 +174,18 @@ function Repair-OrphanedOdbcDriver {
 # after a manual server-side change, or a config file password rotation
 # that was never applied to the running instance). Safe to re-run: if
 # everything is already correct, it makes no changes.
+#
+# --- FIX: this function now returns $true only when 'sa' authentication was
+#     verified/repaired successfully, and $false on any failure along the
+#     way. Previously every failure path here (missing sqlcmd, registry
+#     read/write failure, connection/login failure, verification failure)
+#     only printed a WARNING and returned silently, with the caller never
+#     checking a result - so Deploy MSSQL could report [SUCCESS] even when
+#     'sa' repair had completely failed, and the real error only surfaced
+#     two steps later as a cryptic 18456 in Create Database. No repair
+#     logic, order, or SQL/registry operations below were changed - only
+#     the previously-silent `return` statements now return $false so the
+#     caller can react, plus a final `return $true` on full success. ---
 function Repair-SqlAuthentication {
     param(
         [Parameter(Mandatory = $true)][string]$InstanceNameParam,
@@ -183,15 +195,13 @@ function Repair-SqlAuthentication {
 
     Write-Output "[SQL-AUTH] Starting SQL authentication / 'sa' login repair for instance '$InstanceNameParam'..."
 
-    # --- Resolve sqlcmd.exe. If it isn't available, this is a non-fatal
-    #     diagnostic-only situation: we cannot verify/repair 'sa' without it,
-    #     but installation itself already succeeded, so we warn and return
-    #     rather than failing the whole pipeline. ---
+    # --- Resolve sqlcmd.exe. ---
     $SqlCmdTool = Get-Command "sqlcmd.exe" -ErrorAction SilentlyContinue
     if ($null -eq $SqlCmdTool) {
-        Write-Output "[SQL-AUTH] WARNING: sqlcmd.exe not found on this host. Cannot verify/repair 'sa' login automatically. Skipping this step non-fatally."
-        return
+        Write-Output "[SQL-AUTH] WARNING: sqlcmd.exe not found on this host (not on PATH for this process). Cannot verify/repair 'sa' login."
+        return $false
     }
+    Write-Output "[SQL-AUTH] Using sqlcmd.exe at: $($SqlCmdTool.Source)"
 
     # --- Resolve the Windows Service name for this instance, same pattern
     #     used in start_mssql.ps1 / validate_install.ps1. ---
@@ -203,12 +213,12 @@ function Repair-SqlAuthentication {
         $InstanceId = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" -ErrorAction Stop).$InstanceNameParam
     }
     catch {
-        Write-Output "[SQL-AUTH] WARNING: Could not resolve InstanceId for '$InstanceNameParam' from registry. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
-        return
+        Write-Output "[SQL-AUTH] WARNING: Could not resolve InstanceId for '$InstanceNameParam' from registry. Details: $($_.Exception.Message)"
+        return $false
     }
     if ([string]::IsNullOrWhiteSpace($InstanceId)) {
-        Write-Output "[SQL-AUTH] WARNING: InstanceId for '$InstanceNameParam' resolved empty. Skipping 'sa' repair non-fatally."
-        return
+        Write-Output "[SQL-AUTH] WARNING: InstanceId for '$InstanceNameParam' resolved empty."
+        return $false
     }
 
     $MssqlServerRegPath = "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\$InstanceId\MSSQLServer"
@@ -221,8 +231,8 @@ function Repair-SqlAuthentication {
         $CurrentLoginMode = (Get-ItemProperty -Path $MssqlServerRegPath -Name "LoginMode" -ErrorAction Stop).LoginMode
     }
     catch {
-        Write-Output "[SQL-AUTH] WARNING: Could not read LoginMode from registry at $MssqlServerRegPath. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
-        return
+        Write-Output "[SQL-AUTH] WARNING: Could not read LoginMode from registry at $MssqlServerRegPath. Details: $($_.Exception.Message)"
+        return $false
     }
 
     $LoginModeChanged = $false
@@ -234,8 +244,8 @@ function Repair-SqlAuthentication {
             Write-Output "[SQL-AUTH] LoginMode set to 2 (Mixed Mode)."
         }
         catch {
-            Write-Output "[SQL-AUTH] WARNING: Failed to set LoginMode to Mixed Mode. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
-            return
+            Write-Output "[SQL-AUTH] WARNING: Failed to set LoginMode to Mixed Mode. Details: $($_.Exception.Message)"
+            return $false
         }
     }
     else {
@@ -266,14 +276,14 @@ function Repair-SqlAuthentication {
             }
 
             if (-not $RestartServiceRunning) {
-                Write-Output "[SQL-AUTH] WARNING: Service '$ExpectedServiceName' did not report Running within $RestartMaxWaitSeconds seconds after restart. Skipping 'sa' repair non-fatally."
-                return
+                Write-Output "[SQL-AUTH] WARNING: Service '$ExpectedServiceName' did not report Running within $RestartMaxWaitSeconds seconds after restart."
+                return $false
             }
             Write-Output "[SQL-AUTH] Service '$ExpectedServiceName' restarted and confirmed Running."
         }
         catch {
-            Write-Output "[SQL-AUTH] WARNING: Failed to restart service '$ExpectedServiceName' after LoginMode change. Skipping 'sa' repair non-fatally. Details: $($_.Exception.Message)"
-            return
+            Write-Output "[SQL-AUTH] WARNING: Failed to restart service '$ExpectedServiceName' after LoginMode change. Details: $($_.Exception.Message)"
+            return $false
         }
     }
 
@@ -310,14 +320,15 @@ function Repair-SqlAuthentication {
             $SqlAuthSucceeded = $true
         }
         else {
-            Write-Output "[SQL-AUTH] Attempt $SqlAuthAttempt/$SqlAuthMaxRetries : sqlcmd did not yet succeed (ExitCode: $SqlAuthLastExitCode). Retrying in $SqlAuthRetryIntervalSeconds seconds..."
+            Write-Output "[SQL-AUTH] Attempt $SqlAuthAttempt/$SqlAuthMaxRetries : sqlcmd did not yet succeed (ExitCode: $SqlAuthLastExitCode). Output: $SqlAuthLastOutput"
+            Write-Output "[SQL-AUTH] Retrying in $SqlAuthRetryIntervalSeconds seconds..."
             Start-Sleep -Seconds $SqlAuthRetryIntervalSeconds
         }
     }
 
     if (-not $SqlAuthSucceeded) {
         Write-Output "[SQL-AUTH] WARNING: Failed to enable/set 'sa' login password after $SqlAuthMaxRetries attempts. Last sqlcmd output: $SqlAuthLastOutput"
-        return
+        return $false
     }
     Write-Output "[SQL-AUTH] 'sa' login password set and login enabled successfully."
 
@@ -333,17 +344,21 @@ function Repair-SqlAuthentication {
             }
             else {
                 Write-Output "[SQL-AUTH] WARNING: Verification query returned unexpected is_disabled value: '$VerifyTrimmed'. 'sa' may still be disabled."
+                return $false
             }
         }
         else {
             Write-Output "[SQL-AUTH] WARNING: Verification query failed (ExitCode: $VerifyExitCode). Could not confirm 'sa' status. Output: $VerifyOutput"
+            return $false
         }
     }
     catch {
-        Write-Output "[SQL-AUTH] WARNING: Verification query threw an exception non-fatally. Details: $($_.Exception.Message)"
+        Write-Output "[SQL-AUTH] WARNING: Verification query threw an exception. Details: $($_.Exception.Message)"
+        return $false
     }
 
     Write-Output "[SQL-AUTH] SQL authentication / 'sa' login repair complete."
+    return $true
 }
 # === END SQL AUTHENTICATION / SA LOGIN REPAIR ===
 
@@ -438,7 +453,14 @@ if ($IsAlreadyInstalled) {
     # function: an already-installed instance whose 'sa' login had drifted
     # (disabled, or password out of sync) was never touched again by a
     # re-run of this script until now.
-    Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
+    #
+    # --- FIX: result is now checked. Previously ignored, so this branch
+    #     always fell through to `exit 0` even when 'sa' repair failed. ---
+    $AuthRepairOk = Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
+    if (-not $AuthRepairOk) {
+        throw "[ERROR] [SQL-AUTH] 'sa' login verification/repair failed for instance '$InstanceName'. See the [SQL-AUTH] log lines above for the specific cause. This must be resolved before Create Database can succeed."
+    }
+    # --- END FIX ---
 
     exit 0
 }
@@ -496,7 +518,13 @@ try {
         # Mixed Mode and re-syncs 'sa' to mssql.conf, catching any case where
         # setup silently didn't honor SECURITYMODE (e.g. certain upgrade or
         # edition-specific paths).
-        Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
+        #
+        # --- FIX: same result-check as the idempotency-skip branch above. ---
+        $AuthRepairOk = Repair-SqlAuthentication -InstanceNameParam $InstanceName -PortParam $InstancePort -SaPasswordParam $SaPassword
+        if (-not $AuthRepairOk) {
+            throw "[ERROR] [SQL-AUTH] 'sa' login verification/repair failed for instance '$InstanceName' after a fresh install. See the [SQL-AUTH] log lines above for the specific cause."
+        }
+        # --- END FIX ---
     }
     elseif ($ExitCode -eq 3010) {
         Write-Output "=========================================================================================="
