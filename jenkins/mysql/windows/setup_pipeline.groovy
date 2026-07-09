@@ -40,11 +40,11 @@ pipeline {
             }
         }
         
-        stage('Start MySQL') {
-            steps {
-               bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
-            }
-        }
+        stage('Configure PostgreSQL Service') {
+    steps {
+        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+    }
+}
         stage('Create Database') {
             steps {
                 bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
