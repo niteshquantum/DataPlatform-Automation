@@ -1,4 +1,3 @@
-
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
@@ -6,6 +5,10 @@ Write-Host "====================================="
 Write-Host "CONFIGURING MYSQL WINDOWS SERVICE"
 Write-Host "====================================="
 Write-Host ""
+
+# =====================================
+# PROJECT ROOT
+# =====================================
 
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
@@ -17,9 +20,17 @@ $MyIni      = "$ROOT\databases\mysql\my.ini"
 
 $ServiceName = "MySQLAutomation"
 
+# =====================================
+# VALIDATE CONFIG FILE
+# =====================================
+
 if (!(Test-Path $ConfigFile)) {
     throw "Config file not found: $ConfigFile"
 }
+
+# =====================================
+# READ CONFIG
+# =====================================
 
 $Config = @{}
 
@@ -47,6 +58,10 @@ if (-not $MySQLHost) {
 if (-not $MySQLPort) {
     throw "MYSQL_PORT not found in mysql.conf"
 }
+
+# =====================================
+# VALIDATE MYSQL
+# =====================================
 
 if (!(Test-Path $Mysqld)) {
     throw "mysqld.exe not found: $Mysqld"
@@ -94,8 +109,59 @@ if (!(Test-Path $MyIni)) {
 Write-Host "Configuration : $MyIni"
 
 # =====================================
-# STOP EXISTING SERVICE
+# CHECK PROJECT MYSQL INSTANCE
 # =====================================
+
+Write-Host ""
+Write-Host "Checking MySQL instance on configured port $MySQLPort..."
+
+$PortConnection = Get-NetTCPConnection `
+    -LocalPort $MySQLPort `
+    -State Listen `
+    -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+
+if ($PortConnection) {
+
+    $MySQLProcessId = $PortConnection.OwningProcess
+
+    Write-Host "Process found on configured port."
+    Write-Host "Port       : $MySQLPort"
+    Write-Host "Process ID : $MySQLProcessId"
+
+    $MySQLProcess = Get-Process `
+        -Id $MySQLProcessId `
+        -ErrorAction SilentlyContinue
+
+    if (
+        $MySQLProcess -and
+        $MySQLProcess.ProcessName -eq "mysqld"
+    ) {
+
+        Write-Host "Stopping MySQL process PID: $MySQLProcessId"
+
+        Stop-Process `
+            -Id $MySQLProcessId `
+            -Force
+
+        Start-Sleep -Seconds 3
+    }
+    else {
+
+        throw "Port $MySQLPort is occupied by a non-MySQL process."
+    }
+}
+else {
+
+    Write-Host "No standalone MySQL instance found on port $MySQLPort."
+}
+
+# =====================================
+# CHECK EXISTING MYSQL SERVICE
+# =====================================
+
+Write-Host ""
+Write-Host "Checking existing MySQL Windows Service..."
 
 $ExistingService = Get-Service `
     -Name $ServiceName `
@@ -103,53 +169,96 @@ $ExistingService = Get-Service `
 
 if ($ExistingService) {
 
-    Write-Host "Existing MySQL service found."
+    Write-Host "Existing MySQL service detected."
 
-    if ($ExistingService.Status -eq "Running") {
+    # =====================================
+    # STOP EXISTING SERVICE
+    # =====================================
+
+    if ($ExistingService.Status -ne "Stopped") {
 
         Write-Host "Stopping existing MySQL service..."
 
         Stop-Service `
             -Name $ServiceName `
-            -Force
+            -Force `
+            -ErrorAction SilentlyContinue
 
-        Start-Sleep -Seconds 3
+        # WAIT FOR SERVICE TO STOP
+
+        $ServiceStopped = $false
+
+        for ($i = 1; $i -le 30; $i++) {
+
+            $ServiceCheck = Get-Service `
+                -Name $ServiceName `
+                -ErrorAction SilentlyContinue
+
+            if (
+                $ServiceCheck -and
+                $ServiceCheck.Status -eq "Stopped"
+            ) {
+
+                $ServiceStopped = $true
+                break
+            }
+
+            Write-Host "Waiting for MySQL service to stop... $i/30"
+
+            Start-Sleep -Seconds 1
+        }
+
+        if (-not $ServiceStopped) {
+            throw "Existing MySQL service failed to stop"
+        }
+
+        Write-Host "Existing MySQL service stopped successfully."
     }
-}
 
-# =====================================
-# STOP STANDALONE MYSQL
-# =====================================
-
-Write-Host "Checking standalone MySQL processes..."
-
-Get-Process mysqld -ErrorAction SilentlyContinue |
-ForEach-Object {
-
-    Write-Host "Stopping mysqld process PID: $($_.Id)"
-
-    Stop-Process `
-        -Id $_.Id `
-        -Force
-}
-
-Start-Sleep -Seconds 3
-
-# =====================================
-# REMOVE OLD SERVICE
-# =====================================
-
-if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
+    # =====================================
+    # REMOVE EXISTING SERVICE
+    # =====================================
 
     Write-Host "Removing existing MySQL service..."
 
-    & $Mysqld --remove $ServiceName
+    & sc.exe delete $ServiceName
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to remove existing MySQL service"
     }
 
-    Start-Sleep -Seconds 3
+    # =====================================
+    # WAIT FOR SERVICE REMOVAL
+    # =====================================
+
+    $ServiceRemoved = $false
+
+    for ($i = 1; $i -le 30; $i++) {
+
+        $ServiceCheck = Get-Service `
+            -Name $ServiceName `
+            -ErrorAction SilentlyContinue
+
+        if (-not $ServiceCheck) {
+
+            $ServiceRemoved = $true
+            break
+        }
+
+        Write-Host "Waiting for old service removal... $i/30"
+
+        Start-Sleep -Seconds 1
+    }
+
+    if (-not $ServiceRemoved) {
+        throw "Existing MySQL service could not be completely removed"
+    }
+
+    Write-Host "Existing MySQL service removed successfully."
+}
+else {
+
+    Write-Host "No existing MySQL service found."
 }
 
 # =====================================
@@ -159,13 +268,32 @@ if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
 Write-Host ""
 Write-Host "Installing MySQL Windows Service..."
 
-& $Mysqld `
-    "--defaults-file=$MyIni" `
-    --install $ServiceName
+$InstallOutput = & $Mysqld `
+    --install $ServiceName `
+    "--defaults-file=$MyIni" 2>&1
 
-if ($LASTEXITCODE -ne 0) {
-    throw "MySQL Windows Service installation failed. Exit code: $LASTEXITCODE"
+$InstallExitCode = $LASTEXITCODE
+
+$InstallOutput | ForEach-Object {
+    Write-Host $_
 }
+
+if ($InstallExitCode -ne 0) {
+
+    Write-Host ""
+    Write-Host "====================================="
+    Write-Host "MYSQL SERVICE INSTALLATION FAILED"
+    Write-Host "====================================="
+    Write-Host "Exit Code : $InstallExitCode"
+    Write-Host "Service   : $ServiceName"
+    Write-Host "Config    : $MyIni"
+    Write-Host ""
+
+    throw "MySQL Windows Service installation failed"
+}
+
+Write-Host "MySQL Windows Service installed successfully."
+
 
 # =====================================
 # VALIDATE SERVICE EXISTS
@@ -179,15 +307,22 @@ if (-not $InstalledService) {
     throw "MySQL service was not created"
 }
 
+Write-Host "MySQL Windows Service validation successful."
+
 # =====================================
 # CONFIGURE AUTO START
 # =====================================
+
+Write-Host ""
+Write-Host "Configuring MySQL service automatic startup..."
 
 & sc.exe config $ServiceName start= auto
 
 if ($LASTEXITCODE -ne 0) {
     throw "Failed to configure automatic startup"
 }
+
+Write-Host "Automatic startup configured successfully."
 
 # =====================================
 # START SERVICE
@@ -210,11 +345,16 @@ for ($i = 1; $i -le 60; $i++) {
         -Name $ServiceName `
         -ErrorAction SilentlyContinue
 
-    if ($Service -and $Service.Status -eq "Running") {
+    if (
+        $Service -and
+        $Service.Status -eq "Running"
+    ) {
 
         $ServiceStarted = $true
         break
     }
+
+    Write-Host "Waiting for MySQL service startup... $i/60"
 
     Start-Sleep -Seconds 1
 }
@@ -223,9 +363,14 @@ if (-not $ServiceStarted) {
     throw "MySQL Windows Service failed to start"
 }
 
+Write-Host "MySQL Windows Service started successfully."
+
 # =====================================
-# WAIT FOR PORT
+# WAIT FOR MYSQL PORT
 # =====================================
+
+Write-Host ""
+Write-Host "Waiting for MySQL port $MySQLPort..."
 
 $PortStarted = $false
 
@@ -243,12 +388,18 @@ for ($i = 1; $i -le 60; $i++) {
         break
     }
 
+    Write-Host "Waiting for MySQL port... $i/60"
+
     Start-Sleep -Seconds 1
 }
 
 if (-not $PortStarted) {
     throw "MySQL is not listening on port $MySQLPort"
 }
+
+# =====================================
+# SUCCESS
+# =====================================
 
 Write-Host ""
 Write-Host "====================================="
