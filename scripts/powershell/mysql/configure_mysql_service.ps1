@@ -118,22 +118,49 @@ if ($ExistingService) {
 }
 
 # =====================================
-# STOP STANDALONE MYSQL
+# STOP PROJECT MYSQL INSTANCE
 # =====================================
 
-Write-Host "Checking standalone MySQL processes..."
+Write-Host "Checking MySQL instance on configured port $MySQLPort..."
 
-Get-Process mysqld -ErrorAction SilentlyContinue |
-ForEach-Object {
+$PortConnection = Get-NetTCPConnection `
+    -LocalPort $MySQLPort `
+    -State Listen `
+    -ErrorAction SilentlyContinue |
+    Select-Object -First 1
 
-    Write-Host "Stopping mysqld process PID: $($_.Id)"
+if ($PortConnection) {
 
-    Stop-Process `
-        -Id $_.Id `
-        -Force
+    $ProcessId = $PortConnection.OwningProcess
+
+    Write-Host "Process found on configured port."
+    Write-Host "Port       : $MySQLPort"
+    Write-Host "Process ID : $ProcessId"
+
+    $Process = Get-Process `
+        -Id $ProcessId `
+        -ErrorAction SilentlyContinue
+
+    if ($Process -and $Process.ProcessName -eq "mysqld") {
+
+        Write-Host "Stopping project MySQL process PID: $ProcessId"
+
+        Stop-Process `
+            -Id $ProcessId `
+            -Force
+
+        Start-Sleep -Seconds 3
+
+    }
+    else {
+
+        throw "Port $MySQLPort is occupied by a non-MySQL process."
+    }
 }
+else {
 
-Start-Sleep -Seconds 3
+    Write-Host "No standalone MySQL instance found on port $MySQLPort."
+}
 
 # =====================================
 # REMOVE OLD SERVICE
