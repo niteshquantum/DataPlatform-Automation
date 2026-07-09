@@ -6,10 +6,6 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-    environment {
-        HAS_ADMIN_PRIVILEGES = 'false'
-    }
-
     stages {
 
         stage('Check Administrator Privileges') {
@@ -21,22 +17,25 @@ pipeline {
                         returnStatus: true
                     )
 
-                    env.HAS_ADMIN_PRIVILEGES =
-                        (adminStatus == 0) ? 'true' : 'false'
+                    if (adminStatus == 0) {
 
-                    echo "HAS_ADMIN_PRIVILEGES = ${env.HAS_ADMIN_PRIVILEGES}"
-
-                    if (env.HAS_ADMIN_PRIVILEGES == 'true') {
+                        writeFile file: 'admin_status.txt', text: 'true'
 
                         echo 'Administrator privileges available.'
                         echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
 
                     } else {
 
+                        writeFile file: 'admin_status.txt', text: 'false'
+
                         echo 'Administrator privileges not available.'
                         echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
                         echo 'MongoDB will run using project-local mode.'
                     }
+
+                    def adminResult = readFile('admin_status.txt').trim()
+
+                    echo "ADMIN STATUS = ${adminResult}"
                 }
             }
         }
@@ -87,11 +86,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return readFile('admin_status.txt').trim() == 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges available.'
+                echo 'Configuring Global Mongosh command...'
+
                 bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
             }
         }
@@ -100,11 +102,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return readFile('admin_status.txt').trim() == 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges available.'
+                echo 'Configuring MongoDB Windows Service...'
+
                 bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
             }
         }
@@ -113,11 +118,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES != 'true'
+                    return readFile('admin_status.txt').trim() != 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges unavailable.'
+                echo 'Starting MongoDB in project-local mode...'
+
                 bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
             }
         }
@@ -137,15 +145,17 @@ pipeline {
 
             script {
 
-                if (env.HAS_ADMIN_PRIVILEGES == 'true') {
+                def adminResult = readFile('admin_status.txt').trim()
 
-                    echo 'MongoDB Windows Service configured.'
-                    echo 'Global Mongosh configuration completed.'
+                if (adminResult == 'true') {
+
+                    echo 'MongoDB Windows Service configured successfully.'
+                    echo 'Global Mongosh configuration completed successfully.'
 
                 } else {
 
-                    echo 'MongoDB configured in project-local mode.'
-                    echo 'Windows Service and Global Mongosh skipped because Administrator privileges were unavailable.'
+                    echo 'MongoDB configured successfully in project-local mode.'
+                    echo 'Windows Service and Global Mongosh configuration were skipped because Administrator privileges were unavailable.'
                 }
             }
         }
