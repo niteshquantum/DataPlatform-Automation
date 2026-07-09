@@ -18,11 +18,6 @@ pipeline {
             }
         }
 
-        stage('Install Python Requirements') {
-            steps {
-                sh './scripts/bash/mysql/setup/install_python_requirements.sh'
-            }
-        }
 
         stage('Validate Python Requirements') {
             steps {
