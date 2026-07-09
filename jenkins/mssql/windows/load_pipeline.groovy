@@ -35,6 +35,12 @@ pipeline {
             }
         }
 
+        stage('Download Dataset') {
+            steps {
+                bat 'scripts\\batch\\common\\download_dataset.bat'
+            }
+        }
+        
         stage('Load Data') {
             steps {
                 bat 'scripts\\batch\\mssql\\load_data.bat'

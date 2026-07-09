@@ -31,6 +31,12 @@ pipeline {
             }
         }
 
+        stage('Download Dataset') {
+            steps {
+                sh './scripts/bash/common/download_dataset.sh'
+            }
+        }
+
         stage('Load MongoDB Data') {
             steps {
                 sh './scripts/bash/mongodb/load/load_data.sh'

@@ -48,6 +48,12 @@ pipeline {
             }
         }
 
+        stage('Download Dataset') {
+            steps {
+                sh './scripts/bash/common/download_dataset.sh'
+            }
+        }
+
         stage('Load Data') {
             steps {
                 sh './scripts/bash/mssql/load_data.sh'

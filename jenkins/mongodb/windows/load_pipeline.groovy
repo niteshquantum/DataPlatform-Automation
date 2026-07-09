@@ -28,6 +28,12 @@ pipeline {
             }
         }
 
+        stage('Download Dataset') {
+            steps {
+                bat 'scripts\\batch\\common\\download_dataset.bat'
+            }
+        }
+
         stage('Load Data') {
             steps {
                 bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
