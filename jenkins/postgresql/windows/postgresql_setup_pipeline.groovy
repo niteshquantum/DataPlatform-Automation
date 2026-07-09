@@ -44,11 +44,11 @@ pipeline {
                 }
             }
             
-            stage('Configure PostgreSQL Service') {
-                steps {
-                    bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
-                }
-            }
+          stage('Start PostgreSQL') {
+    steps {
+        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+    }
+}
             
             stage('Create Database') {
                 steps {
