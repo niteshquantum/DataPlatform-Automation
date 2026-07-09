@@ -1,3 +1,5 @@
+def hasAdminPrivileges = false
+
 pipeline {
 
     agent any
@@ -6,26 +8,26 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-    environment {
-        HAS_ADMIN_PRIVILEGES = 'false'
-    }
-
     stages {
 
         stage('Check Administrator Privileges') {
             steps {
                 script {
+
                     def adminStatus = bat(
                         script: 'scripts\\batch\\common\\check_admin_privileges.bat',
                         returnStatus: true
                     )
 
-                    if (adminStatus == 0) {
-                        env.HAS_ADMIN_PRIVILEGES = 'true'
+                    hasAdminPrivileges = (adminStatus == 0)
+
+                    if (hasAdminPrivileges) {
+
                         echo 'Administrator privileges available.'
                         echo 'Windows Service and Global PSQL configuration will be enabled.'
+
                     } else {
-                        env.HAS_ADMIN_PRIVILEGES = 'false'
+
                         echo 'Administrator privileges not available.'
                         echo 'Windows Service and Global PSQL configuration will be skipped.'
                         echo 'PostgreSQL will run using project-local configuration.'
@@ -74,7 +76,7 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return hasAdminPrivileges
                 }
             }
 
@@ -87,7 +89,7 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'false'
+                    return !hasAdminPrivileges
                 }
             }
 
@@ -106,7 +108,7 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return hasAdminPrivileges
                 }
             }
 
@@ -125,13 +127,18 @@ pipeline {
     post {
 
         success {
+
             echo 'POSTGRESQL SETUP SUCCESSFUL'
 
             script {
-                if (env.HAS_ADMIN_PRIVILEGES == 'true') {
+
+                if (hasAdminPrivileges) {
+
                     echo 'PostgreSQL Windows Service configured.'
                     echo 'Global PSQL configuration completed.'
+
                 } else {
+
                     echo 'PostgreSQL configured in project-local mode.'
                     echo 'Windows Service and Global PSQL skipped because Administrator privileges were unavailable.'
                 }
