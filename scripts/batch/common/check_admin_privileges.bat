@@ -7,9 +7,12 @@ echo CHECKING ADMINISTRATOR PRIVILEGES
 echo =====================================
 echo.
 
-net session >nul 2>&1
+powershell.exe -NoProfile -NonInteractive -Command ^
+"$identity = [Security.Principal.WindowsIdentity]::GetCurrent(); ^
+$principal = New-Object Security.Principal.WindowsPrincipal($identity); ^
+if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 0 } else { exit 1 }"
 
-if %errorlevel% equ 0 (
+if %ERRORLEVEL% EQU 0 (
     echo Administrator privileges detected.
     exit /b 0
 )
