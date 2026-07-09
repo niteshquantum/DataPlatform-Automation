@@ -1,11 +1,13 @@
-def hasAdminPrivileges = false
-
 pipeline {
 
     agent any
 
     options {
         disableConcurrentBuilds()
+    }
+
+    environment {
+        HAS_ADMIN_PRIVILEGES = 'false'
     }
 
     stages {
@@ -19,19 +21,23 @@ pipeline {
                         returnStatus: true
                     )
 
-                    hasAdminPrivileges = (adminStatus == 0)
+                    if (adminStatus == 0) {
 
-                    if (hasAdminPrivileges) {
+                        env.HAS_ADMIN_PRIVILEGES = 'true'
 
                         echo 'Administrator privileges available.'
                         echo 'Windows Service and Global PSQL configuration will be enabled.'
 
                     } else {
 
+                        env.HAS_ADMIN_PRIVILEGES = 'false'
+
                         echo 'Administrator privileges not available.'
                         echo 'Windows Service and Global PSQL configuration will be skipped.'
                         echo 'PostgreSQL will run using project-local configuration.'
                     }
+
+                    echo "HAS_ADMIN_PRIVILEGES = ${env.HAS_ADMIN_PRIVILEGES}"
                 }
             }
         }
@@ -76,7 +82,7 @@ pipeline {
 
             when {
                 expression {
-                    return hasAdminPrivileges
+                    env.HAS_ADMIN_PRIVILEGES == 'true'
                 }
             }
 
@@ -89,7 +95,7 @@ pipeline {
 
             when {
                 expression {
-                    return !hasAdminPrivileges
+                    env.HAS_ADMIN_PRIVILEGES != 'true'
                 }
             }
 
@@ -108,7 +114,7 @@ pipeline {
 
             when {
                 expression {
-                    return hasAdminPrivileges
+                    env.HAS_ADMIN_PRIVILEGES == 'true'
                 }
             }
 
@@ -132,7 +138,7 @@ pipeline {
 
             script {
 
-                if (hasAdminPrivileges) {
+                if (env.HAS_ADMIN_PRIVILEGES == 'true') {
 
                     echo 'PostgreSQL Windows Service configured.'
                     echo 'Global PSQL configuration completed.'
