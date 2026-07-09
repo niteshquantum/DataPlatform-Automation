@@ -269,8 +269,8 @@ Write-Host ""
 Write-Host "Installing MySQL Windows Service..."
 
 $InstallOutput = & $Mysqld `
-    "--defaults-file=$MyIni" `
-    --install $ServiceName 2>&1
+    --install $ServiceName `
+    "--defaults-file=$MyIni" 2>&1
 
 $InstallExitCode = $LASTEXITCODE
 
@@ -293,6 +293,7 @@ if ($InstallExitCode -ne 0) {
 }
 
 Write-Host "MySQL Windows Service installed successfully."
+
 
 # =====================================
 # VALIDATE SERVICE EXISTS
