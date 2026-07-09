@@ -65,7 +65,7 @@ pipeline {
                     echo =====================================
                     echo.
 
-                    bat 'scripts\\batch\\mysql\\cleanup\\cleanup_mysql.bat'
+                    call "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\cleanup_mysql.bat"
                     if errorlevel 1 (
                         echo.
                         echo MYSQL CLEANUP FAILED
