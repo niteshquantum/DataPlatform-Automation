@@ -17,7 +17,17 @@ pipeline {
                 sh './scripts/bash/common/validate_python_runtime.sh'
             }
         }
+        stage('Install Python Requirements') {
+            steps {
+                sh './scripts/bash/mysql/setup/install_python_requirements.sh'
+            }
+        }
 
+        stage('Validate Python Requirements') {
+            steps {
+                sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+            }
+        }
         stage('Validate Java Runtime') {
             steps {
                 sh './scripts/bash/common/validate_java_runtime.sh'
