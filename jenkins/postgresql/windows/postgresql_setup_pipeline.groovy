@@ -6,10 +6,6 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-    environment {
-        HAS_ADMIN_PRIVILEGES = 'false'
-    }
-
     stages {
 
         stage('Check Administrator Privileges') {
@@ -23,21 +19,23 @@ pipeline {
 
                     if (adminStatus == 0) {
 
-                        env.HAS_ADMIN_PRIVILEGES = 'true'
+                        writeFile file: 'admin_status.txt', text: 'true'
 
                         echo 'Administrator privileges available.'
                         echo 'Windows Service and Global PSQL configuration will be enabled.'
 
                     } else {
 
-                        env.HAS_ADMIN_PRIVILEGES = 'false'
+                        writeFile file: 'admin_status.txt', text: 'false'
 
                         echo 'Administrator privileges not available.'
                         echo 'Windows Service and Global PSQL configuration will be skipped.'
                         echo 'PostgreSQL will run using project-local configuration.'
                     }
 
-                    echo "HAS_ADMIN_PRIVILEGES = ${env.HAS_ADMIN_PRIVILEGES}"
+                    def adminResult = readFile('admin_status.txt').trim()
+
+                    echo "ADMIN STATUS = ${adminResult}"
                 }
             }
         }
@@ -82,11 +80,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return readFile('admin_status.txt').trim() == 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges available.'
+                echo 'Configuring PostgreSQL Windows Service...'
+
                 bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
             }
         }
@@ -95,11 +96,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES != 'true'
+                    return readFile('admin_status.txt').trim() != 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges unavailable.'
+                echo 'Starting PostgreSQL in project-local mode...'
+
                 bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
             }
         }
@@ -114,11 +118,14 @@ pipeline {
 
             when {
                 expression {
-                    env.HAS_ADMIN_PRIVILEGES == 'true'
+                    return readFile('admin_status.txt').trim() == 'true'
                 }
             }
 
             steps {
+                echo 'Administrator privileges available.'
+                echo 'Configuring Global PSQL command...'
+
                 bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
             }
         }
@@ -138,15 +145,17 @@ pipeline {
 
             script {
 
-                if (env.HAS_ADMIN_PRIVILEGES == 'true') {
+                def adminResult = readFile('admin_status.txt').trim()
 
-                    echo 'PostgreSQL Windows Service configured.'
-                    echo 'Global PSQL configuration completed.'
+                if (adminResult == 'true') {
+
+                    echo 'PostgreSQL Windows Service configured successfully.'
+                    echo 'Global PSQL configuration completed successfully.'
 
                 } else {
 
-                    echo 'PostgreSQL configured in project-local mode.'
-                    echo 'Windows Service and Global PSQL skipped because Administrator privileges were unavailable.'
+                    echo 'PostgreSQL configured successfully in project-local mode.'
+                    echo 'Windows Service and Global PSQL configuration were skipped because Administrator privileges were unavailable.'
                 }
             }
         }
