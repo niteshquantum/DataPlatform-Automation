@@ -1,0 +1,57 @@
+# Development Operating Manual
+
+Every database migration must follow this workflow.
+
+Step 1
+
+Run existing working Setup pipeline.
+
+Step 2
+
+Run existing working Load pipeline.
+
+Step 3
+
+Identify only the files that actually execute.
+
+Step 4
+
+Compare those files with the finalized architecture.
+
+Step 5
+
+Move one file.
+
+Step 6
+
+Update configuration.
+
+Step 7
+
+Update project root.
+
+Step 8
+
+Update imports.
+
+Step 9
+
+Search entire repository.
+
+Step 10
+
+Run script.
+
+Step 11
+
+Verify output.
+
+Step 12
+
+Commit.
+
+Repeat until migration completes.
+
+Never migrate multiple components simultaneously.
+
+Always preserve architecture.
