@@ -8,7 +8,6 @@ REM =====================================
 call "%~dp0..\..\common\set_project_root.bat"
 set "ROOT=%PROJECT_ROOT%"
 
-
 REM =====================================
 REM TERRAFORM PATH
 REM =====================================
