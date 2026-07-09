@@ -77,7 +77,7 @@ function Remove-TerraformRuntimePath {
             -ErrorAction Stop
 
         if (Test-Path -LiteralPath $Path) {
-            throw "Failed to remove $Description: $Path"
+            throw "Failed to remove ${Description}: $Path"
         }
 
         Write-Host "$Description removed successfully."
