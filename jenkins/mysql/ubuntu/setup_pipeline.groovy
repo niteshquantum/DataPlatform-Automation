@@ -64,6 +64,12 @@ pipeline {
             }
         }
 
+        stage('Run Liquibase') {
+            steps {
+                sh './scripts/bash/mysql/setup/run_liquibase.sh'
+            }
+        }
+
         stage('Configure Global MySQL') {
     steps {
         sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'

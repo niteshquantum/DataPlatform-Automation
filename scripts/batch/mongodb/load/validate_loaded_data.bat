@@ -1,6 +1,9 @@
 @echo off
 setlocal
 
+call "%~dp0..\..\common\set_project_root.bat"
+if errorlevel 1 exit /b 1
+
 echo.
 echo =====================================
 echo VALIDATING LOADED DATA

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001_sp_get_customer_loyalty_summary" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM information_schema.routines
+                WHERE routine_schema = DATABASE()
+                  AND routine_name = 'sp_get_customer_loyalty_summary'
+                  AND routine_type = 'PROCEDURE'
+            </sqlCheck>
+        </preConditions>
+
+        <sql splitStatements="false" stripComments="false">
+            CREATE PROCEDURE sp_get_customer_loyalty_summary(IN customerId VARCHAR(255))
+            BEGIN
+                SELECT
+                    customer_id,
+                    loyalty_tier,
+                    points_balance,
+                    total_spent,
+                    member_since,
+                    last_activity_date,
+                    referral_count,
+                    cashback_earned,
+                    reward_expiry_date
+                FROM customer_loyalty
+                WHERE customer_id = customerId;
+            END;
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

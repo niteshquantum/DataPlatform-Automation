@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="008" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+
+            <not>
+                <tableExists
+                    schemaName="public"
+                    tableName="payments"/>
+            </not>
+
+        </preConditions>
+
+        <createTable
+            schemaName="public"
+            tableName="payments">
+
+
+        <column name="Payment_ID" type="VARCHAR(255)"/>
+
+        <column name="Order_ID" type="VARCHAR(255)"/>
+
+        <column name="Payment_Sequential_Installment" type="VARCHAR(255)"/>
+
+        <column name="Payment_Method_Type" type="VARCHAR(255)"/>
+
+        <column name="Payment_Provider_Gateway" type="VARCHAR(255)"/>
+
+        <column name="Payment_Region" type="VARCHAR(255)"/>
+
+        <column name="Transacted_Amount_USD" type="VARCHAR(255)"/>
+
+        <column name="Settlement_Timestamp" type="VARCHAR(255)"/>
+
+        <column name="Auth_Response_Code" type="VARCHAR(255)"/>
+
+        <column name="Fraud_Risk_Score" type="VARCHAR(255)"/>
+
+        <column name="Client_IP_Address" type="VARCHAR(255)"/>
+
+        <column name="created_at" type="VARCHAR(255)"/>
+
+        <column name="updated_at" type="VARCHAR(255)"/>
+
+        <column name="etl_load_timestamp" type="VARCHAR(255)"/>
+
+        <column name="record_version" type="VARCHAR(255)"/>
+
+        <column name="is_active" type="VARCHAR(255)"/>
+
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

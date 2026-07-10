@@ -23,6 +23,7 @@ $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
 $PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
 
 $PgCtl = Join-Path $PgBin "pg_ctl.exe"
+$Psql = Join-Path $PgBin "psql.exe"
 
 # =====================================================
 # CREATE LOG DIRECTORY
@@ -93,11 +94,13 @@ if (!(Test-Path $PgCtl)) {
     throw "pg_ctl.exe not found: $PgCtl"
 }
 
+if (!(Test-Path $Psql)) {
+    throw "psql.exe not found: $Psql"
+}
+
 if (!(Test-Path (Join-Path $PgData "PG_VERSION"))) {
     throw "PostgreSQL data directory is not initialized: $PgData"
 }
-
-$env:PATH = "$PgBin;$env:PATH"
 
 # =====================================================
 # START REPORT
@@ -116,6 +119,43 @@ Write-Log "User         : $PgUser"
 Write-Log "pg_ctl       : $PgCtl"
 Write-Log "Data Dir     : $PgData"
 Write-Log "Log File     : $PgLog"
+
+# =====================================================
+# CHECK CONFIGURED CONNECTION
+# =====================================================
+
+Write-Log "Checking configured PostgreSQL connection..."
+
+$env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
+
+& "$Psql" `
+    --host="$PgHost" `
+    --port="$ExpectedPort" `
+    --username="$PgUser" `
+    --dbname="$PgDatabase" `
+    --command="SELECT 1;" *> $null
+
+$ConfiguredConnectionExitCode = $LASTEXITCODE
+
+$env:PGPASSWORD = $null
+
+if ($ConfiguredConnectionExitCode -eq 0) {
+
+    Write-Log "Configured PostgreSQL is already reachable."
+
+    Write-Log ""
+    Write-Log "======================================="
+    Write-Log "POSTGRESQL START COMPLETED"
+    Write-Log "======================================="
+
+    Write-Log "Host      : $PgHost"
+    Write-Log "Port      : $ExpectedPort"
+    Write-Log "Database  : $PgDatabase"
+    Write-Log "User      : $PgUser"
+    Write-Log "Data Dir  : $PgData"
+
+    exit 0
+}
 
 # =====================================================
 # CHECK CURRENT PROJECT INSTANCE
@@ -179,6 +219,40 @@ if ($PortConnection) {
         Write-Host "Process    : $($OwnerProcess.ProcessName)"
     }
 
+    if ($OwnerProcess -and $OwnerProcess.ProcessName -eq "postgres") {
+
+        Write-Host ""
+        Write-Host "Detected PostgreSQL on configured port. Validating connection..."
+
+        $env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
+
+        & "$Psql" `
+            --host="$PgHost" `
+            --port="$ExpectedPort" `
+            --username="$PgUser" `
+            --dbname="postgres" `
+            --command="SELECT 1;" *> $null
+
+        $PsqlExitCode = $LASTEXITCODE
+
+        $env:PGPASSWORD = $null
+
+        if ($PsqlExitCode -eq 0) {
+
+            Write-Host ""
+            Write-Host "======================================="
+            Write-Host "POSTGRESQL START COMPLETED"
+            Write-Host "======================================="
+            Write-Host "Configured PostgreSQL is already reachable."
+            Write-Host "Host      : $PgHost"
+            Write-Host "Port      : $ExpectedPort"
+            Write-Host "User      : $PgUser"
+            Write-Host ""
+
+            exit 0
+        }
+    }
+
     throw "Port $ExpectedPort is already occupied."
 }
 
@@ -218,15 +292,17 @@ $PgCtlArguments = @(
     "60"
 )
 
-$PgCtlProcess = Start-Process `
-    -FilePath $PgCtl `
-    -ArgumentList $PgCtlArguments `
-    -RedirectStandardOutput $PgCtlOutput `
-    -RedirectStandardError $PgCtlError `
-    -WindowStyle Hidden `
-    -PassThru
+$PreviousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& "$PgCtl" @PgCtlArguments > $PgCtlOutput 2> $PgCtlError
+$PgCtlExitCode = $LASTEXITCODE
+$ErrorActionPreference = $PreviousErrorActionPreference
 
-Write-Log "pg_ctl process started."
+if ($PgCtlExitCode -ne 0) {
+    throw "pg_ctl start failed with exit code $PgCtlExitCode."
+}
+
+Write-Log "pg_ctl start completed."
 
 # =====================================================
 # WAIT FOR POSTGRESQL READINESS

@@ -73,6 +73,12 @@ pipeline {
             }
         }
 
+        stage('Run Liquibase') {
+            steps {
+                sh './scripts/bash/postgresql/setup/run_liquibase.sh'
+            }
+        }
+
         stage('Configure Global PSQL') {
         steps {
             sh './scripts/bash/postgresql/setup/configure_global_psql.sh'

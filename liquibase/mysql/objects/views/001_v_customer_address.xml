@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001_v_customer_address" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <viewExists viewName="v_customer_address"/>
+            </not>
+        </preConditions>
+
+        <createView viewName="v_customer_address">
+            SELECT
+                customer_id,
+                NULL AS street,
+                NULL AS city,
+                NULL AS state,
+                NULL AS country,
+                NULL AS postal_code,
+                NULL AS landmark,
+                NULL AS latitude,
+                NULL AS longitude,
+                NULL AS address_type,
+                NULL AS is_default,
+                member_since AS created_at
+            FROM customer_loyalty
+        </createView>
+
+    </changeSet>
+
+</databaseChangeLog>

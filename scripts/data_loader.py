@@ -241,22 +241,38 @@ def insert_rows(conn, db_type, table_name, actual_columns, rows):
 def read_csv_file(path):
     rows = []
 
-    with open(path, 'r', encoding='utf-8-sig', newline='') as f:
+    encodings = ["utf-8-sig", "cp1252", "latin-1"]
+    last_error = None
 
-        reader = csv.DictReader(f)
+    for encoding in encodings:
+        try:
+            with open(path, 'r', encoding=encoding, newline='') as f:
 
-        # NEW
-        reader.fieldnames = [
-            h.replace('\ufeff', '').strip()
-            for h in reader.fieldnames
-        ]
+                reader = csv.DictReader(f)
 
-        for row in reader:
-            rows.append({
-                k.replace('\ufeff', '').strip():
-                (v if v != '' else None)
-                for k, v in row.items()
-            })
+                reader.fieldnames = [
+                    h.replace('\ufeff', '').strip()
+                    for h in reader.fieldnames
+                ]
+
+                for row in reader:
+                    rows.append({
+                        k.replace('\ufeff', '').strip():
+                        (v if v != '' else None)
+                        for k, v in row.items()
+                    })
+
+            if encoding != "utf-8-sig":
+                logger.info(f"Read {path.name} using {encoding} encoding")
+
+            return rows
+
+        except UnicodeDecodeError as exc:
+            rows = []
+            last_error = exc
+
+    if last_error:
+        raise last_error
 
     return rows
 

@@ -37,6 +37,10 @@ echo =====================================
 echo.
 
 "%TF%" init
+if errorlevel 1 (
+echo ERROR: TERRAFORM INIT FAILED
+exit /b 1
+)
 
 echo.
 echo =====================================
@@ -51,3 +55,9 @@ echo.
 -target=null_resource.start_mysql_windows ^
 -target=null_resource.create_mysql_user_windows ^
 -auto-approve
+if errorlevel 1 (
+echo ERROR: TERRAFORM APPLY FAILED
+exit /b 1
+)
+
+exit /b 0

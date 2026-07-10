@@ -2,11 +2,11 @@
 
 set -e
 
-PROJECT_ROOT=$(pwd)
+source "$(dirname "$0")/../common/set_project_root.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_python_requirements.sh"
+bash "$PROJECT_ROOT/scripts/bash/mongodb/setup/install_python_requirements.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mongodb/setup/validate_python_requirements.sh"
 
@@ -29,3 +29,5 @@ echo "====================================="
 echo "MONGODB SETUP SUCCESSFUL"
 echo "====================================="
 echo
+
+exit 0

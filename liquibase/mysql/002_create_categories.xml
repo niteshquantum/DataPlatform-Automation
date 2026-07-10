@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ 
+    <changeSet id="002" author="tanisha">
+ 
+    <preConditions onFail="MARK_RAN">
+        <not>
+            <tableExists tableName="categories"/>
+        </not>
+    </preConditions>
+ 
+    <createTable tableName="categories">
+
+        <column name="Category_ID" type="VARCHAR(255)"/>
+
+        <column name="Category_Name" type="VARCHAR(255)"/>
+
+        <column name="Department_Name" type="VARCHAR(255)"/>
+
+        <column name="Super_Category" type="VARCHAR(255)"/>
+
+        <column name="Category_Level" type="VARCHAR(255)"/>
+
+        <column name="Tax_Hsn_Code" type="VARCHAR(255)"/>
+
+        <column name="Is_Taxable" type="VARCHAR(255)"/>
+
+        <column name="Category_Status" type="VARCHAR(255)"/>
+
+        <column name="Created_By" type="VARCHAR(255)"/>
+
+        <column name="Internal_Notes" type="VARCHAR(255)"/>
+
+        <column name="Subcategory_ID" type="VARCHAR(255)"/>
+
+        <column name="Subcategory_Name" type="VARCHAR(255)"/>
+
+        </createTable>
+ 
+    </changeSet>
+ 
+</databaseChangeLog>

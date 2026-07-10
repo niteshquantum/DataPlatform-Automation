@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="006_v_mysql_product_price_history_fixed" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <viewExists viewName="v_mysql_product_price_history_fixed"/>
+            </not>
+        </preConditions>
+
+        <createView viewName="v_mysql_product_price_history_fixed">
+            SELECT
+                Product_ID,
+                Effective_Date,
+                MRP,
+                Cost_Price,
+                Selling_Price,
+                Discount_Percentage,
+                Is_Sale_Price,
+                Season_Tag,
+                Price_Change_Reason,
+                Sale_Start_Date,
+                Sale_End_Date
+            FROM price_history
+        </createView>
+
+    </changeSet>
+
+</databaseChangeLog>

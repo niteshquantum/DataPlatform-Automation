@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="006_v_postgresql_order_status_history" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <viewExists schemaName="public" viewName="v_postgresql_order_status_history"/>
+            </not>
+        </preConditions>
+
+        <createView schemaName="public" viewName="v_postgresql_order_status_history">
+            SELECT
+                "History_Log_ID",
+                "Order_ID",
+                "Lifecycle_Stage",
+                "Status_Change_Timestamp",
+                "Dispatch_Hub_ID",
+                "Delivery_Partner_ID",
+                "Route_Exception_Flag",
+                "Technical_Notes",
+                created_at,
+                updated_at
+            FROM public.order_status
+        </createView>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -22,6 +22,8 @@ bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_mysql.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/create_database.sh"
 
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/run_liquibase.sh"
+
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_environment.sh"
 
 echo

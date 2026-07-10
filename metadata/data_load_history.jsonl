@@ -1,0 +1,5 @@
+{"timestamp": "2026-07-10T17:22:05.133029", "file": "cart_events.json", "collection": "cart_events", "rows_inserted": 80000, "status": "SUCCESS"}
+{"timestamp": "2026-07-10T17:22:12.629729", "file": "customer_preferences.csv", "collection": "customer_preferences", "rows_inserted": 99441, "status": "SUCCESS"}
+{"timestamp": "2026-07-10T17:22:17.287452", "file": "customer_segments.csv", "collection": "customer_segments", "rows_inserted": 99441, "status": "SUCCESS"}
+{"timestamp": "2026-07-10T17:22:21.985187", "file": "order_returns.json", "collection": "order_returns", "rows_inserted": 12000, "status": "SUCCESS"}
+{"timestamp": "2026-07-10T17:22:22.654362", "file": "product_seo.json", "collection": "product_seo", "rows_inserted": 105000, "status": "SUCCESS"}

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+
+            <not>
+                <tableExists
+                    schemaName="public"
+                    tableName="customers"/>
+            </not>
+
+        </preConditions>
+
+        <createTable
+            schemaName="public"
+            tableName="customers">
+
+
+        <column name="customer_id" type="VARCHAR(255)"/>
+
+        <column name="account_status" type="VARCHAR(255)"/>
+
+        <column name="referral_source" type="VARCHAR(255)"/>
+
+        <column name="last_login_at" type="VARCHAR(255)"/>
+
+        <column name="preferred_language" type="VARCHAR(255)"/>
+
+        <column name="is_verified" type="VARCHAR(255)"/>
+
+        <column name="email" type="VARCHAR(255)"/>
+
+        <column name="phone" type="VARCHAR(255)"/>
+
+        <column name="age" type="VARCHAR(255)"/>
+
+        <column name="created_at" type="VARCHAR(255)"/>
+
+        <column name="gender" type="VARCHAR(255)"/>
+
+        <column name="first_name" type="VARCHAR(255)"/>
+
+        <column name="last_name" type="VARCHAR(255)"/>
+
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

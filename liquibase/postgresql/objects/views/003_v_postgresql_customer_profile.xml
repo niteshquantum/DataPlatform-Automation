@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003_v_postgresql_customer_profile" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <viewExists schemaName="public" viewName="v_postgresql_customer_profile"/>
+            </not>
+        </preConditions>
+
+        <createView schemaName="public" viewName="v_postgresql_customer_profile">
+            SELECT
+                c.customer_id,
+                c.first_name,
+                c.last_name,
+                c.email,
+                c.phone,
+                c.account_status,
+                c.preferred_language,
+                d.income_bracket,
+                d.education,
+                d.occupation,
+                d.city_tier
+            FROM public.customers c
+            LEFT JOIN public.demographics d
+                ON d.customer_id = c.customer_id
+        </createView>
+
+    </changeSet>
+
+</databaseChangeLog>

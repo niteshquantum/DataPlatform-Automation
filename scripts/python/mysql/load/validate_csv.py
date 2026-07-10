@@ -1,46 +1,50 @@
+import json
 from pathlib import Path
 
 import pandas as pd
-import yaml
 
 ROOT = Path(__file__).resolve().parents[4]
 
-datasets_file = ROOT / "config" / "mysql" / "datasets.yaml"
-datasets_dir = ROOT / "datasets" / "mysql"
+schema_file = ROOT / "metadata" / "mysql" / "schema_registry.json"
+incoming_dir = ROOT / "incoming" / "mysql"
 
 try:
-    with open(datasets_file, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    datasets = config["datasets"]
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema_registry = json.load(f)
 
     print()
     print("=" * 50)
     print("CSV VALIDATION")
     print("=" * 50)
 
-    for table_name, dataset_info in datasets.items():
+    for table_name, required_columns in schema_registry.items():
 
-        csv_file = datasets_dir / dataset_info["file"]
+        csv_file = incoming_dir / f"{table_name}.csv"
 
-        if dataset_info.get("required", False):
+        if not csv_file.exists():
+            archive_file = ROOT / "archive" / "mysql" / f"{table_name}.csv"
+            failed_file = ROOT / "failed" / "mysql" / f"{table_name}.csv"
 
-            if not csv_file.exists():
-                raise Exception(
-                    f"Required file missing: {dataset_info['file']}"
-                )
+            if archive_file.exists() or failed_file.exists():
+                print(f"[SKIPPED] {csv_file.name} already processed")
+                continue
 
-        df = pd.read_csv(csv_file)
+            raise Exception(f"Required file missing: {csv_file.name}")
+
+        last_error = None
+        for encoding in ["utf-8-sig", "cp1252", "latin-1"]:
+            try:
+                df = pd.read_csv(csv_file, encoding=encoding)
+                break
+            except UnicodeDecodeError as exc:
+                last_error = exc
+        else:
+            raise last_error
 
         if df.empty:
             raise Exception(
-                f"CSV file is empty: {dataset_info['file']}"
+                f"CSV file is empty: {csv_file.name}"
             )
-
-        required_columns = dataset_info.get(
-            "required_columns",
-            []
-        )
 
         missing_columns = [
             column
@@ -50,12 +54,12 @@ try:
 
         if missing_columns:
             raise Exception(
-                f"{dataset_info['file']} missing columns: "
+                f"{csv_file.name} missing columns: "
                 f"{', '.join(missing_columns)}"
             )
 
         print(
-            f"[OK] {dataset_info['file']} "
+            f"[OK] {csv_file.name} "
             f"({len(df)} rows)"
         )
 

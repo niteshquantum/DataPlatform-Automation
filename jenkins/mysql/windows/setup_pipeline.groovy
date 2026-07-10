@@ -116,6 +116,12 @@ pipeline {
             }
         }
 
+        stage('Run Liquibase') {
+            steps {
+                bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat'
+            }
+        }
+
         stage('Configure Global MySQL') {
 
             when {

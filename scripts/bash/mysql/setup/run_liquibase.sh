@@ -21,7 +21,7 @@ MYSQL_DRIVER_VERSION=$(grep "^MYSQL_DRIVER_VERSION=" "$CONFIG_FILE" | cut -d'=' 
 
 LB="$PROJECT_ROOT/tools/liquibase/liquibase"
 DRIVER="$PROJECT_ROOT/tools/drivers/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar"
-CHANGELOG="liquibase/mysql/master.xml"
+CHANGELOG="${1:-liquibase/mysql/master.xml}"
 
 cd "$PROJECT_ROOT"
 
