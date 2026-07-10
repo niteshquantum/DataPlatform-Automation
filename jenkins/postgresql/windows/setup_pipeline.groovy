@@ -22,15 +22,15 @@ pipeline {
                         writeFile file: 'admin_status.txt', text: 'true'
 
                         echo 'Administrator privileges available.'
-                        echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
+                        echo 'Windows Service and Global PSQL configuration will be enabled.'
 
                     } else {
 
                         writeFile file: 'admin_status.txt', text: 'false'
 
                         echo 'Administrator privileges not available.'
-                        echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
-                        echo 'MongoDB will run using project-local mode.'
+                        echo 'Windows Service and Global PSQL configuration will be skipped.'
+                        echo 'PostgreSQL will run using project-local configuration.'
                     }
 
                     def adminResult = readFile('admin_status.txt').trim()
@@ -48,13 +48,13 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
             }
         }
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
             }
         }
 
@@ -66,23 +66,17 @@ pipeline {
 
         stage('Install Tools') {
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
             }
         }
 
-        stage('Validate Tools') {
+        stage('Deploy PostgreSQL') {
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
             }
         }
 
-        stage('Deploy MongoDB') {
-            steps {
-                bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
-            }
-        }
-
-        stage('Configure Global Mongosh') {
+        stage('Configure PostgreSQL Service') {
 
             when {
                 expression {
@@ -92,29 +86,13 @@ pipeline {
 
             steps {
                 echo 'Administrator privileges available.'
-                echo 'Configuring Global Mongosh command...'
+                echo 'Configuring PostgreSQL Windows Service...'
 
-                bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
             }
         }
 
-        stage('Configure MongoDB Service') {
-
-            when {
-                expression {
-                    return readFile('admin_status.txt').trim() == 'true'
-                }
-            }
-
-            steps {
-                echo 'Administrator privileges available.'
-                echo 'Configuring MongoDB Windows Service...'
-
-                bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
-            }
-        }
-
-        stage('Start MongoDB') {
+        stage('Start PostgreSQL') {
 
             when {
                 expression {
@@ -124,15 +102,37 @@ pipeline {
 
             steps {
                 echo 'Administrator privileges unavailable.'
-                echo 'Starting MongoDB in project-local mode...'
+                echo 'Starting PostgreSQL in project-local mode...'
 
-                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
             }
         }
 
-        stage('Validate MongoDB') {
+        stage('Create Database') {
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+            }
+        }
+
+        stage('Configure Global PSQL') {
+
+            when {
+                expression {
+                    return readFile('admin_status.txt').trim() == 'true'
+                }
+            }
+
+            steps {
+                echo 'Administrator privileges available.'
+                echo 'Configuring Global PSQL command...'
+
+                bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
+            }
+        }
+
+        stage('Validate Environment') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
             }
         }
     }
@@ -141,7 +141,7 @@ pipeline {
 
         success {
 
-            echo 'MONGODB SETUP SUCCESSFUL'
+            echo 'POSTGRESQL SETUP SUCCESSFUL'
 
             script {
 
@@ -149,23 +149,23 @@ pipeline {
 
                 if (adminResult == 'true') {
 
-                    echo 'MongoDB Windows Service configured successfully.'
-                    echo 'Global Mongosh configuration completed successfully.'
+                    echo 'PostgreSQL Windows Service configured successfully.'
+                    echo 'Global PSQL configuration completed successfully.'
 
                 } else {
 
-                    echo 'MongoDB configured successfully in project-local mode.'
-                    echo 'Windows Service and Global Mongosh configuration were skipped because Administrator privileges were unavailable.'
+                    echo 'PostgreSQL configured successfully in project-local mode.'
+                    echo 'Windows Service and Global PSQL configuration were skipped because Administrator privileges were unavailable.'
                 }
             }
         }
 
         failure {
-            echo 'MONGODB SETUP FAILED'
+            echo 'POSTGRESQL SETUP FAILED'
         }
 
         always {
-            echo 'MONGODB SETUP PIPELINE COMPLETED'
+            echo 'POSTGRESQL SETUP PIPELINE COMPLETED'
         }
     }
 }
