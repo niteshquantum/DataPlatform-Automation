@@ -20,7 +20,13 @@ pipeline {
 
         stage('Install Python Requirements') {
             steps {
-                sh './scripts/bash/common/install_python_requirements.sh'
+                sh './scripts/bash/mongodb/setup/install_python_requirements.sh'
+            }
+        }
+
+        stage('Validate Python Requirements') {
+            steps {
+                sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
             }
         }
 
