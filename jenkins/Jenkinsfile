@@ -1,4 +1,4 @@
-
+```groovy
 pipeline {
 
     agent none
@@ -218,28 +218,230 @@ pipeline {
                 }
             }
 
-            steps {
-                checkout scm
+            stages {
 
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                stage('MongoDB - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
 
-                bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
 
-                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+                stage('MongoDB - Check Administrator Privileges') {
 
-                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    steps {
 
-                bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+                        script {
 
-                bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
+                            def adminStatus = bat(
+                                script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                                returnStatus: true
+                            )
 
-                bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
+                            if (adminStatus == 0) {
 
-                bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+                                writeFile(
+                                    file: 'admin_status.txt',
+                                    text: 'true'
+                                )
 
-                bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
+                                echo 'Administrator privileges available.'
+                                echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
 
-                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                            } else {
+
+                                writeFile(
+                                    file: 'admin_status.txt',
+                                    text: 'false'
+                                )
+
+                                echo 'Administrator privileges not available.'
+                                echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
+                                echo 'MongoDB will run using project-local mode.'
+                            }
+
+                            def adminResult = readFile(
+                                'admin_status.txt'
+                            ).trim()
+
+                            echo "ADMIN STATUS = ${adminResult}"
+                        }
+                    }
+                }
+
+
+                stage('MongoDB - Validate Python Runtime') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Install Python Requirements') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Validate Python Requirements') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Validate Java Runtime') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Install Tools') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Validate Tools') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Deploy MongoDB') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Configure Global Mongosh') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
+                    steps {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring Global Mongosh command...'
+
+                        bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Configure MongoDB Service') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
+                    steps {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring MongoDB Windows Service...'
+
+                        bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Start MongoDB') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() != 'true'
+                        }
+                    }
+
+                    steps {
+
+                        echo 'Administrator privileges unavailable.'
+                        echo 'Starting MongoDB in project-local mode...'
+
+                        bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                    }
+                }
+
+
+                stage('MongoDB - Validate MongoDB') {
+
+                    steps {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+
+                    echo 'MONGODB SETUP SUCCESSFUL'
+
+                    script {
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        if (adminResult == 'true') {
+
+                            echo 'MongoDB Windows Service configured successfully.'
+                            echo 'Global Mongosh configuration completed successfully.'
+
+                        } else {
+
+                            echo 'MongoDB configured successfully in project-local mode.'
+                            echo 'Windows Service and Global Mongosh configuration were skipped because Administrator privileges were unavailable.'
+                        }
+                    }
+                }
+
+                failure {
+
+                    echo 'MONGODB SETUP FAILED'
+                }
+
+                always {
+
+                    echo 'MONGODB SETUP PIPELINE COMPLETED'
+                }
             }
         }
 
@@ -361,15 +563,19 @@ pipeline {
     post {
 
         success {
+
             echo "${params.DATABASE} ${params.ACTION} SUCCESSFUL"
         }
 
         failure {
+
             echo "${params.DATABASE} ${params.ACTION} FAILED"
         }
 
         always {
+
             echo "MASTER DATABASE PIPELINE COMPLETED"
         }
     }
 }
+```
