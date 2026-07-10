@@ -3,7 +3,8 @@
 # =====================================================
 
 databases/
-
+!databases/mssql/templates/
+!databases/mssql/templates/ConfigurationFile.template.ini
 # =====================================================
 # Logs
 # =====================================================
