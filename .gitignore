@@ -12,6 +12,12 @@ logs/
 *.log
 
 # =====================================================
+# Reports
+# =====================================================
+
+reports/
+
+# =====================================================
 # Python
 # =====================================================
 
@@ -97,4 +103,3 @@ liquibase/*/*
 # Keep required Liquibase configuration files
 !liquibase/*/master.xml
 !liquibase/*/liquibase.properties
-
