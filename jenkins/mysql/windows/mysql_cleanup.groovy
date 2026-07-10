@@ -65,8 +65,7 @@ pipeline {
                     echo =====================================
                     echo.
 
-                    powershell -NoProfile -ExecutionPolicy Bypass -File "%WORKSPACE%\\scripts\\powershell\\mysql\\cleanup\\cleanup_mysql.ps1"
-
+                    bat 'scripts\\batch\\mysql\\cleanup\\cleanup_mysql.bat'
                     if errorlevel 1 (
                         echo.
                         echo MYSQL CLEANUP FAILED
