@@ -1,12 +1,2 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<databaseChangeLog
- xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="
- http://www.liquibase.org/xml/ns/dbchangelog
- http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-
-
-
-</databaseChangeLog>
+<?xml version='1.0' encoding='utf-8'?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"><include file="001_create_customers_clean.xml" relativeToChangelogFile="true" /><include file="002_create_customer_sessions_clean.xml" relativeToChangelogFile="true" /><include file="003_create_postgres_olist_mql_deals_fixed.xml" relativeToChangelogFile="true" /><include file="004_create_postgres_orders_fact_fixed.xml" relativeToChangelogFile="true" /><include file="005_create_postgres_order_items_fixed.xml" relativeToChangelogFile="true" /><include file="006_create_postgres_order_payments_log_fixed.xml" relativeToChangelogFile="true" /><include file="007_create_postgres_order_status_history_fixed.xml" relativeToChangelogFile="true" /><include file="008_alter_postgres_orders_fact_fixed_add_columns.xml" relativeToChangelogFile="true" /><include file="009_alter_postgres_orders_fact_fixed_add_columns.xml" relativeToChangelogFile="true" /></databaseChangeLog>
