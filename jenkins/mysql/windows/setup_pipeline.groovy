@@ -415,7 +415,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: 'logs/mysql/setup/build_*/**, reports/mysql/setup/build_*/**',
+                artifacts: "logs/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/mysql/setup/build_${env.BUILD_NUMBER}/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
