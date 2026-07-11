@@ -1,10 +1,10 @@
 /*
 ============================================================
-COMMON EXECUTION FUNCTION
+COMMON LOGGING AND REPORTING FUNCTION
 ============================================================
 */
 
-def runPipeline(
+def executePipeline(
     String database,
     String action,
     String operatingSystem,
@@ -12,6 +12,8 @@ def runPipeline(
 ) {
 
     def finalStatus = 'SUCCESS'
+    def originalError = null
+    def loggingInitialized = false
 
     try {
 
@@ -25,10 +27,10 @@ def runPipeline(
 
             sh """
                 python3 scripts/logging/logger.py init \
-                    --database ${database} \
-                    --action ${action} \
-                    --os ${operatingSystem} \
-                    --build-number ${env.BUILD_NUMBER} \
+                    --database "${database}" \
+                    --action "${action}" \
+                    --os "${operatingSystem}" \
+                    --build-number "${env.BUILD_NUMBER}" \
                     --job-name "${env.JOB_NAME}" \
                     --build-url "${env.BUILD_URL}"
             """
@@ -37,30 +39,29 @@ def runPipeline(
 
             bat """
                 python scripts\\logging\\logger.py init ^
-                    --database ${database} ^
-                    --action ${action} ^
-                    --os ${operatingSystem} ^
-                    --build-number ${env.BUILD_NUMBER} ^
+                    --database "${database}" ^
+                    --action "${action}" ^
+                    --os "${operatingSystem}" ^
+                    --build-number "${env.BUILD_NUMBER}" ^
                     --job-name "${env.JOB_NAME}" ^
                     --build-url "${env.BUILD_URL}"
             """
         }
 
+        loggingInitialized = true
 
         /*
         ============================================================
-        EXECUTE EXISTING PIPELINE
+        EXECUTE ORIGINAL PIPELINE FLOW
         ============================================================
         */
 
         executionBody()
 
-
     } catch (Exception error) {
 
         finalStatus = 'FAILURE'
-
-        throw error
+        originalError = error
 
     } finally {
 
@@ -70,69 +71,103 @@ def runPipeline(
         ============================================================
         */
 
-        if (isUnix()) {
+        if (loggingInitialized) {
 
-            sh """
-                python3 scripts/logging/logger.py finalize \
-                    --database ${database} \
-                    --action ${action} \
-                    --build-number ${env.BUILD_NUMBER} \
-                    --status ${finalStatus}
-            """
+            try {
 
-        } else {
+                if (isUnix()) {
 
-            bat """
-                python scripts\\logging\\logger.py finalize ^
-                    --database ${database} ^
-                    --action ${action} ^
-                    --build-number ${env.BUILD_NUMBER} ^
-                    --status ${finalStatus}
-            """
+                    sh """
+                        python3 scripts/logging/logger.py finalize \
+                            --database "${database}" \
+                            --action "${action}" \
+                            --build-number "${env.BUILD_NUMBER}" \
+                            --status "${finalStatus}"
+                    """
+
+                } else {
+
+                    bat """
+                        python scripts\\logging\\logger.py finalize ^
+                            --database "${database}" ^
+                            --action "${action}" ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --status "${finalStatus}"
+                    """
+                }
+
+            } catch (Exception finalizeError) {
+
+                echo "WARNING: Logging finalization failed: ${finalizeError}"
+            }
+
+
+            /*
+            ============================================================
+            GENERATE REPORT
+            ============================================================
+            */
+
+            try {
+
+                if (isUnix()) {
+
+                    sh """
+                        python3 scripts/reporting/generate_report.py \
+                            --database "${database}" \
+                            --action "${action}" \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                } else {
+
+                    bat """
+                        python scripts\\reporting\\generate_report.py ^
+                            --database "${database}" ^
+                            --action "${action}" ^
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+                }
+
+            } catch (Exception reportError) {
+
+                echo "WARNING: Report generation failed: ${reportError}"
+            }
+
+
+            /*
+            ============================================================
+            ARCHIVE LOGS AND REPORTS
+            ============================================================
+            */
+
+            try {
+
+                archiveArtifacts(
+                    artifacts:
+                        "logs/${database}/${action}/build_${env.BUILD_NUMBER}/**," +
+                        "reports/${database}/${action}/build_${env.BUILD_NUMBER}/**," +
+                        "reports/history/**",
+                    fingerprint: true,
+                    allowEmptyArchive: true
+                )
+
+            } catch (Exception archiveError) {
+
+                echo "WARNING: Artifact archiving failed: ${archiveError}"
+            }
         }
+    }
 
 
-        /*
-        ============================================================
-        GENERATE REPORT
-        ============================================================
-        */
+    /*
+    ============================================================
+    RESTORE ORIGINAL PIPELINE FAILURE
+    ============================================================
+    */
 
-        if (isUnix()) {
-
-            sh """
-                python3 scripts/reporting/generate_report.py \
-                    --database ${database} \
-                    --action ${action} \
-                    --build-number ${env.BUILD_NUMBER}
-            """
-
-        } else {
-
-            bat """
-                python scripts\\reporting\\generate_report.py ^
-                    --database ${database} ^
-                    --action ${action} ^
-                    --build-number ${env.BUILD_NUMBER}
-            """
-        }
-
-
-        /*
-        ============================================================
-        ARCHIVE LOGS AND REPORTS
-        ============================================================
-        */
-
-        archiveArtifacts(
-            artifacts: """
-                logs/${database}/${action}/build_${env.BUILD_NUMBER}/**,
-                reports/${database}/${action}/build_${env.BUILD_NUMBER}/**,
-                reports/history/**
-            """.replaceAll("\\s+", ""),
-            fingerprint: true,
-            allowEmptyArchive: true
-        )
+    if (originalError != null) {
+        throw originalError
     }
 }
 
@@ -192,7 +227,6 @@ pipeline {
 
     stages {
 
-
         /*
         ============================================================
         VALIDATE SELECTION
@@ -217,20 +251,26 @@ pipeline {
                     ) {
 
                         error(
-                            "CLEANUP is available only for Windows databases."
+                            "CLEANUP is not available for Ubuntu database ${params.DATABASE}"
                         )
                     }
 
 
                     echo "============================================"
+                    echo "MASTER DATABASE PIPELINE"
+                    echo "============================================"
                     echo "DATABASE     : ${params.DATABASE}"
                     echo "ACTION       : ${params.ACTION}"
-                    echo "CLEANUP MODE : ${params.CLEANUP_MODE}"
+
+                    if (params.ACTION == 'CLEANUP') {
+
+                        echo "CLEANUP MODE : ${params.CLEANUP_MODE}"
+                    }
+
                     echo "============================================"
                 }
             }
         }
-
 
 
         /*
@@ -267,40 +307,39 @@ pipeline {
                 checkout scm
 
 
-                        script {
+                script {
 
-                runPipeline(
-                    'mysql',
-                    'setup',
-                    'ubuntu'
-                )  {
+                    executePipeline(
+                        'mysql',
+                        'setup',
+                        'ubuntu'
+                    ) {
 
-    sh '''
-        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-    '''
+                        sh '''
+                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
 
-    sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
 
-    sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
+                        sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/install_tools.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/install_tools.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/install_mysql.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/install_mysql.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/deploy_mysql.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/deploy_mysql.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/create_database.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/create_database.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
+                        sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
 
-    sh 'bash ./scripts/bash/mysql/setup/validate_environment.sh'
-}
-            }
+                        sh 'bash ./scripts/bash/mysql/setup/validate_environment.sh'
+                    }
+                }
             }
         }
-
 
 
         /*
@@ -339,7 +378,7 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mysql',
                         'load',
                         'ubuntu'
@@ -347,20 +386,25 @@ pipeline {
 
                         sh '''
                             find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-
-                            ./scripts/bash/common/validate_python_runtime.sh
-                            ./scripts/bash/mysql/setup/install_python_requirements.sh
-                            ./scripts/bash/mysql/setup/validate_python_requirements.sh
-                            ./scripts/bash/mysql/setup/start_mysql.sh
-                            ./scripts/bash/mysql/setup/validate_mysql.sh
-                            ./scripts/bash/mysql/load/load_data.sh
-                            ./scripts/bash/mysql/load/validate_loaded_data.sh
                         '''
+
+                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/install_python_requirements.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/validate_mysql.sh'
+
+                        sh 'bash ./scripts/bash/mysql/load/load_data.sh'
+
+                        sh 'bash ./scripts/bash/mysql/load/validate_loaded_data.sh'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -399,32 +443,39 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mssql',
                         'setup',
                         'ubuntu'
                     ) {
 
                         sh '''
-                            chmod +x scripts/bash/common/*.sh
-                            chmod +x scripts/bash/mssql/*.sh
-
-                            ./scripts/bash/common/validate_python_runtime.sh
-                            ./scripts/bash/common/validate_java_runtime.sh
-                            ./scripts/bash/common/install_tools.sh
-                            ./scripts/bash/common/install_mssql_driver.sh
-                            ./scripts/bash/mssql/install_mssql.sh
-                            ./scripts/bash/mssql/install_sqlcmd.sh
-                            ./scripts/bash/mssql/start_mssql.sh
-                            ./scripts/bash/mssql/create_database.sh
-                            ./scripts/bash/mssql/run_liquibase.sh
-                            ./scripts/bash/mssql/validate_environment.sh
+                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
                         '''
+
+                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+
+                        sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
+
+                        sh 'bash ./scripts/bash/common/install_tools.sh'
+
+                        sh 'bash ./scripts/bash/common/install_mssql_driver.sh'
+
+                        sh 'bash ./scripts/bash/mssql/install_mssql.sh'
+
+                        sh 'bash ./scripts/bash/mssql/install_sqlcmd.sh'
+
+                        sh 'bash ./scripts/bash/mssql/start_mssql.sh'
+
+                        sh 'bash ./scripts/bash/mssql/create_database.sh'
+
+                        sh 'bash ./scripts/bash/mssql/run_liquibase.sh'
+
+                        sh 'bash ./scripts/bash/mssql/validate_environment.sh'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -463,7 +514,7 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mssql',
                         'load',
                         'ubuntu'
@@ -471,21 +522,27 @@ pipeline {
 
                         sh '''
                             find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-
-                            ./scripts/bash/common/validate_python_runtime.sh
-                            ./scripts/bash/install_python_requirements.sh
-                            ./scripts/bash/validate_python_requirements.sh
-                            ./scripts/bash/common/install_tools.sh
-                            ./scripts/bash/mssql/validate_tools.sh
-                            ./scripts/bash/mssql/validate_mssql.sh
-                            ./scripts/bash/mssql/load_data.sh
-                            ./scripts/bash/mssql/validate_loaded_data.sh
                         '''
+
+                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+
+                        sh 'bash ./scripts/bash/install_python_requirements.sh'
+
+                        sh 'bash ./scripts/bash/validate_python_requirements.sh'
+
+                        sh 'bash ./scripts/bash/common/install_tools.sh'
+
+                        sh 'bash ./scripts/bash/mssql/validate_tools.sh'
+
+                        sh 'bash ./scripts/bash/mssql/validate_mssql.sh'
+
+                        sh 'bash ./scripts/bash/mssql/load_data.sh'
+
+                        sh 'bash ./scripts/bash/mssql/validate_loaded_data.sh'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -524,27 +581,25 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mongodb',
                         'setup',
                         'windows'
                     ) {
 
-                        bat '''
-                            scripts\\batch\\common\\validate_python_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
-                            scripts\\batch\\mongodb\\setup\\install_python_requirements.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
 
-                            scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
 
-                            scripts\\batch\\common\\validate_java_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
 
-                            scripts\\batch\\mongodb\\setup\\install_tools.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
 
-                            scripts\\batch\\mongodb\\setup\\validate_tools.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
 
-                            scripts\\batch\\mongodb\\setup\\run_terraform.bat
-                        '''
+                        bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
 
 
                         def adminStatus = bat(
@@ -557,32 +612,29 @@ pipeline {
 
                             echo 'Administrator privileges available.'
 
-                            bat '''
-                                scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat
+                            echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
 
-                                scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat
-                            '''
+                            bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+
+                            bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
 
                         } else {
 
-                            echo 'Administrator privileges unavailable.'
+                            echo 'Administrator privileges not available.'
 
-                            echo 'MongoDB will run in project-local mode.'
+                            echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
 
-                            bat '''
-                                scripts\\batch\\mongodb\\setup\\start_mongodb.bat
-                            '''
+                            echo 'MongoDB will run using project-local mode.'
+
+                            bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
                         }
 
 
-                        bat '''
-                            scripts\\batch\\mongodb\\setup\\validate_mongodb.bat
-                        '''
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -621,32 +673,29 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mongodb',
                         'load',
                         'windows'
                     ) {
 
-                        bat '''
-                            scripts\\batch\\common\\validate_python_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
-                            scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
 
-                            scripts\\batch\\mongodb\\setup\\start_mongodb.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
 
-                            scripts\\batch\\mongodb\\setup\\validate_mongodb.bat
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
 
-                            scripts\\batch\\common\\download_dataset.bat
+                        bat 'scripts\\batch\\common\\download_dataset.bat'
 
-                            scripts\\batch\\mongodb\\load\\load_data.bat
+                        bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
 
-                            scripts\\batch\\mongodb\\load\\validate_loaded_data.bat
-                        '''
+                        bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -685,7 +734,7 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'mongodb',
                         'cleanup',
                         'windows'
@@ -695,15 +744,12 @@ pipeline {
                             "CLEANUP_MODE=${params.CLEANUP_MODE}"
                         ]) {
 
-                            bat '''
-                                scripts\\batch\\mongodb\\cleanup\\mongodb_cleanup_pipeline.bat
-                            '''
+                            bat 'scripts\\batch\\mongodb\\cleanup\\mongodb_cleanup_pipeline.bat'
                         }
                     }
                 }
             }
         }
-
 
 
         /*
@@ -742,38 +788,35 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'postgresql',
                         'setup',
                         'windows'
                     ) {
 
-                        bat '''
-                            scripts\\batch\\common\\validate_python_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
-                            scripts\\batch\\postgresql\\setup\\install_python_requirements.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
 
-                            scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
 
-                            scripts\\batch\\common\\validate_java_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
 
-                            scripts\\batch\\postgresql\\setup\\install_tools.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
 
-                            scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
 
-                            scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
 
-                            scripts\\batch\\postgresql\\setup\\create_database.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
 
-                            scripts\\batch\\postgresql\\setup\\configure_global_psql.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
 
-                            scripts\\batch\\postgresql\\setup\\validate_environment.bat
-                        '''
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -812,30 +855,27 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'postgresql',
                         'load',
                         'windows'
                     ) {
 
-                        bat '''
-                            scripts\\batch\\common\\validate_python_runtime.bat
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
 
-                            scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
 
-                            scripts\\batch\\postgresql\\setup\\start_postgresql.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
 
-                            scripts\\batch\\postgresql\\setup\\validate_postgresql.bat
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
 
-                            scripts\\batch\\postgresql\\load\\load_data.bat
+                        bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
 
-                            scripts\\batch\\postgresql\\load\\validate_loaded_data.bat
-                        '''
+                        bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
                     }
                 }
             }
         }
-
 
 
         /*
@@ -874,7 +914,7 @@ pipeline {
 
                 script {
 
-                    runPipeline(
+                    executePipeline(
                         'postgresql',
                         'cleanup',
                         'windows'
@@ -884,9 +924,7 @@ pipeline {
                             "CLEANUP_MODE=${params.CLEANUP_MODE}"
                         ]) {
 
-                            bat '''
-                                scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat
-                            '''
+                            bat 'scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat'
                         }
                     }
                 }
