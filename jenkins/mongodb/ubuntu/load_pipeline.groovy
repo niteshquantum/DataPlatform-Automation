@@ -59,7 +59,7 @@ pipeline {
 
         stage('Validate Indexes') {
             steps {
-                sh './scripts/bash/mongodb/setup/create_indexes.sh'
+                sh 'python3 scripts/python/mongodb/setup/create_indexes.py'
             }
         }
     }
