@@ -1,63 +1,250 @@
+def runTrackedStage(String stageName, Closure stageBody) {
+
+    bat """
+        python scripts\\logging\\logger.py stage-start ^
+        --database mongodb ^
+        --action load ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --stage-name "${stageName}"
+    """
+
+    try {
+
+        stageBody()
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database mongodb ^
+            --action load ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status SUCCESS
+        """
+
+    } catch (Exception error) {
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database mongodb ^
+            --action load ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status FAILURE
+        """
+
+        bat """
+            python scripts\\logging\\logger.py set-error ^
+            --database mongodb ^
+            --action load ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --failed-stage "${stageName}" ^
+            --message "Stage execution failed"
+        """
+
+        throw error
+    }
+}
+
+
 pipeline {
 
     agent any
 
+    options {
+        disableConcurrentBuilds()
+    }
+
     stages {
 
-        stage('Validate Python Runtime') {
+        stage('Initialize Logging') {
+
             steps {
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                bat """
+                    python scripts\\logging\\logger.py init ^
+                    --database mongodb ^
+                    --action load ^
+                    --os windows ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --job-name "${env.JOB_NAME}" ^
+                    --build-url "${env.BUILD_URL}"
+                """
             }
         }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
 
         stage('Validate Python Requirements') {
+
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+                    }
+                }
             }
         }
+
 
         stage('Start MongoDB Service') {
+
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Start MongoDB Service'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                    }
+                }
             }
         }
+
 
         stage('Validate MongoDB') {
+
             steps {
-                bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MongoDB'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                    }
+                }
             }
         }
+
 
         stage('Download Dataset') {
+
             steps {
-                bat 'scripts\\batch\\common\\download_dataset.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Download Dataset'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
             }
         }
+
 
         stage('Load Data') {
+
             steps {
-                bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Load Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
+                    }
+                }
             }
         }
 
+
         stage('Validate Loaded Data') {
+
             steps {
-                bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Loaded Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+                    }
+                }
             }
         }
     }
 
+
     post {
 
         success {
+
             echo 'MONGODB LOAD SUCCESSFUL'
         }
 
+
         failure {
+
             echo 'MONGODB LOAD FAILED'
         }
 
+
         always {
+
+            echo 'FINALIZING MONGODB LOAD LOGGING AND REPORTING'
+
+            script {
+
+                def finalStatus = currentBuild.currentResult
+
+                bat """
+                    python scripts\\logging\\logger.py finalize ^
+                    --database mongodb ^
+                    --action load ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --status "${finalStatus}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_report.py ^
+                    --database mongodb ^
+                    --action load ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_history.py ^
+                    --database mongodb ^
+                    --action load ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+            }
+
+
+            archiveArtifacts(
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                fingerprint: true,
+                allowEmptyArchive: true
+            )
+
             echo 'MONGODB LOAD PIPELINE COMPLETED'
         }
     }
