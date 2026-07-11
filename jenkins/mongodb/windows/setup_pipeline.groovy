@@ -135,6 +135,18 @@ pipeline {
                 bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
             }
         }
+
+        stage('Validate Collections') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+            }
+        }
+
+        stage('Validate Indexes') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
+            }
+        }
     }
 
     post {
