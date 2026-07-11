@@ -1,6 +1,58 @@
+def runTrackedStage(String stageName, Closure stageBody) {
+
+    bat """
+        python scripts\\logging\\logger.py stage-start ^
+        --database postgresql ^
+        --action cleanup ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --stage-name "${stageName}"
+    """
+
+    try {
+
+        stageBody()
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database postgresql ^
+            --action cleanup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status SUCCESS
+        """
+
+    } catch (Exception error) {
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database postgresql ^
+            --action cleanup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status FAILURE
+        """
+
+        bat """
+            python scripts\\logging\\logger.py set-error ^
+            --database postgresql ^
+            --action cleanup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --failed-stage "${stageName}" ^
+            --message "Stage execution failed"
+        """
+
+        throw error
+    }
+}
+
+
 pipeline {
 
     agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
 
     parameters {
 
@@ -18,88 +70,135 @@ pipeline {
         PIPELINE_TYPE = "POSTGRESQL_WINDOWS_CLEANUP"
     }
 
+
     stages {
+
+        stage('Initialize Logging') {
+
+            steps {
+
+                bat """
+                    python scripts\\logging\\logger.py init ^
+                    --database postgresql ^
+                    --action cleanup ^
+                    --os windows ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --job-name "${env.JOB_NAME}" ^
+                    --build-url "${env.BUILD_URL}"
+                """
+            }
+        }
+
 
         stage('Cleanup Information') {
 
             steps {
 
-                echo "====================================="
-                echo "POSTGRESQL WINDOWS CLEANUP PIPELINE"
-                echo "====================================="
+                script {
 
-                echo "Workspace    : ${WORKSPACE}"
-                echo "Cleanup Mode : ${params.CLEANUP_MODE}"
+                    runTrackedStage(
+                        'Cleanup Information'
+                    ) {
+
+                        echo "====================================="
+                        echo "POSTGRESQL WINDOWS CLEANUP PIPELINE"
+                        echo "====================================="
+
+                        echo "Workspace    : ${WORKSPACE}"
+                        echo "Cleanup Mode : ${params.CLEANUP_MODE}"
+                    }
+                }
             }
         }
+
 
         stage('Validate Cleanup Scripts') {
 
             steps {
 
-                bat '''
-                @echo off
+                script {
 
-                if not exist "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat" (
-                    echo ERROR: PostgreSQL cleanup pipeline not found
-                    exit /b 1
-                )
+                    runTrackedStage(
+                        'Validate Cleanup Scripts'
+                    ) {
 
-                if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\stop_postgresql.ps1" (
-                    echo ERROR: PostgreSQL stop script not found
-                    exit /b 1
-                )
+                        bat '''
+                            @echo off
 
-                if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\remove_postgresql.ps1" (
-                    echo ERROR: PostgreSQL removal script not found
-                    exit /b 1
-                )
+                            if not exist "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat" (
+                                echo ERROR: PostgreSQL cleanup pipeline not found
+                                exit /b 1
+                            )
 
-                if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\reset_terraform_state.ps1" (
-                    echo ERROR: PostgreSQL Terraform reset script not found
-                    exit /b 1
-                )
+                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\stop_postgresql.ps1" (
+                                echo ERROR: PostgreSQL stop script not found
+                                exit /b 1
+                            )
 
-                if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\validate_cleanup.ps1" (
-                    echo ERROR: PostgreSQL cleanup validation script not found
-                    exit /b 1
-                )
+                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\remove_postgresql.ps1" (
+                                echo ERROR: PostgreSQL removal script not found
+                                exit /b 1
+                            )
 
-                echo PostgreSQL cleanup scripts validated successfully
-                '''
+                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\reset_terraform_state.ps1" (
+                                echo ERROR: PostgreSQL Terraform reset script not found
+                                exit /b 1
+                            )
+
+                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\validate_cleanup.ps1" (
+                                echo ERROR: PostgreSQL cleanup validation script not found
+                                exit /b 1
+                            )
+
+                            echo PostgreSQL cleanup scripts validated successfully
+                        '''
+                    }
+                }
             }
         }
+
 
         stage('Cleanup PostgreSQL') {
 
             steps {
 
-                withEnv(["CLEANUP_MODE=${params.CLEANUP_MODE}"]) {
+                script {
 
-                    bat '''
-                    @echo off
+                    runTrackedStage(
+                        'Cleanup PostgreSQL'
+                    ) {
 
-                    echo.
-                    echo =====================================
-                    echo RUNNING POSTGRESQL CLEANUP
-                    echo =====================================
-                    echo.
+                        withEnv([
+                            "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                        ]) {
 
-                    call "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat"
+                            bat '''
+                                @echo off
 
-                    if errorlevel 1 (
-                        echo.
-                        echo POSTGRESQL CLEANUP FAILED
-                        exit /b 1
-                    )
+                                echo.
+                                echo =====================================
+                                echo RUNNING POSTGRESQL CLEANUP
+                                echo =====================================
+                                echo.
 
-                    echo.
-                    echo POSTGRESQL CLEANUP COMPLETED SUCCESSFULLY
-                    '''
+                                call "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat"
+
+                                if errorlevel 1 (
+                                    echo.
+                                    echo POSTGRESQL CLEANUP FAILED
+                                    exit /b 1
+                                )
+
+                                echo.
+                                echo POSTGRESQL CLEANUP COMPLETED SUCCESSFULLY
+                            '''
+                        }
+                    }
                 }
             }
         }
     }
+
 
     post {
 
@@ -110,6 +209,7 @@ pipeline {
             echo "====================================="
         }
 
+
         failure {
 
             echo "====================================="
@@ -117,9 +217,47 @@ pipeline {
             echo "====================================="
         }
 
+
         always {
 
+            echo 'FINALIZING POSTGRESQL CLEANUP LOGGING AND REPORTING'
+
+            script {
+
+                def finalStatus = currentBuild.currentResult
+
+                bat """
+                    python scripts\\logging\\logger.py finalize ^
+                    --database postgresql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --status "${finalStatus}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_report.py ^
+                    --database postgresql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_history.py ^
+                    --database postgresql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+            }
+
+
+            archiveArtifacts(
+                artifacts: "logs/postgresql/cleanup/build_${env.BUILD_NUMBER}/**, reports/postgresql/cleanup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                fingerprint: true,
+                allowEmptyArchive: true
+            )
+
             echo "Cleanup Mode: ${params.CLEANUP_MODE}"
+            echo 'POSTGRESQL CLEANUP PIPELINE COMPLETED'
         }
     }
 }
