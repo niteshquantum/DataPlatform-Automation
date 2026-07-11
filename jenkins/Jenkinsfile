@@ -267,29 +267,37 @@ pipeline {
                 checkout scm
 
 
-                script {
+                        script {
 
-                    runPipeline(
-                        'mysql',
-                        'setup',
-                        'ubuntu'
-                    ) {
+                runPipeline(
+                    'mysql',
+                    'setup',
+                    'ubuntu'
+                ) {
 
-                        sh '''
-                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                    sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                    '''
 
-                            ./scripts/bash/common/validate_python_runtime.sh
-                            ./scripts/bash/common/validate_java_runtime.sh
-                            ./scripts/bash/mysql/setup/install_tools.sh
-                            ./scripts/bash/mysql/setup/install_mysql.sh
-                            ./scripts/bash/mysql/setup/deploy_mysql.sh
-                            ./scripts/bash/mysql/setup/start_mysql.sh
-                            ./scripts/bash/mysql/setup/create_database.sh
-                            ./scripts/bash/mysql/setup/configure_global_mysql.sh
-                            ./scripts/bash/mysql/setup/validate_environment.sh
-                        '''
-                    }
+                    sh './scripts/bash/common/validate_python_runtime.sh'
+
+                    sh './scripts/bash/common/validate_java_runtime.sh'
+
+                    sh './scripts/bash/mysql/setup/install_tools.sh'
+
+                    sh './scripts/bash/mysql/setup/install_mysql.sh'
+
+                    sh './scripts/bash/mysql/setup/deploy_mysql.sh'
+
+                    sh './scripts/bash/mysql/setup/start_mysql.sh'
+
+                    sh './scripts/bash/mysql/setup/create_database.sh'
+
+                    sh './scripts/bash/mysql/setup/configure_global_mysql.sh'
+
+                    sh './scripts/bash/mysql/setup/validate_environment.sh'
                 }
+            }
             }
         }
 
