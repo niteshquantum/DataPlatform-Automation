@@ -55,105 +55,49 @@ pipeline {
 
         stage('Deploy Views') {
             steps {
-                script {
-                    def viewsDir = new File('liquibase/mysql/objects/views')
-                    if (viewsDir.exists() && viewsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-                    } else {
-                        echo 'No Views declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
 
         stage('Validate Views') {
             steps {
-                script {
-                    def viewsDir = new File('liquibase/mysql/objects/views')
-                    if (viewsDir.exists() && viewsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-                    } else {
-                        echo 'No Views declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
 
         stage('Deploy Functions') {
             steps {
-                script {
-                    def functionsDir = new File('liquibase/mysql/objects/functions')
-                    if (functionsDir.exists() && functionsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-                    } else {
-                        echo 'No Functions declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
 
         stage('Validate Functions') {
             steps {
-                script {
-                    def functionsDir = new File('liquibase/mysql/objects/functions')
-                    if (functionsDir.exists() && functionsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-                    } else {
-                        echo 'No Functions declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
 
         stage('Deploy Stored Procedures') {
             steps {
-                script {
-                    def proceduresDir = new File('liquibase/mysql/objects/procedures')
-                    if (proceduresDir.exists() && proceduresDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-                    } else {
-                        echo 'No Stored Procedures declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
 
         stage('Validate Stored Procedures') {
             steps {
-                script {
-                    def proceduresDir = new File('liquibase/mysql/objects/procedures')
-                    if (proceduresDir.exists() && proceduresDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-                    } else {
-                        echo 'No Stored Procedures declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
 
         stage('Deploy Triggers') {
             steps {
-                script {
-                    def triggersDir = new File('liquibase/mysql/objects/triggers')
-                    if (triggersDir.exists() && triggersDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-                    } else {
-                        echo 'No Triggers declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
 
         stage('Validate Triggers') {
             steps {
-                script {
-                    def triggersDir = new File('liquibase/mysql/objects/triggers')
-                    if (triggersDir.exists() && triggersDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-                    } else {
-                        echo 'No Triggers declared.'
-                    }
-                }
+                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
     }

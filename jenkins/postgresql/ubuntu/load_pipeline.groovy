@@ -58,105 +58,49 @@ pipeline {
 
         stage('Deploy Views') {
             steps {
-                script {
-                    def viewsDir = new File('liquibase/postgresql/objects/views')
-                    if (viewsDir.exists() && viewsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/deploy_objects.sh'
-                    } else {
-                        echo 'No Views declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
             }
         }
 
         stage('Validate Views') {
             steps {
-                script {
-                    def viewsDir = new File('liquibase/postgresql/objects/views')
-                    if (viewsDir.exists() && viewsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/validate_objects.sh'
-                    } else {
-                        echo 'No Views declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
             }
         }
 
         stage('Deploy Functions') {
             steps {
-                script {
-                    def functionsDir = new File('liquibase/postgresql/objects/functions')
-                    if (functionsDir.exists() && functionsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/deploy_objects.sh'
-                    } else {
-                        echo 'No Functions declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
             }
         }
 
         stage('Validate Functions') {
             steps {
-                script {
-                    def functionsDir = new File('liquibase/postgresql/objects/functions')
-                    if (functionsDir.exists() && functionsDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/validate_objects.sh'
-                    } else {
-                        echo 'No Functions declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
             }
         }
 
         stage('Deploy Stored Procedures') {
             steps {
-                script {
-                    def proceduresDir = new File('liquibase/postgresql/objects/procedures')
-                    if (proceduresDir.exists() && proceduresDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/deploy_objects.sh'
-                    } else {
-                        echo 'No Stored Procedures declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
             }
         }
 
         stage('Validate Stored Procedures') {
             steps {
-                script {
-                    def proceduresDir = new File('liquibase/postgresql/objects/procedures')
-                    if (proceduresDir.exists() && proceduresDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/validate_objects.sh'
-                    } else {
-                        echo 'No Stored Procedures declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
             }
         }
 
         stage('Deploy Triggers') {
             steps {
-                script {
-                    def triggersDir = new File('liquibase/postgresql/objects/triggers')
-                    if (triggersDir.exists() && triggersDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/deploy_objects.sh'
-                    } else {
-                        echo 'No Triggers declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
             }
         }
 
         stage('Validate Triggers') {
             steps {
-                script {
-                    def triggersDir = new File('liquibase/postgresql/objects/triggers')
-                    if (triggersDir.exists() && triggersDir.listFiles()?.any { it.name.endsWith('.xml') }) {
-                        sh './scripts/bash/postgresql/objects/validate_objects.sh'
-                    } else {
-                        echo 'No Triggers declared.'
-                    }
-                }
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
             }
         }
     }
