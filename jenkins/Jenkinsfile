@@ -2,21 +2,37 @@
 // MASTER DATABASE PIPELINE - WINDOWS + UBUNTU
 // Databases : MYSQL, MONGODB, POSTGRESQL
 // Actions   : SETUP, LOAD, CLEANUP (CLEANUP is Windows only)
-// OS        : WINDOWS (full logging/reporting), UBUNTU (plain, no logging)
+// OS        : WINDOWS, UBUNTU (both fully integrated with
+//             logger.py stage tracking + report/history generation)
 // ============================================================
 
 
 def initializeLogging(String database, String action, String operatingSystem) {
 
-    bat """
-        python scripts\\logging\\logger.py init ^
-        --database "${database}" ^
-        --action "${action}" ^
-        --os "${operatingSystem}" ^
-        --build-number "${env.BUILD_NUMBER}" ^
-        --job-name "${env.JOB_NAME}" ^
-        --build-url "${env.BUILD_URL}"
-    """
+    if (isUnix()) {
+
+        sh """
+            python3 scripts/logging/logger.py init \
+            --database "${database}" \
+            --action "${action}" \
+            --os "${operatingSystem}" \
+            --build-number "${env.BUILD_NUMBER}" \
+            --job-name "${env.JOB_NAME}" \
+            --build-url "${env.BUILD_URL}"
+        """
+
+    } else {
+
+        bat """
+            python scripts\\logging\\logger.py init ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --os "${operatingSystem}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --job-name "${env.JOB_NAME}" ^
+            --build-url "${env.BUILD_URL}"
+        """
+    }
 }
 
 
@@ -27,46 +43,97 @@ def runTrackedStage(
     Closure stageBody
 ) {
 
-    bat """
-        python scripts\\logging\\logger.py stage-start ^
-        --database "${database}" ^
-        --action "${action}" ^
-        --build-number "${env.BUILD_NUMBER}" ^
-        --stage-name "${stageName}"
-    """
+    if (isUnix()) {
+
+        sh """
+            python3 scripts/logging/logger.py stage-start \
+            --database "${database}" \
+            --action "${action}" \
+            --build-number "${env.BUILD_NUMBER}" \
+            --stage-name "${stageName}"
+        """
+
+    } else {
+
+        bat """
+            python scripts\\logging\\logger.py stage-start ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}"
+        """
+    }
+
 
     try {
 
         stageBody()
 
-        bat """
-            python scripts\\logging\\logger.py stage-end ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --stage-name "${stageName}" ^
-            --status SUCCESS
-        """
+        if (isUnix()) {
+
+            sh """
+                python3 scripts/logging/logger.py stage-end \
+                --database "${database}" \
+                --action "${action}" \
+                --build-number "${env.BUILD_NUMBER}" \
+                --stage-name "${stageName}" \
+                --status SUCCESS
+            """
+
+        } else {
+
+            bat """
+                python scripts\\logging\\logger.py stage-end ^
+                --database "${database}" ^
+                --action "${action}" ^
+                --build-number "${env.BUILD_NUMBER}" ^
+                --stage-name "${stageName}" ^
+                --status SUCCESS
+            """
+        }
 
     } catch (Exception error) {
 
-        bat """
-            python scripts\\logging\\logger.py stage-end ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --stage-name "${stageName}" ^
-            --status FAILURE
-        """
+        if (isUnix()) {
 
-        bat """
-            python scripts\\logging\\logger.py set-error ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --failed-stage "${stageName}" ^
-            --message "Stage execution failed"
-        """
+            sh """
+                python3 scripts/logging/logger.py stage-end \
+                --database "${database}" \
+                --action "${action}" \
+                --build-number "${env.BUILD_NUMBER}" \
+                --stage-name "${stageName}" \
+                --status FAILURE
+            """
+
+            sh """
+                python3 scripts/logging/logger.py set-error \
+                --database "${database}" \
+                --action "${action}" \
+                --build-number "${env.BUILD_NUMBER}" \
+                --failed-stage "${stageName}" \
+                --message "Stage execution failed"
+            """
+
+        } else {
+
+            bat """
+                python scripts\\logging\\logger.py stage-end ^
+                --database "${database}" ^
+                --action "${action}" ^
+                --build-number "${env.BUILD_NUMBER}" ^
+                --stage-name "${stageName}" ^
+                --status FAILURE
+            """
+
+            bat """
+                python scripts\\logging\\logger.py set-error ^
+                --database "${database}" ^
+                --action "${action}" ^
+                --build-number "${env.BUILD_NUMBER}" ^
+                --failed-stage "${stageName}" ^
+                --message "Stage execution failed"
+            """
+        }
 
         throw error
     }
@@ -124,27 +191,54 @@ def finalizeLoggingAndReporting(
     String finalStatus
 ) {
 
-    bat """
-        python scripts\\logging\\logger.py finalize ^
-        --database "${database}" ^
-        --action "${action}" ^
-        --build-number "${env.BUILD_NUMBER}" ^
-        --status "${finalStatus}"
-    """
+    if (isUnix()) {
 
-    bat """
-        python scripts\\reporting\\generate_report.py ^
-        --database "${database}" ^
-        --action "${action}" ^
-        --build-number "${env.BUILD_NUMBER}"
-    """
+        sh """
+            python3 scripts/logging/logger.py finalize \
+            --database "${database}" \
+            --action "${action}" \
+            --build-number "${env.BUILD_NUMBER}" \
+            --status "${finalStatus}"
+        """
 
-    bat """
-        python scripts\\reporting\\generate_history.py ^
-        --database "${database}" ^
-        --action "${action}" ^
-        --build-number "${env.BUILD_NUMBER}"
-    """
+        sh """
+            python3 scripts/reporting/generate_report.py \
+            --database "${database}" \
+            --action "${action}" \
+            --build-number "${env.BUILD_NUMBER}"
+        """
+
+        sh """
+            python3 scripts/reporting/generate_history.py \
+            --database "${database}" \
+            --action "${action}" \
+            --build-number "${env.BUILD_NUMBER}"
+        """
+
+    } else {
+
+        bat """
+            python scripts\\logging\\logger.py finalize ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --status "${finalStatus}"
+        """
+
+        bat """
+            python scripts\\reporting\\generate_report.py ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}"
+        """
+
+        bat """
+            python scripts\\reporting\\generate_history.py ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}"
+        """
+    }
 
     archiveArtifacts(
         artifacts:
@@ -643,77 +737,185 @@ pipeline {
                     }
                 }
 
+                stage('MySQL Setup (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'mysql',
+                                'setup',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('MySQL Setup (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Validate Python Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_python_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Validate Python Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_python_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Install Python Requirements') {
                     steps {
-                        sh './scripts/bash/mysql/setup/install_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Install Python Requirements'
+                            ) {
+                                sh './scripts/bash/mysql/setup/install_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Validate Java Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_java_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Validate Java Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_java_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Install Tools') {
                     steps {
-                        sh './scripts/bash/mysql/setup/install_tools.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Install Tools'
+                            ) {
+                                sh './scripts/bash/mysql/setup/install_tools.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Install MySQL') {
                     steps {
-                        sh './scripts/bash/mysql/setup/install_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Install MySQL'
+                            ) {
+                                sh './scripts/bash/mysql/setup/install_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Deploy MySQL') {
                     steps {
-                        sh './scripts/bash/mysql/setup/deploy_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Deploy MySQL'
+                            ) {
+                                sh './scripts/bash/mysql/setup/deploy_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Start MySQL') {
                     steps {
-                        sh './scripts/bash/mysql/setup/start_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Start MySQL'
+                            ) {
+                                sh './scripts/bash/mysql/setup/start_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Create Database') {
                     steps {
-                        sh './scripts/bash/mysql/setup/create_database.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Create Database'
+                            ) {
+                                sh './scripts/bash/mysql/setup/create_database.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Configure Global MySQL') {
                     steps {
-                        sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Configure Global MySQL'
+                            ) {
+                                sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Setup (Ubuntu) - Validate Environment') {
                     steps {
-                        sh './scripts/bash/mysql/setup/validate_environment.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Validate Environment'
+                            ) {
+                                sh './scripts/bash/mysql/setup/validate_environment.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -729,6 +931,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'mysql',
+                            'setup',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU MYSQL SETUP PIPELINE COMPLETED'
                 }
             }
@@ -1004,53 +1216,129 @@ pipeline {
                     }
                 }
 
+                stage('MySQL Load (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'mysql',
+                                'load',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('MySQL Load (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Validate Python Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_python_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Validate Python Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_python_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Start MySQL') {
                     steps {
-                        sh './scripts/bash/mysql/setup/start_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Start MySQL'
+                            ) {
+                                sh './scripts/bash/mysql/setup/start_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Validate MySQL') {
                     steps {
-                        sh './scripts/bash/mysql/setup/validate_mysql.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Validate MySQL'
+                            ) {
+                                sh './scripts/bash/mysql/setup/validate_mysql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Download Dataset') {
                     steps {
-                        sh './scripts/bash/common/download_dataset.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Download Dataset'
+                            ) {
+                                sh './scripts/bash/common/download_dataset.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Load Data') {
                     steps {
-                        sh './scripts/bash/mysql/load/load_data.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Load Data'
+                            ) {
+                                sh './scripts/bash/mysql/load/load_data.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MySQL Load (Ubuntu) - Validate Loaded Data') {
                     steps {
-                        sh './scripts/bash/mysql/load/validate_loaded_data.sh'
+                        script {
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Validate Loaded Data'
+                            ) {
+                                sh './scripts/bash/mysql/load/validate_loaded_data.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -1066,6 +1354,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'mysql',
+                            'load',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU MYSQL LOAD PIPELINE COMPLETED'
                 }
             }
@@ -1691,65 +1989,157 @@ pipeline {
                     }
                 }
 
+                stage('MongoDB Setup (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'mongodb',
+                                'setup',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('MongoDB Setup (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        chmod -R +x scripts/bash
-                        '''
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                chmod -R +x scripts/bash
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Validate Python Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_python_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Validate Python Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_python_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Install Python Requirements') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/install_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Install Python Requirements'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/install_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Install MongoDB') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/install_mongodb.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Install MongoDB'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/install_mongodb.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Install Mongosh') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/install_mongosh.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Install Mongosh'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/install_mongosh.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Configure Global Mongosh') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/configure_global_mongosh.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Configure Global Mongosh'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/configure_global_mongosh.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Start MongoDB') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Start MongoDB'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Configure MongoDB Service') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/configure_mongodb_service.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Configure MongoDB Service'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/configure_mongodb_service.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Setup (Ubuntu) - Validate MongoDB') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'setup',
+                                'Validate MongoDB'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -1765,6 +2155,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'mongodb',
+                            'setup',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU MONGODB SETUP PIPELINE COMPLETED'
                 }
             }
@@ -2040,47 +2440,115 @@ pipeline {
                     }
                 }
 
+                stage('MongoDB Load (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'mongodb',
+                                'load',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('MongoDB Load (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        chmod -R +x scripts/bash
-                        '''
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                chmod -R +x scripts/bash
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Start MongoDB') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Start MongoDB'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Validate MongoDB') {
                     steps {
-                        sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Validate MongoDB'
+                            ) {
+                                sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Download Dataset') {
                     steps {
-                        sh './scripts/bash/common/download_dataset.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Download Dataset'
+                            ) {
+                                sh './scripts/bash/common/download_dataset.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Load MongoDB Data') {
                     steps {
-                        sh './scripts/bash/mongodb/load/load_data.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Load MongoDB Data'
+                            ) {
+                                sh './scripts/bash/mongodb/load/load_data.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('MongoDB Load (Ubuntu) - Validate Loaded Data') {
                     steps {
-                        sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
+                        script {
+                            runTrackedStage(
+                                'mongodb',
+                                'load',
+                                'Validate Loaded Data'
+                            ) {
+                                sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -2096,6 +2564,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'mongodb',
+                            'load',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU MONGODB LOAD PIPELINE COMPLETED'
                 }
             }
@@ -2744,89 +3222,213 @@ pipeline {
                     }
                 }
 
+                stage('PostgreSQL Setup (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'postgresql',
+                                'setup',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('PostgreSQL Setup (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Validate Python Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_python_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Validate Python Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_python_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Install Python Requirements') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Install Python Requirements'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Validate Java Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_java_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Validate Java Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_java_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Install Tools') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/install_tools.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Install Tools'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/install_tools.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Deploy PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Deploy PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Install PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/install_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Install PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/install_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Start PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Start PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Configure PostgreSQL User') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Configure PostgreSQL User'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Create Database') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/create_database.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Create Database'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/create_database.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Configure Global PSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/configure_global_psql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Configure Global PSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/configure_global_psql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Validate PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Validate PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Setup (Ubuntu) - Validate Environment') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/validate_environment.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Validate Environment'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/validate_environment.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -2842,6 +3444,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'postgresql',
+                            'setup',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU POSTGRESQL SETUP PIPELINE COMPLETED'
                 }
             }
@@ -3117,53 +3729,129 @@ pipeline {
                     }
                 }
 
+                stage('PostgreSQL Load (Ubuntu) - Initialize Logging') {
+                    steps {
+                        script {
+                            initializeLogging(
+                                'postgresql',
+                                'load',
+                                'ubuntu'
+                            )
+                        }
+                    }
+                }
+
                 stage('PostgreSQL Load (Ubuntu) - Set Permissions') {
                     steps {
-                        sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Set Permissions'
+                            ) {
+                                sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                                '''
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Validate Python Runtime') {
                     steps {
-                        sh './scripts/bash/common/validate_python_runtime.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Validate Python Runtime'
+                            ) {
+                                sh './scripts/bash/common/validate_python_runtime.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Validate Python Requirements') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Validate Python Requirements'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Start PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Start PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Validate PostgreSQL') {
                     steps {
-                        sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Validate PostgreSQL'
+                            ) {
+                                sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Download Dataset') {
                     steps {
-                        sh './scripts/bash/common/download_dataset.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Download Dataset'
+                            ) {
+                                sh './scripts/bash/common/download_dataset.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Load Data') {
                     steps {
-                        sh './scripts/bash/postgresql/load/load_data.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Load Data'
+                            ) {
+                                sh './scripts/bash/postgresql/load/load_data.sh'
+                            }
+                        }
                     }
                 }
 
                 stage('PostgreSQL Load (Ubuntu) - Validate Loaded Data') {
                     steps {
-                        sh './scripts/bash/postgresql/load/validate_loaded_data.sh'
+                        script {
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Validate Loaded Data'
+                            ) {
+                                sh './scripts/bash/postgresql/load/validate_loaded_data.sh'
+                            }
+                        }
                     }
                 }
             }
@@ -3179,6 +3867,16 @@ pipeline {
                 }
 
                 always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'postgresql',
+                            'load',
+                            currentBuild.currentResult
+                        )
+                    }
+
                     echo 'UBUNTU POSTGRESQL LOAD PIPELINE COMPLETED'
                 }
             }
