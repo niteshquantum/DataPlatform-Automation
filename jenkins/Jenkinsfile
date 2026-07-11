@@ -1,29 +1,22 @@
+// ============================================================
+// MASTER DATABASE PIPELINE - WINDOWS + UBUNTU
+// Databases : MYSQL, MONGODB, POSTGRESQL
+// Actions   : SETUP, LOAD, CLEANUP (CLEANUP is Windows only)
+// OS        : WINDOWS (full logging/reporting), UBUNTU (plain, no logging)
+// ============================================================
+
+
 def initializeLogging(String database, String action, String operatingSystem) {
 
-    if (isUnix()) {
-
-        sh """
-            python3 scripts/logging/logger.py init \
-            --database "${database}" \
-            --action "${action}" \
-            --os "${operatingSystem}" \
-            --build-number "${env.BUILD_NUMBER}" \
-            --job-name "${env.JOB_NAME}" \
-            --build-url "${env.BUILD_URL}"
-        """
-
-    } else {
-
-        bat """
-            python scripts\\logging\\logger.py init ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --os "${operatingSystem}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --job-name "${env.JOB_NAME}" ^
-            --build-url "${env.BUILD_URL}"
-        """
-    }
+    bat """
+        python scripts\\logging\\logger.py init ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --os "${operatingSystem}" ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --job-name "${env.JOB_NAME}" ^
+        --build-url "${env.BUILD_URL}"
+    """
 }
 
 
@@ -34,100 +27,94 @@ def runTrackedStage(
     Closure stageBody
 ) {
 
-    if (isUnix()) {
-
-        sh """
-            python3 scripts/logging/logger.py stage-start \
-            --database "${database}" \
-            --action "${action}" \
-            --build-number "${env.BUILD_NUMBER}" \
-            --stage-name "${stageName}"
-        """
-
-    } else {
-
-        bat """
-            python scripts\\logging\\logger.py stage-start ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --stage-name "${stageName}"
-        """
-    }
-
+    bat """
+        python scripts\\logging\\logger.py stage-start ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --stage-name "${stageName}"
+    """
 
     try {
 
         stageBody()
 
-        if (isUnix()) {
-
-            sh """
-                python3 scripts/logging/logger.py stage-end \
-                --database "${database}" \
-                --action "${action}" \
-                --build-number "${env.BUILD_NUMBER}" \
-                --stage-name "${stageName}" \
-                --status SUCCESS
-            """
-
-        } else {
-
-            bat """
-                python scripts\\logging\\logger.py stage-end ^
-                --database "${database}" ^
-                --action "${action}" ^
-                --build-number "${env.BUILD_NUMBER}" ^
-                --stage-name "${stageName}" ^
-                --status SUCCESS
-            """
-        }
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status SUCCESS
+        """
 
     } catch (Exception error) {
 
-        if (isUnix()) {
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status FAILURE
+        """
 
-            sh """
-                python3 scripts/logging/logger.py stage-end \
-                --database "${database}" \
-                --action "${action}" \
-                --build-number "${env.BUILD_NUMBER}" \
-                --stage-name "${stageName}" \
-                --status FAILURE
-            """
-
-            sh """
-                python3 scripts/logging/logger.py set-error \
-                --database "${database}" \
-                --action "${action}" \
-                --build-number "${env.BUILD_NUMBER}" \
-                --failed-stage "${stageName}" \
-                --message "Stage execution failed"
-            """
-
-        } else {
-
-            bat """
-                python scripts\\logging\\logger.py stage-end ^
-                --database "${database}" ^
-                --action "${action}" ^
-                --build-number "${env.BUILD_NUMBER}" ^
-                --stage-name "${stageName}" ^
-                --status FAILURE
-            """
-
-            bat """
-                python scripts\\logging\\logger.py set-error ^
-                --database "${database}" ^
-                --action "${action}" ^
-                --build-number "${env.BUILD_NUMBER}" ^
-                --failed-stage "${stageName}" ^
-                --message "Stage execution failed"
-            """
-        }
+        bat """
+            python scripts\\logging\\logger.py set-error ^
+            --database "${database}" ^
+            --action "${action}" ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --failed-stage "${stageName}" ^
+            --message "Stage execution failed"
+        """
 
         throw error
     }
+}
+
+
+def checkAdministratorPrivileges(String database, String action, String serviceLabel) {
+
+    def adminStatus = bat(
+        script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+        returnStatus: true
+    )
+
+    if (adminStatus == 0) {
+
+        writeFile(
+            file: 'admin_status.txt',
+            text: 'true'
+        )
+
+        echo 'Administrator privileges available.'
+        echo "${serviceLabel} and Global configuration will be enabled."
+
+    } else {
+
+        writeFile(
+            file: 'admin_status.txt',
+            text: 'false'
+        )
+
+        echo 'Administrator privileges not available.'
+        echo "${serviceLabel} and Global configuration will be skipped."
+        echo "${database.toUpperCase()} will run using project-local mode."
+    }
+
+    def adminResult = readFile(
+        'admin_status.txt'
+    ).trim()
+
+    echo "ADMIN STATUS = ${adminResult}"
+
+    bat """
+        python scripts\\logging\\logger.py set-environment ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --administrator-privileges "${adminResult}"
+    """
 }
 
 
@@ -137,46 +124,33 @@ def finalizeLoggingAndReporting(
     String finalStatus
 ) {
 
-    if (isUnix()) {
+    bat """
+        python scripts\\logging\\logger.py finalize ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --status "${finalStatus}"
+    """
 
-        sh """
-            python3 scripts/logging/logger.py finalize \
-            --database "${database}" \
-            --action "${action}" \
-            --build-number "${env.BUILD_NUMBER}" \
-            --status "${finalStatus}"
-        """
+    bat """
+        python scripts\\reporting\\generate_report.py ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --build-number "${env.BUILD_NUMBER}"
+    """
 
-        sh """
-            python3 scripts/reporting/generate_report.py \
-            --database "${database}" \
-            --action "${action}" \
-            --build-number "${env.BUILD_NUMBER}"
-        """
-
-    } else {
-
-        bat """
-            python scripts\\logging\\logger.py finalize ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}" ^
-            --status "${finalStatus}"
-        """
-
-        bat """
-            python scripts\\reporting\\generate_report.py ^
-            --database "${database}" ^
-            --action "${action}" ^
-            --build-number "${env.BUILD_NUMBER}"
-        """
-    }
-
+    bat """
+        python scripts\\reporting\\generate_history.py ^
+        --database "${database}" ^
+        --action "${action}" ^
+        --build-number "${env.BUILD_NUMBER}"
+    """
 
     archiveArtifacts(
         artifacts:
             "logs/${database.toLowerCase()}/${action.toLowerCase()}/build_${env.BUILD_NUMBER}/**, " +
-            "reports/${database.toLowerCase()}/${action.toLowerCase()}/build_${env.BUILD_NUMBER}/**",
+            "reports/${database.toLowerCase()}/${action.toLowerCase()}/build_${env.BUILD_NUMBER}/**, " +
+            "reports/history/**",
         fingerprint: true,
         allowEmptyArchive: true
     )
@@ -200,7 +174,6 @@ pipeline {
             name: 'DATABASE',
             choices: [
                 'MYSQL',
-                'MSSQL',
                 'MONGODB',
                 'POSTGRESQL'
             ],
@@ -212,9 +185,30 @@ pipeline {
             name: 'ACTION',
             choices: [
                 'SETUP',
-                'LOAD'
+                'LOAD',
+                'CLEANUP'
             ],
             description: 'Select Action'
+        )
+
+
+        choice(
+            name: 'CLEANUP_MODE',
+            choices: [
+                'PRESERVE_DATA',
+                'DELETE_DATA'
+            ],
+            description: 'Select cleanup mode (only used when ACTION = CLEANUP)'
+        )
+
+
+        choice(
+            name: 'OS',
+            choices: [
+                'WINDOWS',
+                'UBUNTU'
+            ],
+            description: 'Select operating system (only used when ACTION = SETUP or LOAD; CLEANUP is Windows only)'
         )
     }
 
@@ -224,7 +218,7 @@ pipeline {
 
         /*
         ============================================================
-        MYSQL SETUP
+        MYSQL SETUP (WINDOWS)
         ============================================================
         */
 
@@ -232,7 +226,7 @@ pipeline {
         stage('MySQL Setup') {
 
             agent {
-                label 'ubuntu-node'
+                label 'windows-node'
             }
 
 
@@ -246,6 +240,10 @@ pipeline {
 
                     expression {
                         params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -272,8 +270,31 @@ pipeline {
                             initializeLogging(
                                 'mysql',
                                 'setup',
-                                'ubuntu'
+                                'windows'
                             )
+                        }
+                    }
+                }
+
+
+                stage('MySQL Setup - Check Administrator Privileges') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Check Administrator Privileges'
+                            ) {
+
+                                checkAdministratorPrivileges(
+                                    'mysql',
+                                    'setup',
+                                    'MySQL Service'
+                                )
+                            }
                         }
                     }
                 }
@@ -291,11 +312,45 @@ pipeline {
                                 'Validate Python Runtime'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/common/validate_python_runtime.sh
+                                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                            }
+                        }
+                    }
+                }
 
-                                    ./scripts/bash/common/validate_python_runtime.sh
-                                '''
+
+                stage('MySQL Setup - Install Python Requirements') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Install Python Requirements'
+                            ) {
+
+                                bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+                            }
+                        }
+                    }
+                }
+
+
+                stage('MySQL Setup - Validate Python Requirements') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Validate Python Requirements'
+                            ) {
+
+                                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
                             }
                         }
                     }
@@ -314,11 +369,7 @@ pipeline {
                                 'Validate Java Runtime'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/common/validate_java_runtime.sh
-
-                                    ./scripts/bash/common/validate_java_runtime.sh
-                                '''
+                                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
                             }
                         }
                     }
@@ -337,34 +388,7 @@ pipeline {
                                 'Install Tools'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/install_tools.sh
-
-                                    ./scripts/bash/mysql/setup/install_tools.sh
-                                '''
-                            }
-                        }
-                    }
-                }
-
-
-                stage('MySQL Setup - Install MySQL') {
-
-                    steps {
-
-                        script {
-
-                            runTrackedStage(
-                                'mysql',
-                                'setup',
-                                'Install MySQL'
-                            ) {
-
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/install_mysql.sh
-
-                                    ./scripts/bash/mysql/setup/install_mysql.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
                             }
                         }
                     }
@@ -383,11 +407,40 @@ pipeline {
                                 'Deploy MySQL'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/deploy_mysql.sh
+                                bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+                            }
+                        }
+                    }
+                }
 
-                                    ./scripts/bash/mysql/setup/deploy_mysql.sh
-                                '''
+
+                stage('MySQL Setup - Configure MySQL Service') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'setup',
+                                'Configure MySQL Service'
+                            ) {
+
+                                echo 'Administrator privileges available.'
+                                echo 'Configuring MySQL Windows Service...'
+
+                                bat 'scripts\\batch\\mysql\\setup\\configure_mysql_service.bat'
                             }
                         }
                     }
@@ -395,6 +448,17 @@ pipeline {
 
 
                 stage('MySQL Setup - Start MySQL') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() != 'true'
+                        }
+                    }
+
 
                     steps {
 
@@ -406,11 +470,10 @@ pipeline {
                                 'Start MySQL'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/start_mysql.sh
+                                echo 'Administrator privileges unavailable.'
+                                echo 'Starting MySQL in project-local mode...'
 
-                                    ./scripts/bash/mysql/setup/start_mysql.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
                             }
                         }
                     }
@@ -429,11 +492,7 @@ pipeline {
                                 'Create Database'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/create_database.sh
-
-                                    ./scripts/bash/mysql/setup/create_database.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
                             }
                         }
                     }
@@ -441,6 +500,17 @@ pipeline {
 
 
                 stage('MySQL Setup - Configure Global MySQL') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
 
                     steps {
 
@@ -452,11 +522,10 @@ pipeline {
                                 'Configure Global MySQL'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/configure_global_mysql.sh
+                                echo 'Administrator privileges available.'
+                                echo 'Configuring Global MySQL command...'
 
-                                    ./scripts/bash/mysql/setup/configure_global_mysql.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
                             }
                         }
                     }
@@ -475,11 +544,7 @@ pipeline {
                                 'Validate Environment'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/validate_environment.sh
-
-                                    ./scripts/bash/mysql/setup/validate_environment.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
                             }
                         }
                     }
@@ -490,6 +555,24 @@ pipeline {
             post {
 
                 success {
+
+                    script {
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        if (adminResult == 'true') {
+
+                            echo 'MySQL Windows Service configured successfully.'
+                            echo 'Global MySQL configuration completed successfully.'
+
+                        } else {
+
+                            echo 'MySQL configured successfully in project-local mode.'
+                            echo 'Windows Service and Global MySQL configuration were skipped because Administrator privileges were unavailable.'
+                        }
+                    }
 
                     echo 'MYSQL SETUP SUCCESSFUL'
                 }
@@ -521,12 +604,12 @@ pipeline {
 
         /*
         ============================================================
-        MYSQL LOAD
+        MYSQL SETUP (UBUNTU)
         ============================================================
         */
 
 
-        stage('MySQL Load') {
+        stage('MySQL Setup (Ubuntu)') {
 
             agent {
                 label 'ubuntu-node'
@@ -542,7 +625,145 @@ pipeline {
                     }
 
                     expression {
+                        params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
+                }
+            }
+
+
+            stages {
+
+                stage('MySQL Setup (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Validate Python Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Install Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/install_python_requirements.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Validate Java Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_java_runtime.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Install Tools') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/install_tools.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Install MySQL') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/install_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Deploy MySQL') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/deploy_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Start MySQL') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/start_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Create Database') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/create_database.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Configure Global MySQL') {
+                    steps {
+                        sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Setup (Ubuntu) - Validate Environment') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/validate_environment.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU MYSQL SETUP SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU MYSQL SETUP FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU MYSQL SETUP PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        MYSQL LOAD (WINDOWS)
+        ============================================================
+        */
+
+
+        stage('MySQL Load') {
+
+            agent {
+                label 'windows-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MYSQL'
+                    }
+
+                    expression {
                         params.ACTION == 'LOAD'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -569,7 +790,7 @@ pipeline {
                             initializeLogging(
                                 'mysql',
                                 'load',
-                                'ubuntu'
+                                'windows'
                             )
                         }
                     }
@@ -588,34 +809,7 @@ pipeline {
                                 'Validate Python Runtime'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/common/validate_python_runtime.sh
-
-                                    ./scripts/bash/common/validate_python_runtime.sh
-                                '''
-                            }
-                        }
-                    }
-                }
-
-
-                stage('MySQL Load - Install Python Requirements') {
-
-                    steps {
-
-                        script {
-
-                            runTrackedStage(
-                                'mysql',
-                                'load',
-                                'Install Python Requirements'
-                            ) {
-
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/install_python_requirements.sh
-
-                                    ./scripts/bash/mysql/setup/install_python_requirements.sh
-                                '''
+                                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
                             }
                         }
                     }
@@ -634,18 +828,14 @@ pipeline {
                                 'Validate Python Requirements'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/validate_python_requirements.sh
-
-                                    ./scripts/bash/mysql/setup/validate_python_requirements.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
                             }
                         }
                     }
                 }
 
 
-                stage('MySQL Load - Start MySQL') {
+                stage('MySQL Load - Start MySQL Service') {
 
                     steps {
 
@@ -654,14 +844,10 @@ pipeline {
                             runTrackedStage(
                                 'mysql',
                                 'load',
-                                'Start MySQL'
+                                'Start MySQL Service'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/start_mysql.sh
-
-                                    ./scripts/bash/mysql/setup/start_mysql.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
                             }
                         }
                     }
@@ -680,11 +866,26 @@ pipeline {
                                 'Validate MySQL'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/setup/validate_mysql.sh
+                                bat 'scripts\\batch\\mysql\\setup\\validate_mysql.bat'
+                            }
+                        }
+                    }
+                }
 
-                                    ./scripts/bash/mysql/setup/validate_mysql.sh
-                                '''
+
+                stage('MySQL Load - Download Dataset') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'load',
+                                'Download Dataset'
+                            ) {
+
+                                bat 'scripts\\batch\\common\\download_dataset.bat'
                             }
                         }
                     }
@@ -703,11 +904,7 @@ pipeline {
                                 'Load Data'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/load/load_data.sh
-
-                                    ./scripts/bash/mysql/load/load_data.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\load\\load_data.bat'
                             }
                         }
                     }
@@ -726,11 +923,7 @@ pipeline {
                                 'Validate Loaded Data'
                             ) {
 
-                                sh '''
-                                    chmod +x scripts/bash/mysql/load/validate_loaded_data.sh
-
-                                    ./scripts/bash/mysql/load/validate_loaded_data.sh
-                                '''
+                                bat 'scripts\\batch\\mysql\\load\\validate_loaded_data.bat'
                             }
                         }
                     }
@@ -772,12 +965,12 @@ pipeline {
 
         /*
         ============================================================
-        MSSQL SETUP
+        MYSQL LOAD (UBUNTU)
         ============================================================
         */
 
 
-        stage('MSSQL Setup') {
+        stage('MySQL Load (Ubuntu)') {
 
             agent {
                 label 'ubuntu-node'
@@ -789,143 +982,135 @@ pipeline {
                 allOf {
 
                     expression {
-                        params.DATABASE == 'MSSQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'SETUP'
-                    }
-                }
-            }
-
-
-            stages {
-
-
-                stage('MSSQL Setup - Checkout SCM') {
-
-                    steps {
-
-                        checkout scm
-                    }
-                }
-
-
-                stage('MSSQL Setup - Initialize Logging') {
-
-                    steps {
-
-                        script {
-
-                            initializeLogging(
-                                'mssql',
-                                'setup',
-                                'ubuntu'
-                            )
-                        }
-                    }
-                }
-
-
-                stage('MSSQL Setup - Execute Setup') {
-
-                    steps {
-
-                        script {
-
-                            runTrackedStage(
-                                'mssql',
-                                'setup',
-                                'Execute MSSQL Setup'
-                            ) {
-
-                                sh '''
-                                    chmod +x scripts/bash/common/*.sh
-                                    chmod +x scripts/bash/mssql/*.sh
-
-                                    ./scripts/bash/common/validate_python_runtime.sh
-                                    ./scripts/bash/common/validate_java_runtime.sh
-                                    ./scripts/bash/common/install_tools.sh
-                                    ./scripts/bash/common/install_mssql_driver.sh
-                                    ./scripts/bash/mssql/install_mssql.sh
-                                    ./scripts/bash/mssql/install_sqlcmd.sh
-                                    ./scripts/bash/mssql/start_mssql.sh
-                                    ./scripts/bash/mssql/create_database.sh
-                                    ./scripts/bash/mssql/run_liquibase.sh
-                                    ./scripts/bash/mssql/validate_environment.sh
-                                '''
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            post {
-
-                success {
-
-                    echo 'MSSQL SETUP SUCCESSFUL'
-                }
-
-
-                failure {
-
-                    echo 'MSSQL SETUP FAILED'
-                }
-
-
-                always {
-
-                    script {
-
-                        finalizeLoggingAndReporting(
-                            'mssql',
-                            'setup',
-                            currentBuild.currentResult
-                        )
-                    }
-
-                    echo 'MSSQL SETUP PIPELINE COMPLETED'
-                }
-            }
-        }
-
-
-
-        /*
-        ============================================================
-        MSSQL LOAD
-        ============================================================
-        */
-
-
-        stage('MSSQL Load') {
-
-            agent {
-                label 'ubuntu-node'
-            }
-
-
-            when {
-
-                allOf {
-
-                    expression {
-                        params.DATABASE == 'MSSQL'
+                        params.DATABASE == 'MYSQL'
                     }
 
                     expression {
                         params.ACTION == 'LOAD'
                     }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
                 }
             }
 
 
             stages {
 
+                stage('MySQL Load (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
 
-                stage('MSSQL Load - Checkout SCM') {
+                stage('MySQL Load (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Validate Python Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Start MySQL') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/start_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Validate MySQL') {
+                    steps {
+                        sh './scripts/bash/mysql/setup/validate_mysql.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Download Dataset') {
+                    steps {
+                        sh './scripts/bash/common/download_dataset.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Load Data') {
+                    steps {
+                        sh './scripts/bash/mysql/load/load_data.sh'
+                    }
+                }
+
+                stage('MySQL Load (Ubuntu) - Validate Loaded Data') {
+                    steps {
+                        sh './scripts/bash/mysql/load/validate_loaded_data.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU MYSQL LOAD SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU MYSQL LOAD FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU MYSQL LOAD PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        MYSQL CLEANUP (WINDOWS)
+        ============================================================
+        */
+
+
+        stage('MySQL Cleanup') {
+
+            agent {
+                label 'windows-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MYSQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'CLEANUP'
+                    }
+                }
+            }
+
+
+            environment {
+                PIPELINE_TYPE = "MYSQL_WINDOWS_CLEANUP"
+            }
+
+
+            stages {
+
+
+                stage('MySQL Cleanup - Checkout SCM') {
 
                     steps {
 
@@ -934,46 +1119,111 @@ pipeline {
                 }
 
 
-                stage('MSSQL Load - Initialize Logging') {
+                stage('MySQL Cleanup - Initialize Logging') {
 
                     steps {
 
                         script {
 
                             initializeLogging(
-                                'mssql',
-                                'load',
-                                'ubuntu'
+                                'mysql',
+                                'cleanup',
+                                'windows'
                             )
                         }
                     }
                 }
 
 
-                stage('MSSQL Load - Execute Load') {
+                stage('MySQL Cleanup - Cleanup Information') {
 
                     steps {
 
                         script {
 
                             runTrackedStage(
-                                'mssql',
-                                'load',
-                                'Execute MSSQL Load'
+                                'mysql',
+                                'cleanup',
+                                'Cleanup Information'
                             ) {
 
-                                sh '''
-                                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                                echo "====================================="
+                                echo "MYSQL WINDOWS CLEANUP PIPELINE"
+                                echo "====================================="
 
-                                    ./scripts/bash/common/validate_python_runtime.sh
-                                    ./scripts/bash/install_python_requirements.sh
-                                    ./scripts/bash/validate_python_requirements.sh
-                                    ./scripts/bash/common/install_tools.sh
-                                    ./scripts/bash/mssql/validate_tools.sh
-                                    ./scripts/bash/mssql/validate_mssql.sh
-                                    ./scripts/bash/mssql/load_data.sh
-                                    ./scripts/bash/mssql/validate_loaded_data.sh
+                                echo "Workspace    : ${WORKSPACE}"
+                                echo "Cleanup Mode : ${params.CLEANUP_MODE}"
+                            }
+                        }
+                    }
+                }
+
+
+                stage('MySQL Cleanup - Validate Cleanup Scripts') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'cleanup',
+                                'Validate Cleanup Scripts'
+                            ) {
+
+                                bat '''
+                                    @echo off
+
+                                    if not exist "%WORKSPACE%\\scripts\\powershell\\mysql\\cleanup\\cleanup_mysql.ps1" (
+                                        echo ERROR: MySQL cleanup script not found
+                                        exit /b 1
+                                    )
+
+                                    echo MySQL cleanup scripts validated successfully
                                 '''
+                            }
+                        }
+                    }
+                }
+
+
+                stage('MySQL Cleanup - Cleanup MySQL') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mysql',
+                                'cleanup',
+                                'Cleanup MySQL'
+                            ) {
+
+                                withEnv([
+                                    "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                                ]) {
+
+                                    bat '''
+                                        @echo off
+
+                                        echo.
+                                        echo =====================================
+                                        echo RUNNING MYSQL CLEANUP
+                                        echo =====================================
+                                        echo.
+
+                                        call scripts\\batch\\mysql\\cleanup\\cleanup_mysql.bat
+
+                                        if errorlevel 1 (
+                                            echo.
+                                            echo MYSQL CLEANUP FAILED
+                                            exit /b 1
+                                        )
+
+                                        echo.
+                                        echo MYSQL CLEANUP COMPLETED SUCCESSFULLY
+                                    '''
+                                }
                             }
                         }
                     }
@@ -985,13 +1235,13 @@ pipeline {
 
                 success {
 
-                    echo 'MSSQL LOAD SUCCESSFUL'
+                    echo "MYSQL WINDOWS CLEANUP PIPELINE SUCCESSFUL"
                 }
 
 
                 failure {
 
-                    echo 'MSSQL LOAD FAILED'
+                    echo "MYSQL WINDOWS CLEANUP PIPELINE FAILED"
                 }
 
 
@@ -1000,13 +1250,14 @@ pipeline {
                     script {
 
                         finalizeLoggingAndReporting(
-                            'mssql',
-                            'load',
+                            'mysql',
+                            'cleanup',
                             currentBuild.currentResult
                         )
                     }
 
-                    echo 'MSSQL LOAD PIPELINE COMPLETED'
+                    echo "Cleanup Mode: ${params.CLEANUP_MODE}"
+                    echo 'MYSQL CLEANUP PIPELINE COMPLETED'
                 }
             }
         }
@@ -1015,7 +1266,7 @@ pipeline {
 
         /*
         ============================================================
-        MONGODB SETUP
+        MONGODB SETUP (WINDOWS)
         ============================================================
         */
 
@@ -1037,6 +1288,10 @@ pipeline {
 
                     expression {
                         params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -1082,49 +1337,11 @@ pipeline {
                                 'Check Administrator Privileges'
                             ) {
 
-                                def adminStatus = bat(
-                                    script: 'scripts\\batch\\common\\check_admin_privileges.bat',
-                                    returnStatus: true
+                                checkAdministratorPrivileges(
+                                    'mongodb',
+                                    'setup',
+                                    'Global Mongosh and MongoDB Service'
                                 )
-
-                                if (adminStatus == 0) {
-
-                                    writeFile(
-                                        file: 'admin_status.txt',
-                                        text: 'true'
-                                    )
-
-                                    echo 'Administrator privileges available.'
-                                    echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
-
-                                } else {
-
-                                    writeFile(
-                                        file: 'admin_status.txt',
-                                        text: 'false'
-                                    )
-
-                                    echo 'Administrator privileges not available.'
-                                    echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
-                                    echo 'MongoDB will run using project-local mode.'
-                                }
-
-
-                                def adminResult = readFile(
-                                    'admin_status.txt'
-                                ).trim()
-
-
-                                echo "ADMIN STATUS = ${adminResult}"
-
-
-                                bat """
-                                    python scripts\\logging\\logger.py set-environment ^
-                                    --database mongodb ^
-                                    --action setup ^
-                                    --build-number "${env.BUILD_NUMBER}" ^
-                                    --administrator-privileges "${adminResult}"
-                                """
                             }
                         }
                     }
@@ -1387,6 +1604,24 @@ pipeline {
 
                 success {
 
+                    script {
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        if (adminResult == 'true') {
+
+                            echo 'MongoDB Windows Service configured successfully.'
+                            echo 'Global Mongosh configuration completed successfully.'
+
+                        } else {
+
+                            echo 'MongoDB configured successfully in project-local mode.'
+                            echo 'Windows Service and Global Mongosh configuration were skipped because Administrator privileges were unavailable.'
+                        }
+                    }
+
                     echo 'MONGODB SETUP SUCCESSFUL'
                 }
 
@@ -1417,7 +1652,129 @@ pipeline {
 
         /*
         ============================================================
-        MONGODB LOAD
+        MONGODB SETUP (UBUNTU)
+        ============================================================
+        */
+
+
+        stage('MongoDB Setup (Ubuntu)') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MONGODB'
+                    }
+
+                    expression {
+                        params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
+                }
+            }
+
+
+            stages {
+
+                stage('MongoDB Setup (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        chmod -R +x scripts/bash
+                        '''
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Validate Python Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Install Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/install_python_requirements.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Install MongoDB') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/install_mongodb.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Install Mongosh') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/install_mongosh.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Configure Global Mongosh') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/configure_global_mongosh.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Start MongoDB') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Configure MongoDB Service') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/configure_mongodb_service.sh'
+                    }
+                }
+
+                stage('MongoDB Setup (Ubuntu) - Validate MongoDB') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU MONGODB SETUP SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU MONGODB SETUP FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU MONGODB SETUP PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        MONGODB LOAD (WINDOWS)
         ============================================================
         */
 
@@ -1439,6 +1796,10 @@ pipeline {
 
                     expression {
                         params.ACTION == 'LOAD'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -1640,7 +2001,325 @@ pipeline {
 
         /*
         ============================================================
-        POSTGRESQL SETUP
+        MONGODB LOAD (UBUNTU)
+        ============================================================
+        */
+
+
+        stage('MongoDB Load (Ubuntu)') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MONGODB'
+                    }
+
+                    expression {
+                        params.ACTION == 'LOAD'
+                    }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
+                }
+            }
+
+
+            stages {
+
+                stage('MongoDB Load (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        chmod -R +x scripts/bash
+                        '''
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Start MongoDB') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/start_mongodb.sh'
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Validate MongoDB') {
+                    steps {
+                        sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Download Dataset') {
+                    steps {
+                        sh './scripts/bash/common/download_dataset.sh'
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Load MongoDB Data') {
+                    steps {
+                        sh './scripts/bash/mongodb/load/load_data.sh'
+                    }
+                }
+
+                stage('MongoDB Load (Ubuntu) - Validate Loaded Data') {
+                    steps {
+                        sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU MONGODB LOAD SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU MONGODB LOAD FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU MONGODB LOAD PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        MONGODB CLEANUP (WINDOWS)
+        ============================================================
+        */
+
+
+        stage('MongoDB Cleanup') {
+
+            agent {
+                label 'windows-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MONGODB'
+                    }
+
+                    expression {
+                        params.ACTION == 'CLEANUP'
+                    }
+                }
+            }
+
+
+            environment {
+                PIPELINE_TYPE = "MONGODB_WINDOWS_CLEANUP"
+            }
+
+
+            stages {
+
+
+                stage('MongoDB Cleanup - Checkout SCM') {
+
+                    steps {
+
+                        checkout scm
+                    }
+                }
+
+
+                stage('MongoDB Cleanup - Initialize Logging') {
+
+                    steps {
+
+                        script {
+
+                            initializeLogging(
+                                'mongodb',
+                                'cleanup',
+                                'windows'
+                            )
+                        }
+                    }
+                }
+
+
+                stage('MongoDB Cleanup - Display Cleanup Configuration') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mongodb',
+                                'cleanup',
+                                'Display Cleanup Configuration'
+                            ) {
+
+                                echo "======================================"
+                                echo "MONGODB WINDOWS CLEANUP PIPELINE"
+                                echo "======================================"
+                                echo "Pipeline Type : ${env.PIPELINE_TYPE}"
+                                echo "Cleanup Mode  : ${params.CLEANUP_MODE}"
+                                echo "Workspace     : ${env.WORKSPACE}"
+                                echo "======================================"
+                            }
+                        }
+                    }
+                }
+
+
+                stage('MongoDB Cleanup - Validate Workspace') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mongodb',
+                                'cleanup',
+                                'Validate Workspace'
+                            ) {
+
+                                bat '''
+                                    @echo off
+
+                                    echo.
+                                    echo =====================================
+                                    echo VALIDATING JENKINS WORKSPACE
+                                    echo =====================================
+                                    echo.
+
+                                    if not exist "scripts\\batch\\mongodb\\cleanup\\mongodb_cleanup_pipeline.bat" (
+                                        echo ERROR: MongoDB cleanup pipeline not found.
+                                        exit /b 1
+                                    )
+
+                                    if not exist "config\\windows\\mongodb.conf" (
+                                        echo ERROR: MongoDB configuration file not found.
+                                        exit /b 1
+                                    )
+
+                                    if not exist "terraform\\mongodb" (
+                                        echo ERROR: MongoDB Terraform directory not found.
+                                        exit /b 1
+                                    )
+
+                                    echo MongoDB cleanup workspace validation successful.
+                                '''
+                            }
+                        }
+                    }
+                }
+
+
+                stage('MongoDB Cleanup - Run MongoDB Cleanup') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'mongodb',
+                                'cleanup',
+                                'Run MongoDB Cleanup'
+                            ) {
+
+                                withEnv([
+                                    "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                                ]) {
+
+                                    bat '''
+                                        @echo off
+
+                                        echo.
+                                        echo =====================================
+                                        echo RUNNING MONGODB WINDOWS CLEANUP
+                                        echo =====================================
+                                        echo.
+
+                                        call scripts\\batch\\mongodb\\cleanup\\mongodb_cleanup_pipeline.bat
+
+                                        if errorlevel 1 (
+                                            echo.
+                                            echo =====================================
+                                            echo MONGODB CLEANUP FAILED
+                                            echo =====================================
+                                            echo.
+                                            exit /b 1
+                                        )
+
+                                        echo.
+                                        echo =====================================
+                                        echo MONGODB CLEANUP COMPLETED
+                                        echo =====================================
+                                        echo.
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            post {
+
+                success {
+
+                    echo "MONGODB WINDOWS CLEANUP SUCCESSFUL"
+                }
+
+
+                failure {
+
+                    echo "MONGODB WINDOWS CLEANUP FAILED"
+                }
+
+
+                always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'mongodb',
+                            'cleanup',
+                            currentBuild.currentResult
+                        )
+                    }
+
+                    echo "Cleanup Mode: ${params.CLEANUP_MODE}"
+                    echo 'MONGODB CLEANUP PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        POSTGRESQL SETUP (WINDOWS)
         ============================================================
         */
 
@@ -1662,6 +2341,10 @@ pipeline {
 
                     expression {
                         params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -1690,6 +2373,29 @@ pipeline {
                                 'setup',
                                 'windows'
                             )
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Setup - Check Administrator Privileges') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Check Administrator Privileges'
+                            ) {
+
+                                checkAdministratorPrivileges(
+                                    'postgresql',
+                                    'setup',
+                                    'Windows Service and Global PSQL'
+                                )
+                            }
                         }
                     }
                 }
@@ -1811,6 +2517,17 @@ pipeline {
 
                 stage('PostgreSQL Setup - Configure PostgreSQL Service') {
 
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
+
                     steps {
 
                         script {
@@ -1821,7 +2538,43 @@ pipeline {
                                 'Configure PostgreSQL Service'
                             ) {
 
+                                echo 'Administrator privileges available.'
+                                echo 'Configuring PostgreSQL Windows Service...'
+
                                 bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+                            }
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Setup - Start PostgreSQL') {
+
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() != 'true'
+                        }
+                    }
+
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'setup',
+                                'Start PostgreSQL'
+                            ) {
+
+                                echo 'Administrator privileges unavailable.'
+                                echo 'Starting PostgreSQL in project-local mode...'
+
+                                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
                             }
                         }
                     }
@@ -1849,6 +2602,17 @@ pipeline {
 
                 stage('PostgreSQL Setup - Configure Global PSQL') {
 
+                    when {
+
+                        expression {
+
+                            return readFile(
+                                'admin_status.txt'
+                            ).trim() == 'true'
+                        }
+                    }
+
+
                     steps {
 
                         script {
@@ -1858,6 +2622,9 @@ pipeline {
                                 'setup',
                                 'Configure Global PSQL'
                             ) {
+
+                                echo 'Administrator privileges available.'
+                                echo 'Configuring Global PSQL command...'
 
                                 bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
                             }
@@ -1890,6 +2657,24 @@ pipeline {
 
                 success {
 
+                    script {
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        if (adminResult == 'true') {
+
+                            echo 'PostgreSQL Windows Service configured successfully.'
+                            echo 'Global PSQL configuration completed successfully.'
+
+                        } else {
+
+                            echo 'PostgreSQL configured successfully in project-local mode.'
+                            echo 'Windows Service and Global PSQL configuration were skipped because Administrator privileges were unavailable.'
+                        }
+                    }
+
                     echo 'POSTGRESQL SETUP SUCCESSFUL'
                 }
 
@@ -1920,7 +2705,153 @@ pipeline {
 
         /*
         ============================================================
-        POSTGRESQL LOAD
+        POSTGRESQL SETUP (UBUNTU)
+        ============================================================
+        */
+
+
+        stage('PostgreSQL Setup (Ubuntu)') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'POSTGRESQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'SETUP'
+                    }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
+                }
+            }
+
+
+            stages {
+
+                stage('PostgreSQL Setup (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Validate Python Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Install Python Requirements') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Validate Java Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_java_runtime.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Install Tools') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/install_tools.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Deploy PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Install PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/install_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Start PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Configure PostgreSQL User') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Create Database') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/create_database.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Configure Global PSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/configure_global_psql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Validate PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Setup (Ubuntu) - Validate Environment') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/validate_environment.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU POSTGRESQL SETUP SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU POSTGRESQL SETUP FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU POSTGRESQL SETUP PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        POSTGRESQL LOAD (WINDOWS)
         ============================================================
         */
 
@@ -1942,6 +2873,10 @@ pipeline {
 
                     expression {
                         params.ACTION == 'LOAD'
+                    }
+
+                    expression {
+                        params.OS == 'WINDOWS'
                     }
                 }
             }
@@ -2013,7 +2948,7 @@ pipeline {
                 }
 
 
-                stage('PostgreSQL Load - Start PostgreSQL') {
+                stage('PostgreSQL Load - Start PostgreSQL Service') {
 
                     steps {
 
@@ -2022,7 +2957,7 @@ pipeline {
                             runTrackedStage(
                                 'postgresql',
                                 'load',
-                                'Start PostgreSQL'
+                                'Start PostgreSQL Service'
                             ) {
 
                                 bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
@@ -2045,6 +2980,25 @@ pipeline {
                             ) {
 
                                 bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
+                            }
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Load - Download Dataset') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'load',
+                                'Download Dataset'
+                            ) {
+
+                                bat 'scripts\\batch\\common\\download_dataset.bat'
                             }
                         }
                     }
@@ -2119,6 +3073,327 @@ pipeline {
                 }
             }
         }
+
+
+
+        /*
+        ============================================================
+        POSTGRESQL LOAD (UBUNTU)
+        ============================================================
+        */
+
+
+        stage('PostgreSQL Load (Ubuntu)') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'POSTGRESQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'LOAD'
+                    }
+
+                    expression {
+                        params.OS == 'UBUNTU'
+                    }
+                }
+            }
+
+
+            stages {
+
+                stage('PostgreSQL Load (Ubuntu) - Checkout SCM') {
+                    steps {
+                        checkout scm
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Set Permissions') {
+                    steps {
+                        sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Validate Python Runtime') {
+                    steps {
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Validate Python Requirements') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/validate_python_requirements.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Start PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/start_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Validate PostgreSQL') {
+                    steps {
+                        sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Download Dataset') {
+                    steps {
+                        sh './scripts/bash/common/download_dataset.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Load Data') {
+                    steps {
+                        sh './scripts/bash/postgresql/load/load_data.sh'
+                    }
+                }
+
+                stage('PostgreSQL Load (Ubuntu) - Validate Loaded Data') {
+                    steps {
+                        sh './scripts/bash/postgresql/load/validate_loaded_data.sh'
+                    }
+                }
+            }
+
+            post {
+
+                success {
+                    echo 'UBUNTU POSTGRESQL LOAD SUCCESSFUL'
+                }
+
+                failure {
+                    echo 'UBUNTU POSTGRESQL LOAD FAILED'
+                }
+
+                always {
+                    echo 'UBUNTU POSTGRESQL LOAD PIPELINE COMPLETED'
+                }
+            }
+        }
+
+
+
+        /*
+        ============================================================
+        POSTGRESQL CLEANUP (WINDOWS)
+        ============================================================
+        */
+
+
+        stage('PostgreSQL Cleanup') {
+
+            agent {
+                label 'windows-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'POSTGRESQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'CLEANUP'
+                    }
+                }
+            }
+
+
+            environment {
+                PIPELINE_TYPE = "POSTGRESQL_WINDOWS_CLEANUP"
+            }
+
+
+            stages {
+
+
+                stage('PostgreSQL Cleanup - Checkout SCM') {
+
+                    steps {
+
+                        checkout scm
+                    }
+                }
+
+
+                stage('PostgreSQL Cleanup - Initialize Logging') {
+
+                    steps {
+
+                        script {
+
+                            initializeLogging(
+                                'postgresql',
+                                'cleanup',
+                                'windows'
+                            )
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Cleanup - Cleanup Information') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'cleanup',
+                                'Cleanup Information'
+                            ) {
+
+                                echo "====================================="
+                                echo "POSTGRESQL WINDOWS CLEANUP PIPELINE"
+                                echo "====================================="
+
+                                echo "Workspace    : ${WORKSPACE}"
+                                echo "Cleanup Mode : ${params.CLEANUP_MODE}"
+                            }
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Cleanup - Validate Cleanup Scripts') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'cleanup',
+                                'Validate Cleanup Scripts'
+                            ) {
+
+                                bat '''
+                                    @echo off
+
+                                    if not exist "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat" (
+                                        echo ERROR: PostgreSQL cleanup pipeline not found
+                                        exit /b 1
+                                    )
+
+                                    if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\stop_postgresql.ps1" (
+                                        echo ERROR: PostgreSQL stop script not found
+                                        exit /b 1
+                                    )
+
+                                    if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\remove_postgresql.ps1" (
+                                        echo ERROR: PostgreSQL removal script not found
+                                        exit /b 1
+                                    )
+
+                                    if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\reset_terraform_state.ps1" (
+                                        echo ERROR: PostgreSQL Terraform reset script not found
+                                        exit /b 1
+                                    )
+
+                                    if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\validate_cleanup.ps1" (
+                                        echo ERROR: PostgreSQL cleanup validation script not found
+                                        exit /b 1
+                                    )
+
+                                    echo PostgreSQL cleanup scripts validated successfully
+                                '''
+                            }
+                        }
+                    }
+                }
+
+
+                stage('PostgreSQL Cleanup - Cleanup PostgreSQL') {
+
+                    steps {
+
+                        script {
+
+                            runTrackedStage(
+                                'postgresql',
+                                'cleanup',
+                                'Cleanup PostgreSQL'
+                            ) {
+
+                                withEnv([
+                                    "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                                ]) {
+
+                                    bat '''
+                                        @echo off
+
+                                        echo.
+                                        echo =====================================
+                                        echo RUNNING POSTGRESQL CLEANUP
+                                        echo =====================================
+                                        echo.
+
+                                        call "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat"
+
+                                        if errorlevel 1 (
+                                            echo.
+                                            echo POSTGRESQL CLEANUP FAILED
+                                            exit /b 1
+                                        )
+
+                                        echo.
+                                        echo POSTGRESQL CLEANUP COMPLETED SUCCESSFULLY
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            post {
+
+                success {
+
+                    echo "POSTGRESQL WINDOWS CLEANUP PIPELINE SUCCESSFUL"
+                }
+
+
+                failure {
+
+                    echo "POSTGRESQL WINDOWS CLEANUP PIPELINE FAILED"
+                }
+
+
+                always {
+
+                    script {
+
+                        finalizeLoggingAndReporting(
+                            'postgresql',
+                            'cleanup',
+                            currentBuild.currentResult
+                        )
+                    }
+
+                    echo "Cleanup Mode: ${params.CLEANUP_MODE}"
+                    echo 'POSTGRESQL CLEANUP PIPELINE COMPLETED'
+                }
+            }
+        }
     }
 
 
@@ -2126,13 +3401,13 @@ pipeline {
 
         success {
 
-            echo "${params.DATABASE} ${params.ACTION} SUCCESSFUL"
+            echo "${params.DATABASE} ${params.ACTION} (${params.OS}) SUCCESSFUL"
         }
 
 
         failure {
 
-            echo "${params.DATABASE} ${params.ACTION} FAILED"
+            echo "${params.DATABASE} ${params.ACTION} (${params.OS}) FAILED"
         }
 
 
