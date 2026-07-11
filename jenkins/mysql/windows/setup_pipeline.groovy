@@ -411,14 +411,21 @@ pipeline {
                     --action setup ^
                     --build-number "${env.BUILD_NUMBER}"
                 """
+
+                bat """
+                    python scripts\\reporting\\generate_history.py ^
+                    --database mysql ^
+                    --action setup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
             }
 
 
-            archiveArtifacts(
-                artifacts: "logs/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/mysql/setup/build_${env.BUILD_NUMBER}/**",
-                fingerprint: true,
-                allowEmptyArchive: true
-            )
+                archiveArtifacts(
+                    artifacts: "logs/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                    fingerprint: true,
+                    allowEmptyArchive: true
+                )
 
             echo 'MYSQL SETUP PIPELINE COMPLETED'
         }
