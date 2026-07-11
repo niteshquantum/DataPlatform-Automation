@@ -107,7 +107,7 @@ resource "null_resource" "start_mysql_windows" {
 
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
- 
+
     command = "powershell -ExecutionPolicy Bypass -File ../../scripts/powershell/mysql/start_mysql.ps1"
   }
 }
@@ -117,20 +117,91 @@ resource "null_resource" "create_mysql_user_windows" {
 
   depends_on = [null_resource.start_mysql_windows]
 
+  triggers = {
+    bootstrap_version = "config-driven-mysql-user-v1"
+    config_sha        = filesha256("../../config/windows/mysql.conf")
+  }
+
   provisioner "local-exec" {
     interpreter = ["PowerShell", "-Command"]
 
     command = <<EOT
 
-Start-Sleep -Seconds 5
+$ConfigFile = "..\..\config\windows\mysql.conf"
 
-& "..\..\databases\mysql\server\bin\mysql.exe" `
+if (!(Test-Path $ConfigFile)) {
+    throw "MySQL config file not found: $ConfigFile"
+}
+
+$Config = @{}
+Get-Content $ConfigFile | ForEach-Object {
+    $Line = $_.Trim()
+    if ($Line -and -not $Line.StartsWith("#") -and $Line.Contains("=")) {
+        $Key, $Value = $Line.Split("=", 2)
+        $Config[$Key.Trim()] = $Value.Trim()
+    }
+}
+
+$MysqlHost = $Config["MYSQL_HOST"]
+$MysqlPort = $Config["MYSQL_PORT"]
+$MysqlUser = $Config["MYSQL_USER"]
+$MysqlPassword = $Config["MYSQL_PASSWORD"]
+
+if (-not $MysqlHost) { throw "MYSQL_HOST not found in mysql.conf" }
+if (-not $MysqlPort) { throw "MYSQL_PORT not found in mysql.conf" }
+if (-not $MysqlUser) { throw "MYSQL_USER not found in mysql.conf" }
+
+$MysqlExe = "..\..\databases\mysql\server\bin\mysql.exe"
+
+if (!(Test-Path $MysqlExe)) {
+    throw "mysql.exe not found: $MysqlExe"
+}
+
+$RootReady = $false
+
+for ($i = 1; $i -le 60; $i++) {
+    & $MysqlExe `
+      --host=$MysqlHost `
+      --port=$MysqlPort `
+      -u root `
+      -e "SELECT 1;" 2>$null
+
+    if ($LASTEXITCODE -eq 0) {
+        $RootReady = $true
+        break
+    }
+
+    Start-Sleep -Seconds 1
+}
+
+if (-not $RootReady) {
+    throw "MySQL root bootstrap account is not available"
+}
+
+$EscapedUser = $MysqlUser.Replace("'", "''")
+$EscapedPassword = ""
+
+if ($MysqlPassword) {
+    $EscapedPassword = $MysqlPassword.Replace("'", "''")
+}
+
+& $MysqlExe `
+  --host=$MysqlHost `
+  --port=$MysqlPort `
   -u root `
-  -e "CREATE USER IF NOT EXISTS 'rootuser'@'localhost' IDENTIFIED BY 'root123';
-      GRANT ALL PRIVILEGES ON *.* TO 'rootuser'@'localhost' WITH GRANT OPTION;
+  -e "CREATE USER IF NOT EXISTS '$EscapedUser'@'%' IDENTIFIED BY '$EscapedPassword';
+      ALTER USER '$EscapedUser'@'%' IDENTIFIED BY '$EscapedPassword';
+      GRANT ALL PRIVILEGES ON *.* TO '$EscapedUser'@'%' WITH GRANT OPTION;
+      CREATE USER IF NOT EXISTS '$EscapedUser'@'localhost' IDENTIFIED BY '$EscapedPassword';
+      ALTER USER '$EscapedUser'@'localhost' IDENTIFIED BY '$EscapedPassword';
+      GRANT ALL PRIVILEGES ON *.* TO '$EscapedUser'@'localhost' WITH GRANT OPTION;
       FLUSH PRIVILEGES;"
 
-Write-Host "rootuser created successfully"
+if ($LASTEXITCODE -ne 0) {
+    throw "MySQL repository user creation failed"
+}
+
+Write-Host "MySQL repository user created successfully"
 
 EOT
   }
