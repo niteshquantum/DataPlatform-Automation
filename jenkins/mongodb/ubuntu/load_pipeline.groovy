@@ -50,6 +50,18 @@ pipeline {
                 sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
             }
         }
+
+        stage('Validate Collections') {
+            steps {
+                sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
+            }
+        }
+
+        stage('Validate Indexes') {
+            steps {
+                sh './scripts/bash/mongodb/setup/create_indexes.sh'
+            }
+        }
     }
 
     post {

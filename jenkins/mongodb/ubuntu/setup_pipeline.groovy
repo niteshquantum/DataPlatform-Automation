@@ -61,18 +61,6 @@ pipeline {
                 sh './scripts/bash/mongodb/setup/validate_mongodb.sh'
             }
         }
-
-        stage('Validate Collections') {
-            steps {
-                sh 'python3 scripts/python/mongodb/load/validate_loaded_data.py'
-            }
-        }
-
-        stage('Validate Indexes') {
-            steps {
-                sh 'python3 scripts/python/mongodb/setup/create_indexes.py'
-            }
-        }
     }
 
     post {
