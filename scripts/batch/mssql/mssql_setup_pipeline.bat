@@ -21,13 +21,13 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql.bat"
 if errorlevel 1 exit /b 1
 
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
+if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\create_database.bat"
-if errorlevel 1 exit /b 1
-
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\run_liquibase.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_environment.bat"
