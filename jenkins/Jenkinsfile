@@ -273,30 +273,30 @@ pipeline {
                     'mysql',
                     'setup',
                     'ubuntu'
-                ) {
+                )  {
 
-                    sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                    '''
+    sh '''
+        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+    '''
 
-                    sh './scripts/bash/common/validate_python_runtime.sh'
+    sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
 
-                    sh './scripts/bash/common/validate_java_runtime.sh'
+    sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
 
-                    sh './scripts/bash/mysql/setup/install_tools.sh'
+    sh 'bash ./scripts/bash/mysql/setup/install_tools.sh'
 
-                    sh './scripts/bash/mysql/setup/install_mysql.sh'
+    sh 'bash ./scripts/bash/mysql/setup/install_mysql.sh'
 
-                    sh './scripts/bash/mysql/setup/deploy_mysql.sh'
+    sh 'bash ./scripts/bash/mysql/setup/deploy_mysql.sh'
 
-                    sh './scripts/bash/mysql/setup/start_mysql.sh'
+    sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
 
-                    sh './scripts/bash/mysql/setup/create_database.sh'
+    sh 'bash ./scripts/bash/mysql/setup/create_database.sh'
 
-                    sh './scripts/bash/mysql/setup/configure_global_mysql.sh'
+    sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
 
-                    sh './scripts/bash/mysql/setup/validate_environment.sh'
-                }
+    sh 'bash ./scripts/bash/mysql/setup/validate_environment.sh'
+}
             }
             }
         }
