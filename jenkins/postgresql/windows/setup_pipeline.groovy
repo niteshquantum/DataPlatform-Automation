@@ -114,12 +114,6 @@ pipeline {
             }
         }
 
-        stage('Run Liquibase') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat'
-            }
-        }
-
         stage('Configure Global PSQL') {
 
             when {
