@@ -17,7 +17,7 @@ MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 export DEBIAN_FRONTEND=noninteractive
 
 sudo apt-get update
-sudo apt-get install -y curl gnupg2 lsb-release bc
+sudo apt-get install -y curl lsb-release bc
 
 # 1. Install SQL Server Engine if not present
 if ! dpkg -l mssql-server 2>/dev/null | grep -q '^ii'
@@ -25,10 +25,10 @@ then
     echo "Writing Microsoft Repository Key Inline..."
     sudo mkdir -p /usr/share/keyrings
 
-    # Write the official Microsoft OpenPGP key directly to prevent curl/network failures
-    sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg << 'EOF'
+    # Write the key directly as an ASCII armored text file to bypass any local gpg binary bugs
+    sudo tee /usr/share/keyrings/microsoft-prod.asc > /dev/null << 'EOF'
 -----BEGIN PGP PUBLIC KEY BLOCK-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
 mQENBFYx9YwBCADL696ZepvSSeT09U8b3y+o4uEfe6F4mU3Z9oR70Gv3Zis8SbaA
 I1HOfN/b+OshCInS4R3V4I8uWb78oM2/y8n1l1k4m09X+9wFfH9WqT5c+N7L8S4n
@@ -59,8 +59,9 @@ EOF
         REPO_VERSION="22.04"
     fi
 
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://microsoft.com{REPO_VERSION}/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://microsoft.com{REPO_VERSION}/mssql-server-2022 jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
+    # Reference the raw text file directly using signed-by
+    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com{REPO_VERSION}/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com{REPO_VERSION}/mssql-server-2022 jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
 
     sudo apt-get update
     
