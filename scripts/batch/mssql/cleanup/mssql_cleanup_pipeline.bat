@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo =====================================
-echo POSTGRESQL CLEANUP PIPELINE
+echo MSSQL CLEANUP PIPELINE
 echo =====================================
 echo.
 
@@ -47,13 +47,17 @@ REM =====================================
 REM CLEANUP SCRIPT PATHS
 REM =====================================
 
-set "STOP_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\stop_postgresql.bat"
+set "STOP_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\stop_mssql.bat"
 
-set "REMOVE_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\remove_postgresql.bat"
+set "REMOVE_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\remove_mssql.bat"
 
-set "RESET_TERRAFORM_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\reset_terraform_state.bat"
+set "RESET_TERRAFORM_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\reset_terraform_state.bat"
 
-set "VALIDATE_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\validate_cleanup.bat"
+set "XML_CLEANUP_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\cleanup_mssql_xml.bat"
+
+set "LOAD_ARTIFACTS_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\cleanup_mssql_load_artifacts.bat"
+
+set "VALIDATE_SCRIPT=%ROOT%\scripts\batch\mssql\cleanup\validate_cleanup.bat"
 
 REM =====================================
 REM VALIDATE CLEANUP SCRIPTS
@@ -82,21 +86,33 @@ if not exist "%RESET_TERRAFORM_SCRIPT%" (
     exit /b 1
 )
 
+if not exist "%XML_CLEANUP_SCRIPT%" (
+    echo ERROR: MSSQL XML cleanup script not found:
+    echo %XML_CLEANUP_SCRIPT%
+    exit /b 1
+)
+
+if not exist "%LOAD_ARTIFACTS_SCRIPT%" (
+    echo ERROR: MSSQL load artifacts cleanup script not found:
+    echo %LOAD_ARTIFACTS_SCRIPT%
+    exit /b 1
+)
+
 if not exist "%VALIDATE_SCRIPT%" (
     echo ERROR: Validation script not found:
     echo %VALIDATE_SCRIPT%
     exit /b 1
 )
 
-echo All PostgreSQL cleanup scripts found successfully.
+echo All MSSQL cleanup scripts found successfully.
 echo.
 
 REM =====================================
-REM STEP 1 - STOP POSTGRESQL
+REM STEP 1 - STOP MSSQL
 REM =====================================
 
 echo =====================================
-echo STEP 1 - STOP POSTGRESQL
+echo STEP 1 - STOP MSSQL
 echo =====================================
 echo.
 
@@ -104,33 +120,33 @@ call "%STOP_SCRIPT%"
 
 if errorlevel 1 (
     echo.
-    echo ERROR: PostgreSQL stop stage failed.
+    echo ERROR: MSSQL stop stage failed.
     exit /b 1
 )
 
 echo.
-echo PostgreSQL stop stage completed successfully.
+echo MSSQL stop stage completed successfully.
 echo.
 
 REM =====================================
-REM STEP 2 - REMOVE POSTGRESQL
+REM STEP 2 - REMOVE MSSQL
 REM =====================================
 
 echo =====================================
-echo STEP 2 - REMOVE POSTGRESQL DEPLOYMENT
+echo STEP 2 - REMOVE MSSQL DEPLOYMENT
 echo =====================================
 echo.
 
-call "%REMOVE_SCRIPT%" "%CLEANUP_MODE%"
+call "%REMOVE_SCRIPT%"
 
 if errorlevel 1 (
     echo.
-    echo ERROR: PostgreSQL removal stage failed.
+    echo ERROR: MSSQL removal stage failed.
     exit /b 1
 )
 
 echo.
-echo PostgreSQL removal stage completed successfully.
+echo MSSQL removal stage completed successfully.
 echo.
 
 REM =====================================
@@ -146,33 +162,75 @@ call "%RESET_TERRAFORM_SCRIPT%"
 
 if errorlevel 1 (
     echo.
-    echo ERROR: PostgreSQL Terraform reset stage failed.
+    echo ERROR: MSSQL Terraform reset stage failed.
     exit /b 1
 )
 
 echo.
-echo PostgreSQL Terraform reset stage completed successfully.
+echo MSSQL Terraform reset stage completed successfully.
 echo.
 
 REM =====================================
-REM STEP 4 - VALIDATE CLEANUP
+REM STEP 4 - CLEANUP LIQUIBASE XML
 REM =====================================
 
 echo =====================================
-echo STEP 4 - VALIDATE CLEANUP
+echo STEP 4 - CLEANUP LIQUIBASE XML
 echo =====================================
 echo.
 
-call "%VALIDATE_SCRIPT%" "%CLEANUP_MODE%"
+call "%XML_CLEANUP_SCRIPT%"
 
 if errorlevel 1 (
     echo.
-    echo ERROR: PostgreSQL cleanup validation stage failed.
+    echo ERROR: MSSQL Liquibase XML cleanup stage failed.
     exit /b 1
 )
 
 echo.
-echo PostgreSQL cleanup validation completed successfully.
+echo MSSQL Liquibase XML cleanup completed successfully.
+echo.
+
+REM =====================================
+REM STEP 5 - CLEANUP LOAD ARTIFACTS
+REM =====================================
+
+echo =====================================
+echo STEP 5 - CLEANUP LOAD ARTIFACTS
+echo =====================================
+echo.
+
+call "%LOAD_ARTIFACTS_SCRIPT%"
+
+if errorlevel 1 (
+    echo.
+    echo ERROR: MSSQL load artifacts cleanup stage failed.
+    exit /b 1
+)
+
+echo.
+echo MSSQL load artifacts cleanup completed successfully.
+echo.
+
+REM =====================================
+REM STEP 6 - VALIDATE CLEANUP
+REM =====================================
+
+echo =====================================
+echo STEP 6 - VALIDATE CLEANUP
+echo =====================================
+echo.
+
+call "%VALIDATE_SCRIPT%"
+
+if errorlevel 1 (
+    echo.
+    echo ERROR: MSSQL cleanup validation stage failed.
+    exit /b 1
+)
+
+echo.
+echo MSSQL cleanup validation completed successfully.
 echo.
 
 REM =====================================
@@ -181,7 +239,7 @@ REM =====================================
 
 echo.
 echo =====================================
-echo POSTGRESQL CLEANUP PIPELINE COMPLETED
+echo MSSQL CLEANUP PIPELINE COMPLETED
 echo =====================================
 echo.
 
