@@ -14,27 +14,33 @@ echo
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
 # 2. Install Python Requirements
-bash "$PROJECT_ROOT/scripts/bash/mssql/load/install_python_requirements.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_python_requirements.sh"
 
 # 3. Validate Python Requirements
-bash "$PROJECT_ROOT/scripts/bash/mssql/load/validate_python_requirements.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_python_requirements.sh"
 
-# 4. Install Tools
-bash "$PROJECT_ROOT/scripts/bash/mssql/load/install_tools.sh"
+# 4. Validate Java Runtime
+bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 
-# 5. Validate Tools
-bash "$PROJECT_ROOT/scripts/bash/mssql/load/validate_tools.sh"
+# 5. Install Common Tools
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_tools.sh"
 
-# 6. Validate SQL Server
-bash "$PROJECT_ROOT/scripts/bash/mssql/load/validate_mssql.sh"
+# 6. Validate Tools
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_tools.sh"
 
-# 7. Download Dataset
+# 7. Start MSSQL Server
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/start_mssql.sh"
+
+# 8. Validate MSSQL Server
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_mssql.sh"
+
+# 9. Download Dataset
 bash "$PROJECT_ROOT/scripts/bash/common/download_dataset.sh"
 
-# 8. Load Data
+# 10. Load Data
 bash "$PROJECT_ROOT/scripts/bash/mssql/load/load_data.sh"
 
-# 9. Validate Loaded Data
+# 11. Validate Loaded Data
 bash "$PROJECT_ROOT/scripts/bash/mssql/load/validate_loaded_data.sh"
 
 echo
