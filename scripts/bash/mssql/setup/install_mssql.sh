@@ -14,14 +14,17 @@ CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mssql.conf"
 MSSQL_PASSWORD=$(grep "^MSSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
 MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 
-# Ensure prerequisite tools are available
+# Prevent any interactive prompt hanging during installation
+export DEBIAN_FRONTEND=noninteractive
+
 sudo apt-get update
-sudo apt-get install -y curl gnupg2 lsb-release
+sudo apt-get install -y curl gnupg2 lsb-release bc
 
 # 1. Install SQL Server Engine if not present
 if ! dpkg -l mssql-server 2>/dev/null | grep -q '^ii'
 then
     echo "Adding Microsoft Repository Keys..."
+    sudo mkdir -p /usr/share/keyrings
     curl -fsSL https://microsoft.com | sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg
 
     UBUNTU_VERSION=$(lsb_release -rs)
@@ -32,7 +35,7 @@ then
     sudo apt-get update
     
     echo "Installing mssql-server package..."
-    sudo apt-get install -y mssql-server
+    sudo -E apt-get install -y mssql-server
 
     echo "Configuring SQL Server Engine Instance..."
     sudo MSSQL_PID="$MSSQL_PID" \

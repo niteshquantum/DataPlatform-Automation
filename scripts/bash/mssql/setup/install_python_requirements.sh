@@ -12,7 +12,15 @@ echo
 
 python3 --version
 
-python3 -m pip install --break-system-packages -r "$PROJECT_ROOT/requirements/mssql.txt"
+# Detect Python version to append safely the system-break flag on newer OS versions
+PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+
+PIP_FLAGS=""
+if (( $(echo "$PYTHON_VERSION >= 3.11" | bc -l) )); then
+    PIP_FLAGS="--break-system-packages"
+fi
+
+python3 -m pip install $PIP_FLAGS -r "$PROJECT_ROOT/requirements/mssql.txt"
 
 echo
 echo "====================================="
