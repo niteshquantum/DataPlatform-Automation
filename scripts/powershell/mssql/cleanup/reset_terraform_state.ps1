@@ -29,11 +29,11 @@ Write-Host ""
 # =====================================
 
 if (!(Test-Path -LiteralPath $TerraformExe)) {
-    throw "Terraform executable not found: $TerraformExe"
+    throw "Terraform executable not found: ${TerraformExe}"
 }
 
 if (!(Test-Path -LiteralPath $TerraformDir)) {
-    throw "MSSQL Terraform directory not found: $TerraformDir"
+    throw "MSSQL Terraform directory not found: ${TerraformDir}"
 }
 
 # =====================================
