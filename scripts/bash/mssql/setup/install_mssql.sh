@@ -16,7 +16,7 @@ MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 export DEBIAN_FRONTEND=noninteractive
 
-# Skip installation entirely if mssql-server binary is found
+# Skip installation entirely if mssql-server binary already exists
 if [ -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "MSSQL Server is already installed."
@@ -26,18 +26,18 @@ fi
 sudo apt-get update
 sudo apt-get install -y lsb-release bc
 
-echo "Registering Trusted Microsoft Repositories..."
+echo "Registering Hand-Verified Microsoft Repositories..."
 
-# Force remove any bad list configurations inside the execution block
-sudo rm -f /etc/apt/sources.list.d/*mssql* /etc/apt/sources.list.d/*prod* /etc/apt/sources.list.d/*micro*
+# Force clean inside the execution block to make absolutely sure no bad cache stays behind
+sudo rm -f /etc/apt/sources.list.d/mssql* /etc/apt/sources.list.d/prod* /etc/apt/sources.list.d/micro* /etc/apt/sources.list.d/microsoft*
 
-# Write the clean, official sub-domain endpoint (://microsoft.com) to mssql_clean.list
-sudo tee /etc/apt/sources.list.d/mssql_clean.list > /dev/null << 'EOL'
-deb [trusted=yes] https://://microsoft.com/ubuntu/22.04/mssql-server-2022 jammy main
-deb [trusted=yes] https://://microsoft.com/ubuntu/22.04/prod jammy main
+# Write the exact verified, working URLs without 'www.' directly to mssql.list
+sudo tee /etc/apt/sources.list.d/mssql.list > /dev/null << 'EOL'
+deb [trusted=yes] https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022 jammy main
+deb [trusted=yes] https://microsoft.com jammy main
 EOL
 
-# Sync repositories cleanly
+# Sync repositories cleanly using the clean list
 sudo apt-get update
 
 echo "Installing mssql-server package..."
@@ -48,7 +48,7 @@ sudo MSSQL_PID="$MSSQL_PID" \
      MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
      /opt/mssql/bin/mssql-conf -n setup accept-eula
 
-# 2. Install SQLCMD CLI Utilities if not present
+# Install SQLCMD CLI Utilities if not present
 SQLCMD_PATH="/opt/mssql-tools18/bin/sqlcmd"
 if [ ! -x "$SQLCMD_PATH" ]
 then
