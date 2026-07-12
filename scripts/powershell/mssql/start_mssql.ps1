@@ -6,57 +6,115 @@ Write-Host "STARTING MSSQL SERVER"
 Write-Host "====================================="
 Write-Host ""
 
-$ServiceName = "MSSQLSERVER"
+# =====================================
+# PROJECT ROOT
+# =====================================
 
-$Port = 1433
+$PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
-$Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+# =====================================
+# LOAD CONFIG
+# =====================================
 
-if ($null -eq $Service) {
+. "$PROJECT_ROOT\scripts\powershell\common\load_config.ps1"
 
-    throw "SQL Server service '$ServiceName' not found."
+$Config = Load-Config "$PROJECT_ROOT\config\windows\mssql.conf"
+
+$Instance = $Config["MSSQL_INSTANCE"]
+
+if ([string]::IsNullOrWhiteSpace($Instance)) {
+    throw "MSSQL_INSTANCE is missing in config/windows/mssql.conf"
+}
+
+# =====================================
+# SERVICE NAME
+# =====================================
+
+if ($Instance -eq "MSSQLSERVER") {
+    $ServiceName = "MSSQLSERVER"
+}
+else {
+    $ServiceName = "MSSQL`$$Instance"
+}
+
+Write-Host "Instance     : $Instance"
+Write-Host "Service Name : $ServiceName"
+Write-Host ""
+
+# =====================================
+# VERIFY SERVICE EXISTS
+# =====================================
+
+$Service = Get-Service `
+    -Name $ServiceName `
+    -ErrorAction SilentlyContinue
+
+if (!$Service) {
+
+    throw "SQL Server service '$ServiceName' was not found."
 
 }
 
-if ($Service.Status -ne "Running") {
+# =====================================
+# START SERVICE
+# =====================================
 
-    Write-Host "Starting SQL Server Service..."
+if ($Service.Status -eq "Running") {
 
-    Start-Service $ServiceName
-
-    $Service.WaitForStatus("Running","00:00:30")
+    Write-Host "[OK] SQL Server service is already running."
 
 }
+else {
 
-$Started = $false
+    Write-Host "Starting SQL Server service..."
+    Write-Host ""
 
-for ($i=1; $i -le 30; $i++) {
+    Start-Service -Name $ServiceName
 
-    $PortCheck = netstat -ano | Select-String ":$Port"
+    $Timeout = 60
+    $Elapsed = 0
 
-    if ($PortCheck) {
+    do {
 
-        $Started = $true
-        break
+        Start-Sleep -Seconds 2
+
+        $Service = Get-Service -Name $ServiceName
+
+        $Elapsed += 2
+
+    } until (
+        $Service.Status -eq "Running" -or
+        $Elapsed -ge $Timeout
+    )
+
+    if ($Service.Status -ne "Running") {
+
+        throw "SQL Server service failed to start within $Timeout seconds."
 
     }
 
-    Start-Sleep -Seconds 1
+    Write-Host "[OK] SQL Server service started successfully."
 
 }
 
-if (-not $Started) {
+# =====================================
+# FINAL STATUS
+# =====================================
 
-    throw "SQL Server failed to start on port $Port"
-
-}
+$Service = Get-Service -Name $ServiceName
 
 Write-Host ""
 Write-Host "====================================="
-Write-Host "SQL SERVER STARTED SUCCESSFULLY"
-Write-Host "Service : $ServiceName"
-Write-Host "Port    : $Port"
+Write-Host "MSSQL SERVER STATUS"
 Write-Host "====================================="
+Write-Host ""
+
+Write-Host ("Service Name : {0}" -f $Service.Name)
+Write-Host ("Status       : {0}" -f $Service.Status)
+Write-Host ("Start Type   : {0}" -f $Service.StartType)
+
+Write-Host ""
+Write-Host "[SUCCESS] MSSQL Server is running."
 Write-Host ""
 
 exit 0

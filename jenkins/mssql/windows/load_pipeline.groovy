@@ -1,6 +1,5 @@
 pipeline {
 
- 
     agent any
 
     stages {
@@ -13,25 +12,19 @@ pipeline {
 
         stage('Validate Python Requirements') {
             steps {
-                bat 'scripts\\batch\\validate_python_requirements.bat'
+                bat 'scripts\\batch\\mssql\\setup\\validate_python_requirements.bat'
             }
         }
 
-        stage('Validate Tools') {
+        stage('Start SQL Server') {
             steps {
-                bat 'scripts\\batch\\common\\validate_tools.bat'
+                bat 'scripts\\batch\\mssql\\setup\\start_mssql.bat'
             }
         }
 
-        stage('Validate MSSQL') {
+        stage('Validate SQL Server') {
             steps {
-                bat 'scripts\\batch\\mssql\\validate_mssql.bat'
-            }
-        }
-
-        stage('Validate CSV') {
-            steps {
-                bat 'scripts\\batch\\mssql\\validate_csv.bat'
+                bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
             }
         }
 
@@ -40,18 +33,19 @@ pipeline {
                 bat 'scripts\\batch\\common\\download_dataset.bat'
             }
         }
-        
+
         stage('Load Data') {
             steps {
-                bat 'scripts\\batch\\mssql\\load_data.bat'
+                bat 'scripts\\batch\\mssql\\load\\load_data.bat'
             }
         }
 
         stage('Validate Loaded Data') {
             steps {
-                bat 'scripts\\batch\\mssql\\validate_loaded_data.bat'
+                bat 'scripts\\batch\\mssql\\load\\validate_loaded_data.bat'
             }
         }
+
     }
 
     post {
@@ -67,7 +61,7 @@ pipeline {
         always {
             echo 'MSSQL LOAD PIPELINE COMPLETED'
         }
+
     }
-   
 
 }
