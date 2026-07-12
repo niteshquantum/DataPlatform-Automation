@@ -384,23 +384,23 @@ pipeline {
                         'ubuntu'
                     ) {
 
-                        sh '''
-                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
-
-                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
-
-                        sh 'bash ./scripts/bash/mysql/setup/install_python_requirements.sh'
-
-                        sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
-
-                        sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
-
-                        sh 'bash ./scripts/bash/mysql/setup/validate_mysql.sh'
-
-                        sh 'bash ./scripts/bash/mysql/load/load_data.sh'
-
-                        sh 'bash ./scripts/bash/mysql/load/validate_loaded_data.sh'
+                                            sh '''
+                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                    '''
+                    
+                    sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+                    
+                    sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
+                    
+                    sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
+                    
+                    sh 'bash ./scripts/bash/mysql/setup/validate_mysql.sh'
+                    
+                    sh 'bash ./scripts/bash/common/download_dataset.sh'
+                    
+                    sh 'bash ./scripts/bash/mysql/load/load_data.sh'
+                    
+                    sh 'bash ./scripts/bash/mysql/load/validate_loaded_data.sh'
                     }
                 }
             }
