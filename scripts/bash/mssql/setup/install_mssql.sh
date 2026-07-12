@@ -25,7 +25,11 @@ if ! dpkg -l mssql-server 2>/dev/null | grep -q '^ii'
 then
     echo "Adding Microsoft Repository Keys..."
     sudo mkdir -p /usr/share/keyrings
-    curl -fsSL https://microsoft.com | sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg
+    
+    # Secure download to temp file first to prevent silent pipe truncation
+    curl -fsSL "https://packages.microsoft.com/keys/microsoft.asc" -o /tmp/microsoft.asc
+    sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg /tmp/microsoft.asc
+    rm -f /tmp/microsoft.asc
 
     UBUNTU_VERSION=$(lsb_release -rs)
     echo "Registering Microsoft Ubuntu ${UBUNTU_VERSION} Repository..."
