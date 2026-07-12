@@ -1,2 +1,8 @@
-<?xml version='1.0' encoding='utf-8'?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"><include file="001_create_brand_table.xml" relativeToChangelogFile="true" /><include file="002_create_product_master.xml" relativeToChangelogFile="true" /><include file="003_create_product_inventory.xml" relativeToChangelogFile="true" /><include file="004_create_category_table.xml" relativeToChangelogFile="true" /><include file="005_create_brand_table.xml" relativeToChangelogFile="true" /><include file="006_create_product_master.xml" relativeToChangelogFile="true" /><include file="007_create_product_inventory.xml" relativeToChangelogFile="true" /><include file="008_create_category_table.xml" relativeToChangelogFile="true" /><include file="009_create_brand_table.xml" relativeToChangelogFile="true" /><include file="010_create_product_master.xml" relativeToChangelogFile="true" /><include file="011_create_product_inventory.xml" relativeToChangelogFile="true" /><include file="012_create_category_table.xml" relativeToChangelogFile="true" /></databaseChangeLog>
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+</databaseChangeLog>

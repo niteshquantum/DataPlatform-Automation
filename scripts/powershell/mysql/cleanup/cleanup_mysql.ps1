@@ -7,6 +7,7 @@ $dataCleanupScript = "$PSScriptRoot\cleanup_mysql_data.ps1"
 $deploymentScript  = "$PSScriptRoot\remove_mysql_deployment.ps1"
 $stateResetScript  = "$PSScriptRoot\reset_mysql_terraform_state.ps1"
 $validationScript  = "$PSScriptRoot\validate_cleanup.ps1"
+$xmlCleanupScript = "$PSScriptRoot\cleanup_mysql_xml.ps1"
 
 Write-Host ""
 Write-Host "====================================="
@@ -47,7 +48,8 @@ $requiredScripts = @(
     $dataCleanupScript,
     $deploymentScript,
     $stateResetScript,
-    $validationScript
+    $validationScript,
+    $xmlCleanupScript
 )
 
 foreach ($script in $requiredScripts) {
@@ -122,7 +124,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # =====================================
-# STEP 5 - VALIDATE CLEANUP
+# STEP 5 - CLEANUP LIQUIBASE XML
+# =====================================
+
+Write-Host ""
+Write-Host "====================================="
+Write-Host "STEP 5 - CLEANUP LIQUIBASE XML"
+Write-Host "====================================="
+Write-Host ""
+
+& $xmlCleanupScript
+
+if ($LASTEXITCODE -ne 0) {
+    throw "MySQL Liquibase XML cleanup failed"
+}
+
+# =====================================
+# STEP 6 - VALIDATE CLEANUP
 # =====================================
 
 Write-Host ""
