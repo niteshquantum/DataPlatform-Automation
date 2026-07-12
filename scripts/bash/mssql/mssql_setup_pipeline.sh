@@ -1,29 +1,35 @@
 #!/bin/bash
 
+# Ensure script stops on unexpected errors
 set -e
 
-source "$(dirname "$0")/../common/set_project_root.sh"
+# Resolve project root dynamically
+source "$(dirname "$0")/../../common/set_project_root.sh"
 
+echo "====================================="
+echo "STARTING LOCAL MSSQL SETUP PIPELINE"
+echo "====================================="
+
+# 1. Validate Python Runtime
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
+# 2. Install Python Requirements
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_python_requirements.sh"
+
+# 3. Validate Python Requirements
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_python_requirements.sh"
+
+# 4. Validate Java Runtime
 bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_terraform.sh"
+# 5. Install Tools
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_tools.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"
+echo
+echo "====================================="
+echo "INITIAL SETUP SCOPE SUCCESSFUL"
+echo "====================================="
+echo "Stopping here before 'Deploy SQL Server' stage."
+echo "====================================="
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_mssql_driver.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/validate_tools.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/install_mssql.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/install_sqlcmd.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/start_mssql.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/create_database.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/run_liquibase.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/validate_environment.sh"
+exit 0
