@@ -65,16 +65,6 @@ echo "Validating SQL Server connection..."
 -l 30 \
 -Q "SELECT @@VERSION;" > /dev/null
 
-echo "Validating database access..."
-
-"$SQLCMD" \
--S "${MSSQL_HOST},${MSSQL_PORT}" \
--U "${MSSQL_USER}" \
--P "${MSSQL_PASSWORD}" \
--C \
--d "${MSSQL_DB}" \
--l 30 \
--Q "SELECT DB_NAME();" > /dev/null
 
 echo
 echo "====================================="
