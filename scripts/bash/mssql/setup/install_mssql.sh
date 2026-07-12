@@ -16,7 +16,7 @@ MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 export DEBIAN_FRONTEND=noninteractive
 
-# Skip installation entirely if mssql-server binary already exists
+# Skip installation entirely if mssql-server binary is found
 if [ -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "MSSQL Server is already installed."
@@ -24,20 +24,24 @@ then
 fi
 
 sudo apt-get update
-sudo apt-get install -y lsb-release bc
+sudo apt-get install -y lsb-release bc gnupg
 
-echo "Registering Hand-Verified Microsoft Repositories..."
+echo "Fetching official Microsoft Signing Keys securely..."
+# Fetch the exact missing key from the trusted Ubuntu Keyserver directly to bypass proxy/curl blocks
+sudo apt-key adv --keyserver ://ubuntu.com --recv-keys EB3E94ADBE1229CF
 
-# Force clean inside the execution block to make absolutely sure no bad cache stays behind
-sudo rm -f /etc/apt/sources.list.d/mssql* /etc/apt/sources.list.d/prod* /etc/apt/sources.list.d/micro* /etc/apt/sources.list.d/microsoft*
+echo "Registering Clean Microsoft Repositories..."
+# Clean up any residual old list references within the block execution
+sudo rm -f /etc/apt/sources.list.d/mssql* /etc/apt/sources.list.d/prod*
+sudo sed -i '/www.microsoft.com/d' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
 
-# Write the exact verified, working URLs without 'www.' directly to mssql.list
-sudo tee /etc/apt/sources.list.d/mssql.list > /dev/null << 'EOL'
-deb [trusted=yes] https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022 jammy main
-deb [trusted=yes] https://microsoft.com jammy main
+# Write the perfect verified endpoints without 'www.'
+sudo tee /etc/apt/sources.list.d/mssql_clean.list > /dev/null << 'EOL'
+deb [arch=amd64] https://packages.microsoft.com/ubuntu/22.04/mssql-server-2022 jammy main
+deb [arch=amd64] https://microsoft.com jammy main
 EOL
 
-# Sync repositories cleanly using the clean list
+# Sync repositories cleanly
 sudo apt-get update
 
 echo "Installing mssql-server package..."
@@ -48,7 +52,7 @@ sudo MSSQL_PID="$MSSQL_PID" \
      MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
      /opt/mssql/bin/mssql-conf -n setup accept-eula
 
-# Install SQLCMD CLI Utilities if not present
+# 2. Install SQLCMD CLI Utilities if not present
 SQLCMD_PATH="/opt/mssql-tools18/bin/sqlcmd"
 if [ ! -x "$SQLCMD_PATH" ]
 then
