@@ -25,7 +25,7 @@ then
     echo "Writing Microsoft Repository Key Inline..."
     sudo mkdir -p /usr/share/keyrings
 
-    # Write the key directly as an ASCII armored text file to bypass any local gpg binary bugs
+    # Write the key directly as an ASCII armored text file
     sudo tee /usr/share/keyrings/microsoft-prod.asc > /dev/null << 'EOF'
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1
@@ -50,18 +50,11 @@ U7PzU7PzUrMvLw3h0Gv9YqT5c+N7L8S4nTf9YqT5c+N7L8S4nTf9YqT5c+N7L8S
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
 
-    UBUNTU_VERSION=$(lsb_release -rs)
-    echo "Registering Microsoft Repositories for Ubuntu ${UBUNTU_VERSION}..."
+    echo "Registering Microsoft Repositories for Ubuntu..."
     
-    # Force 22.04 repo fallback if running on 24.04, as officially mandated by Microsoft for MSSQL Server
-    REPO_VERSION="$UBUNTU_VERSION"
-    if [ "$UBUNTU_VERSION" = "24.04" ]; then
-        REPO_VERSION="22.04"
-    fi
-
-    # Reference the raw text file directly using signed-by
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com{REPO_VERSION}/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com{REPO_VERSION}/mssql-server-2022 jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
+    # Clean, direct URLs without any variables to guarantee absolute execution stability inside Terraform
+    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
 
     sudo apt-get update
     
