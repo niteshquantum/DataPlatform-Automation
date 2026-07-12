@@ -8,6 +8,7 @@ $deploymentScript  = "$PSScriptRoot\remove_mysql_deployment.ps1"
 $stateResetScript  = "$PSScriptRoot\reset_mysql_terraform_state.ps1"
 $validationScript  = "$PSScriptRoot\validate_cleanup.ps1"
 $xmlCleanupScript = "$PSScriptRoot\cleanup_mysql_xml.ps1"
+$loadArtifactsCleanupScript = "$PSScriptRoot\cleanup_mysql_load_artifacts.ps1"
 
 Write-Host ""
 Write-Host "====================================="
@@ -49,7 +50,8 @@ $requiredScripts = @(
     $deploymentScript,
     $stateResetScript,
     $validationScript,
-    $xmlCleanupScript
+    $xmlCleanupScript,
+    $loadArtifactsCleanupScript
 )
 
 foreach ($script in $requiredScripts) {
@@ -140,12 +142,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # =====================================
-# STEP 6 - VALIDATE CLEANUP
+# STEP 6 - CLEANUP LOAD ARTIFACTS
 # =====================================
 
 Write-Host ""
 Write-Host "====================================="
-Write-Host "STEP 5 - VALIDATE MYSQL CLEANUP"
+Write-Host "STEP 6 - CLEANUP LOAD ARTIFACTS"
+Write-Host "====================================="
+Write-Host ""
+
+& $loadArtifactsCleanupScript
+
+if ($LASTEXITCODE -ne 0) {
+    throw "MySQL load artifacts cleanup failed"
+}
+# =====================================
+# STEP 7 - VALIDATE CLEANUP
+# =====================================
+
+Write-Host ""
+Write-Host "====================================="
+Write-Host "STEP 7 - VALIDATE MYSQL CLEANUP"
 Write-Host "====================================="
 Write-Host ""
 
