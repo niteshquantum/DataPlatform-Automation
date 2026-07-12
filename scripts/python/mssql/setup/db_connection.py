@@ -32,7 +32,7 @@ def get_connection(database=None):
     target_database = database or config["MSSQL_DB"]
 
     connection_string = (
-        "DRIVER={ODBC Driver 17 for SQL Server};"
+        f"DRIVER={{{config['MSSQL_ODBC_DRIVER']}}};"
         f"SERVER={config['MSSQL_HOST']},{config['MSSQL_PORT']};"
         f"DATABASE={target_database};"
         f"UID={config['MSSQL_USER']};"
