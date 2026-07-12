@@ -14,6 +14,7 @@ $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..\..").Path
 
 $MongoHome = Join-Path $PROJECT_ROOT "databases\mongodb"
 $MongodExe = Join-Path $MongoHome "server\bin\mongod.exe"
+$MongoshExe = Join-Path $MongoHome "mongosh\bin\mongosh.exe"
 
 $ServiceName = "MongoDBAutomation"
 
@@ -67,6 +68,10 @@ if (
 
 $ExpectedMongodPath = [System.IO.Path]::GetFullPath(
     $MongodExe
+)
+
+$ExpectedMongoshPath = [System.IO.Path]::GetFullPath(
+    $MongoshExe
 )
 
 # =====================================
@@ -228,6 +233,96 @@ if (!(Test-Path -LiteralPath $MongoHome)) {
 }
 
 # =====================================
+# STOP PROJECT-MANAGED MONGOSH PROCESS
+# =====================================
+
+Write-Host "Checking project-managed mongosh processes..."
+Write-Host ""
+
+$MongoshProcesses = Get-CimInstance Win32_Process `
+    -Filter "Name='mongosh.exe'" `
+    -ErrorAction SilentlyContinue
+
+$ProjectMongoshFound = $false
+
+foreach ($Process in $MongoshProcesses) {
+
+    if ($Process.ExecutablePath) {
+
+        $ActualProcessPath = [System.IO.Path]::GetFullPath(
+            $Process.ExecutablePath
+        )
+
+        if (
+            $ActualProcessPath.Equals(
+                $ExpectedMongoshPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+
+            $ProjectMongoshFound = $true
+
+            Write-Host "Stopping project-managed mongosh process..."
+            Write-Host "PID  : $($Process.ProcessId)"
+            Write-Host "Path : $ActualProcessPath"
+
+            Stop-Process `
+                -Id $Process.ProcessId `
+                -Force `
+                -ErrorAction Stop
+
+            Write-Host "Project-managed mongosh process stopped."
+            Write-Host ""
+        }
+    }
+}
+
+if (-not $ProjectMongoshFound) {
+
+    Write-Host "No running project-managed mongosh process found."
+    Write-Host ""
+}
+
+# =====================================
+# WAIT FOR MONGOSH PROCESS RELEASE
+# =====================================
+
+Start-Sleep -Seconds 2
+
+# =====================================
+# VALIDATE MONGOSH PROCESS STOPPED
+# =====================================
+
+Write-Host "Validating project-managed mongosh process status..."
+Write-Host ""
+
+$RemainingMongoshProcesses = Get-CimInstance Win32_Process `
+    -Filter "Name='mongosh.exe'" `
+    -ErrorAction SilentlyContinue
+
+foreach ($Process in $RemainingMongoshProcesses) {
+
+    if ($Process.ExecutablePath) {
+
+        $ActualProcessPath = [System.IO.Path]::GetFullPath(
+            $Process.ExecutablePath
+        )
+
+        if (
+            $ActualProcessPath.Equals(
+                $ExpectedMongoshPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            throw "Project-managed mongosh process is still running."
+        }
+    }
+}
+
+Write-Host "Project-managed mongosh process validation passed."
+Write-Host ""
+
+# =====================================
 # HELPER FUNCTION
 # =====================================
 
@@ -253,7 +348,7 @@ function Remove-ProjectPath {
             -ErrorAction Stop
 
         if (Test-Path -LiteralPath $Path) {
-            throw "Failed to remove $Description: $Path"
+            throw "Failed to remove ${Description}: $Path"
         }
 
         Write-Host "$Description removed successfully."
