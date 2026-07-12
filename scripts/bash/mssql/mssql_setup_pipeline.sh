@@ -25,11 +25,12 @@ bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 # 5. Install Tools
 bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_tools.sh"
 
+# 6. Deploy SQL Server (New Stage)
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/deploy_mssql.sh"
+
 echo
 echo "====================================="
-echo "INITIAL SETUP SCOPE SUCCESSFUL"
+echo "DEPLOYMENT SCOPE SUCCESSFUL"
 echo "====================================="
-echo "Stopping here before 'Deploy SQL Server' stage."
-echo "====================================="
-
 exit 0
+
