@@ -10,19 +10,57 @@ echo "STARTING MSSQL SERVER"
 echo "====================================="
 echo
 
-sudo systemctl start mssql-server
+SERVICE_NAME="mssql-server"
 
-sleep 5
-
-if ! systemctl is-active --quiet mssql-server
+if [ ! -x "/opt/mssql/bin/sqlservr" ]
 then
-    echo
-    echo "MSSQL SERVER START FAILED"
+    echo "MSSQL Server is not installed."
     exit 1
 fi
 
+if systemctl is-active --quiet "$SERVICE_NAME"
+then
+    echo "MSSQL Server is already running."
+    echo
+    echo "====================================="
+    echo "MSSQL SERVER START SUCCESSFUL"
+    echo "====================================="
+    echo
+    exit 0
+fi
+
+echo "Enabling MSSQL Server service..."
+sudo systemctl enable "$SERVICE_NAME"
+
 echo
-echo "MSSQL SERVER START SUCCESSFUL"
+echo "Starting MSSQL Server service..."
+sudo systemctl start "$SERVICE_NAME"
+
+echo
+echo "Waiting for SQL Server to start..."
+
+for i in {1..15}
+do
+    if systemctl is-active --quiet "$SERVICE_NAME"
+    then
+        echo
+        echo "MSSQL Server started successfully."
+        echo
+        echo "====================================="
+        echo "MSSQL SERVER START SUCCESSFUL"
+        echo "====================================="
+        echo
+        exit 0
+    fi
+
+    sleep 2
+done
+
+echo
+echo "MSSQL SERVER START FAILED"
 echo
 
-exit 0
+echo "Service Status:"
+sudo systemctl --no-pager --full status "$SERVICE_NAME" || true
+
+exit 1
