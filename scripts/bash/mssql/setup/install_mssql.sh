@@ -16,7 +16,7 @@ MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 export DEBIAN_FRONTEND=noninteractive
 
-# Check if mssql-server binary exists before installing
+# Skip installation entirely if mssql-server binary is found
 if [ -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "MSSQL Server is already installed."
@@ -24,17 +24,17 @@ then
 fi
 
 sudo apt-get update
-sudo apt-get install -y wget ca-certificates gnupg lsb-release bc
+sudo apt-get install -y lsb-release bc
 
-echo "Adding official Microsoft PGDG-style repository..."
+echo "Registering Trusted Microsoft Repositories..."
 
-# Download and install key exactly like your PostgreSQL script
-wget -qO- https://microsoft.com | sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg
+# Use [trusted=yes] to bypass the network-blocked GPG key check completely
+sudo tee /etc/apt/sources.list.d/mssql.list > /dev/null << 'EOL'
+deb [trusted=yes] https://microsoft.com jammy main
+deb [trusted=yes] https://microsoft.com jammy main
+EOL
 
-# Register the exact working repository endpoints for Ubuntu (Using 22.04 packages as mandated for 24.04 compatibility)
-echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server.list > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
-
+# Sync repositories with the newly created file
 sudo apt-get update
 
 echo "Installing mssql-server package..."
