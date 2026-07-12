@@ -321,6 +321,10 @@ pipeline {
 
                         sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
 
+                        sh 'bash ./scripts/bash/mysql/setup/install_python_requirements.sh'
+
+                         sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
+
                         sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
 
                         sh 'bash ./scripts/bash/mysql/setup/install_tools.sh'
