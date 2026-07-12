@@ -3,8 +3,8 @@
 # Ensure script stops on unexpected errors
 set -e
 
-# Resolve project root dynamically
-source "$(dirname "$0")/../../common/set_project_root.sh"
+# Resolve project root dynamically (Go up 1 level to scripts/bash/, then down to common/)
+source "$(dirname "$0")/../common/set_project_root.sh"
 
 echo "====================================="
 echo "STARTING LOCAL MSSQL SETUP PIPELINE"
