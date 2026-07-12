@@ -55,6 +55,10 @@ set "RESET_TERRAFORM_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\reset_terraf
 
 set "VALIDATE_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\validate_cleanup.bat"
 
+set "XML_CLEANUP_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\cleanup_postgresql_xml.bat"
+
+set "LOAD_ARTIFACTS_SCRIPT=%ROOT%\scripts\batch\postgresql\cleanup\cleanup_postgresql_load_artifacts.bat"
+
 REM =====================================
 REM VALIDATE CLEANUP SCRIPTS
 REM =====================================
@@ -79,6 +83,17 @@ if not exist "%REMOVE_SCRIPT%" (
 if not exist "%RESET_TERRAFORM_SCRIPT%" (
     echo ERROR: Terraform reset script not found:
     echo %RESET_TERRAFORM_SCRIPT%
+    exit /b 1
+)
+if not exist "%XML_CLEANUP_SCRIPT%" (
+    echo ERROR: PostgreSQL XML cleanup script not found:
+    echo %XML_CLEANUP_SCRIPT%
+    exit /b 1
+)
+
+if not exist "%LOAD_ARTIFACTS_SCRIPT%" (
+    echo ERROR: PostgreSQL load artifacts cleanup script not found:
+    echo %LOAD_ARTIFACTS_SCRIPT%
     exit /b 1
 )
 
@@ -133,9 +148,7 @@ echo.
 echo PostgreSQL removal stage completed successfully.
 echo.
 
-REM =====================================
-REM STEP 3 - RESET TERRAFORM STATE
-REM =====================================
+
 
 echo =====================================
 echo STEP 3 - RESET TERRAFORM STATE
@@ -155,11 +168,53 @@ echo PostgreSQL Terraform reset stage completed successfully.
 echo.
 
 REM =====================================
-REM STEP 4 - VALIDATE CLEANUP
+REM STEP 4 - CLEANUP LIQUIBASE XML
 REM =====================================
 
 echo =====================================
-echo STEP 4 - VALIDATE CLEANUP
+echo STEP 4 - CLEANUP LIQUIBASE XML
+echo =====================================
+echo.
+
+call "%XML_CLEANUP_SCRIPT%"
+
+if errorlevel 1 (
+    echo.
+    echo ERROR: PostgreSQL Liquibase XML cleanup stage failed.
+    exit /b 1
+)
+
+echo.
+echo PostgreSQL Liquibase XML cleanup completed successfully.
+echo.
+
+REM =====================================
+REM STEP 5 - CLEANUP LOAD ARTIFACTS
+REM =====================================
+
+echo =====================================
+echo STEP 5 - CLEANUP LOAD ARTIFACTS
+echo =====================================
+echo.
+
+call "%LOAD_ARTIFACTS_SCRIPT%"
+
+if errorlevel 1 (
+    echo.
+    echo ERROR: PostgreSQL load artifacts cleanup stage failed.
+    exit /b 1
+)
+
+echo.
+echo PostgreSQL load artifacts cleanup completed successfully.
+echo.
+
+REM =====================================
+REM STEP 6 - VALIDATE CLEANUP
+REM =====================================
+
+echo =====================================
+echo STEP 6 - VALIDATE CLEANUP
 echo =====================================
 echo.
 
