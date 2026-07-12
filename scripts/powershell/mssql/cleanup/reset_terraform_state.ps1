@@ -29,11 +29,11 @@ Write-Host ""
 # =====================================
 
 if (!(Test-Path -LiteralPath $TerraformExe)) {
-    throw "Terraform executable not found: ${TerraformExe}"
+    throw "Terraform executable not found: $TerraformExe"
 }
 
 if (!(Test-Path -LiteralPath $TerraformDir)) {
-    throw "MSSQL Terraform directory not found: ${TerraformDir}"
+    throw "MSSQL Terraform directory not found: $TerraformDir"
 }
 
 # =====================================
@@ -47,18 +47,44 @@ $WindowsResources = @(
 )
 
 # =====================================
-# READ CURRENT TERRAFORM STATE
+# ENTER TERRAFORM DIRECTORY
 # =====================================
-
-Write-Host "Reading current Terraform state..."
-Write-Host ""
 
 Push-Location $TerraformDir
 
 try {
 
+    # =====================================
+    # CHECK TERRAFORM STATE FILE
+    # =====================================
+
+    $TerraformStateFile = Join-Path `
+        $TerraformDir `
+        "terraform.tfstate"
+
+    if (!(Test-Path -LiteralPath $TerraformStateFile)) {
+
+        Write-Host "No Terraform state file found."
+        Write-Host "Nothing to reset."
+        Write-Host ""
+
+        Write-Host "====================================="
+        Write-Host "MSSQL TERRAFORM STATE RESET SUCCESSFUL"
+        Write-Host "====================================="
+        Write-Host ""
+
+        exit 0
+    }
+
+    # =====================================
+    # READ CURRENT TERRAFORM STATE
+    # =====================================
+
+    Write-Host "Reading current Terraform state..."
+    Write-Host ""
+
     $StateResources = @(
-        & $TerraformExe state list 2>$null
+        & $TerraformExe state list
     )
 
     if ($LASTEXITCODE -ne 0) {
@@ -66,7 +92,25 @@ try {
     }
 
     # =====================================
-    # REMOVE WINDOWS RESOURCES FROM STATE
+    # HANDLE EMPTY TERRAFORM STATE
+    # =====================================
+
+    if ($StateResources.Count -eq 0) {
+
+        Write-Host "Terraform state contains no resources."
+        Write-Host "Nothing to reset."
+        Write-Host ""
+
+        Write-Host "====================================="
+        Write-Host "MSSQL TERRAFORM STATE RESET SUCCESSFUL"
+        Write-Host "====================================="
+        Write-Host ""
+
+        exit 0
+    }
+
+    # =====================================
+    # REMOVE WINDOWS RESOURCES
     # =====================================
 
     $ResourcesFound = $false
@@ -114,7 +158,7 @@ try {
     Write-Host ""
 
     $RemainingStateResources = @(
-        & $TerraformExe state list 2>$null
+        & $TerraformExe state list
     )
 
     if ($LASTEXITCODE -ne 0) {
@@ -127,6 +171,8 @@ try {
             throw "Terraform state cleanup validation failed. Resource still exists: $Resource"
         }
     }
+
+    Write-Host "MSSQL Windows Terraform resources removed successfully."
 
     Write-Host ""
     Write-Host "====================================="
