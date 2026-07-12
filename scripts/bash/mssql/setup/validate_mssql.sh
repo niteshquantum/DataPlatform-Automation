@@ -49,7 +49,7 @@ fi
 
 echo "Checking SQL Server port..."
 
-if ! ss -tln | grep -q ":${MSSQL_PORT} "
+if ! sudo ss -tlnp | grep sqlservr | grep -q ":${MSSQL_PORT}"
 then
     echo "SQL Server is not listening on port ${MSSQL_PORT}."
     exit 1

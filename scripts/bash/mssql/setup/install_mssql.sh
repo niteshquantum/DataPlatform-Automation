@@ -92,7 +92,7 @@ fi
 echo
 echo "Installed SQL Server Version:"
 echo "-------------------------------------"
-/opt/mssql/bin/sqlservr --version || true
+dpkg -s mssql-server | grep Version
 
 echo
 echo "Installed sqlcmd Version:"
