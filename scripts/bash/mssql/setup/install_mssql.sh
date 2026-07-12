@@ -28,13 +28,16 @@ sudo apt-get install -y lsb-release bc
 
 echo "Registering Trusted Microsoft Repositories..."
 
-# Use [trusted=yes] to bypass the network-blocked GPG key check completely
-sudo tee /etc/apt/sources.list.d/mssql.list > /dev/null << 'EOL'
-deb [trusted=yes] https://microsoft.com jammy main
-deb [trusted=yes] https://microsoft.com jammy main
+# Force remove any bad list configurations inside the execution block
+sudo rm -f /etc/apt/sources.list.d/*mssql* /etc/apt/sources.list.d/*prod* /etc/apt/sources.list.d/*micro*
+
+# Write the clean, official sub-domain endpoint (://microsoft.com) to mssql_clean.list
+sudo tee /etc/apt/sources.list.d/mssql_clean.list > /dev/null << 'EOL'
+deb [trusted=yes] https://://microsoft.com/ubuntu/22.04/mssql-server-2022 jammy main
+deb [trusted=yes] https://://microsoft.com/ubuntu/22.04/prod jammy main
 EOL
 
-# Sync repositories with the newly created file
+# Sync repositories cleanly
 sudo apt-get update
 
 echo "Installing mssql-server package..."
@@ -62,7 +65,6 @@ echo
 echo "MSSQL SERVER VERSION:"
 /opt/mssql/bin/sqlservr --version || true
 
-echo
 echo "====================================="
 echo "MSSQL INSTALLATION COMPLETED"
 echo "====================================="
