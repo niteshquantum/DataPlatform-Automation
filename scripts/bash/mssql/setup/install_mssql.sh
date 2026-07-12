@@ -52,9 +52,11 @@ EOF
 
     echo "Registering Microsoft Repositories for Ubuntu..."
     
-    # Clean, direct URLs without any variables to guarantee absolute execution stability inside Terraform
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
-    echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
+    # Combined into a single file with packages.microsoft.com subdomain to fix 404 and duplicate warnings
+    sudo tee /etc/apt/sources.list.d/mssql.list > /dev/null << 'EOL'
+deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main
+deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://microsoft.com jammy main
+EOL
 
     sudo apt-get update
     
