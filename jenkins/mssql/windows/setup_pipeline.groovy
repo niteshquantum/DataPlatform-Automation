@@ -71,7 +71,7 @@ pipeline {
 
         stage('Deploy SQL Server') {
             steps {
-                bat 'scripts\\batch\\mssql\\setup\\deploy_mssql.bat'
+                bat 'scripts\\batch\\mssql\\setup\\deploy_mssql_gdrive.bat'
             }
         }
 

@@ -18,7 +18,10 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql.bat"
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql.bat"
+@REM if errorlevel 1 exit /b 1
+
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql_gdrive.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"

@@ -51,9 +51,27 @@ if ($Service) {
 # ISO PATH
 # =====================================
 
-$IsoPath = Join-Path `
-    $PROJECT_ROOT `
-    "databases\mssql\media\SQLServer2022-x64-ENU-Dev.iso"
+# =====================================
+# FIND ISO
+# =====================================
+
+$Iso = Get-ChildItem `
+    -Path "$PROJECT_ROOT\databases\mssql\media" `
+    -Filter "*.iso" `
+    -Recurse |
+    Select-Object -First 1
+
+if (!$Iso) {
+
+    throw "SQL Server ISO not found."
+
+}
+
+$IsoPath = $Iso.FullName
+
+Write-Host "ISO Found"
+Write-Host $IsoPath
+Write-Host ""
 
 if (!(Test-Path $IsoPath)) {
 
@@ -150,9 +168,20 @@ Dismount-DiskImage `
 # VERIFY SERVICE
 # =====================================
 
-$Service = Get-Service `
-    -Name $ServiceName `
-    -ErrorAction SilentlyContinue
+$Service = $null
+
+for ($i = 1; $i -le 30; $i++) {
+
+    $Service = Get-Service `
+        -Name $ServiceName `
+        -ErrorAction SilentlyContinue
+
+    if ($Service) {
+        break
+    }
+
+    Start-Sleep -Seconds 1
+}
 
 if (!$Service) {
 
