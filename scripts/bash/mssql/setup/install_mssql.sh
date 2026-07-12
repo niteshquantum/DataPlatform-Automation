@@ -27,14 +27,16 @@ then
     sudo mkdir -p /usr/share/keyrings
     
     # Secure download to temp file first to prevent silent pipe truncation
-    curl -fsSL "https://packages.microsoft.com/keys/microsoft.asc" -o /tmp/microsoft.asc
+    curl -fsSL "https://microsoft.com" -o /tmp/microsoft.asc
     sudo gpg --dearmor --yes -o /usr/share/keyrings/microsoft-prod.gpg /tmp/microsoft.asc
     rm -f /tmp/microsoft.asc
 
     UBUNTU_VERSION=$(lsb_release -rs)
     echo "Registering Microsoft Ubuntu ${UBUNTU_VERSION} Repository..."
-    curl -fsSL "https://microsoft.com{UBUNTU_VERSION}/mssql-server-2022.list" | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
-    curl -fsSL "https://microsoft.com{UBUNTU_VERSION}/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
+    
+    # Use clean concatenation to prevent Terraform from misinterpreting Bash variables
+    curl -fsSL 'https://microsoft.com'"$UBUNTU_VERSION"'/mssql-server-2022.list' | sudo tee /etc/apt/sources.list.d/mssql-server-2022.list > /dev/null
+    curl -fsSL 'https://microsoft.com'"$UBUNTU_VERSION"'/prod.list' | sudo tee /etc/apt/sources.list.d/mssql-tools.list > /dev/null
 
     sudo apt-get update
     
