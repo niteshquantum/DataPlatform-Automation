@@ -2,9 +2,16 @@
 # Databases (Generated Locally)
 # =====================================================
 
-databases/
+databases/*
+!databases/mssql/
+databases/mssql/*
 !databases/mssql/templates/
+databases/mssql/templates/*
 !databases/mssql/templates/ConfigurationFile.template.ini
+
+# =====================================================
+# Logs
+# =====================================================
 # =====================================================
 # Logs
 # =====================================================
