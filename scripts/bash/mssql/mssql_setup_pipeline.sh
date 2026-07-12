@@ -28,6 +28,15 @@ bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_tools.sh"
 # 6. Deploy SQL Server
 bash "$PROJECT_ROOT/scripts/bash/mssql/setup/deploy_mssql.sh"
 
+
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/start_mssql.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_mssql.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/create_database.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_environment.sh"
+
 echo
 echo "====================================="
 echo "LOCAL MSSQL SETUP PIPELINE COMPLETED"
