@@ -2,14 +2,28 @@
 # Databases (Generated Locally)
 # =====================================================
 
-databases/
+databases/*
+!databases/mssql/
+databases/mssql/*
+!databases/mssql/templates/
+databases/mssql/templates/*
+!databases/mssql/templates/ConfigurationFile.template.ini
 
+# =====================================================
+# Logs
+# =====================================================
 # =====================================================
 # Logs
 # =====================================================
 
 logs/
 *.log
+
+# =====================================================
+# Reports
+# =====================================================
+
+reports/
 
 # =====================================================
 # Python
@@ -96,6 +110,7 @@ liquibase/*/*
 
 # Keep required Liquibase configuration files
 !liquibase/*/master.xml
+<<<<<<< HEAD
 !liquibase/*/liquibase.properties
 !liquibase/mysql/*.xml
 !liquibase/mysql/objects/
@@ -104,3 +119,6 @@ liquibase/*/*
 !liquibase/postgresql/objects/
 !liquibase/postgresql/objects/**
 
+=======
+!liquibase/*/liquibase.properties
+>>>>>>> main

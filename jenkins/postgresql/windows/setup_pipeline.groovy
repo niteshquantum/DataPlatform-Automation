@@ -1,3 +1,51 @@
+def runTrackedStage(String stageName, Closure stageBody) {
+
+    bat """
+        python scripts\\logging\\logger.py stage-start ^
+        --database postgresql ^
+        --action setup ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --stage-name "${stageName}"
+    """
+
+    try {
+
+        stageBody()
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database postgresql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status SUCCESS
+        """
+
+    } catch (Exception error) {
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database postgresql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status FAILURE
+        """
+
+        bat """
+            python scripts\\logging\\logger.py set-error ^
+            --database postgresql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --failed-stage "${stageName}" ^
+            --message "Stage execution failed"
+        """
+
+        throw error
+    }
+}
+
+
 pipeline {
 
     agent any
@@ -8,140 +56,313 @@ pipeline {
 
     stages {
 
-        stage('Check Administrator Privileges') {
+        stage('Initialize Logging') {
+
             steps {
+
+                bat """
+                    python scripts\\logging\\logger.py init ^
+                    --database postgresql ^
+                    --action setup ^
+                    --os windows ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --job-name "${env.JOB_NAME}" ^
+                    --build-url "${env.BUILD_URL}"
+                """
+            }
+        }
+
+
+        stage('Check Administrator Privileges') {
+
+            steps {
+
                 script {
 
-                    def adminStatus = bat(
-                        script: 'scripts\\batch\\common\\check_admin_privileges.bat',
-                        returnStatus: true
-                    )
+                    runTrackedStage(
+                        'Check Administrator Privileges'
+                    ) {
 
-                    if (adminStatus == 0) {
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
 
-                        writeFile file: 'admin_status.txt', text: 'true'
+                        if (adminStatus == 0) {
 
-                        echo 'Administrator privileges available.'
-                        echo 'Windows Service and Global PSQL configuration will be enabled.'
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'true'
+                            )
 
-                    } else {
+                            echo 'Administrator privileges available.'
+                            echo 'Windows Service and Global PSQL configuration will be enabled.'
 
-                        writeFile file: 'admin_status.txt', text: 'false'
+                        } else {
 
-                        echo 'Administrator privileges not available.'
-                        echo 'Windows Service and Global PSQL configuration will be skipped.'
-                        echo 'PostgreSQL will run using project-local configuration.'
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'false'
+                            )
+
+                            echo 'Administrator privileges not available.'
+                            echo 'Windows Service and Global PSQL configuration will be skipped.'
+                            echo 'PostgreSQL will run using project-local configuration.'
+                        }
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        echo "ADMIN STATUS = ${adminResult}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database postgresql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --administrator-privileges "${adminResult}"
+                        """
                     }
-
-                    def adminResult = readFile('admin_status.txt').trim()
-
-                    echo "ADMIN STATUS = ${adminResult}"
                 }
             }
         }
 
+
         stage('Validate Python Runtime') {
+
             steps {
-                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
             }
         }
+
 
         stage('Install Python Requirements') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
+                    }
+                }
             }
         }
+
 
         stage('Validate Python Requirements') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+                    }
+                }
             }
         }
+
 
         stage('Validate Java Runtime') {
+
             steps {
-                bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
             }
         }
+
 
         stage('Install Tools') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
+                    }
+                }
             }
         }
 
+
         stage('Deploy PostgreSQL') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy PostgreSQL'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+                    }
+                }
             }
         }
+
 
         stage('Configure PostgreSQL Service') {
 
             when {
+
                 expression {
-                    return readFile('admin_status.txt').trim() == 'true'
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
                 }
             }
 
             steps {
-                echo 'Administrator privileges available.'
-                echo 'Configuring PostgreSQL Windows Service...'
 
-                bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+                script {
+
+                    runTrackedStage(
+                        'Configure PostgreSQL Service'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring PostgreSQL Windows Service...'
+
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+                    }
+                }
             }
         }
+
 
         stage('Start PostgreSQL') {
 
             when {
+
                 expression {
-                    return readFile('admin_status.txt').trim() != 'true'
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() != 'true'
                 }
             }
 
             steps {
-                echo 'Administrator privileges unavailable.'
-                echo 'Starting PostgreSQL in project-local mode...'
 
-                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+                script {
+
+                    runTrackedStage(
+                        'Start PostgreSQL'
+                    ) {
+
+                        echo 'Administrator privileges unavailable.'
+                        echo 'Starting PostgreSQL in project-local mode...'
+
+                        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+                    }
+                }
             }
         }
+
 
         stage('Create Database') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Create Database'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+                    }
+                }
             }
         }
 
+<<<<<<< HEAD
         stage('Run Liquibase') {
             steps {
                 bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat'
             }
         }
+=======
+>>>>>>> main
 
         stage('Configure Global PSQL') {
 
             when {
+
                 expression {
-                    return readFile('admin_status.txt').trim() == 'true'
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
                 }
             }
 
             steps {
-                echo 'Administrator privileges available.'
-                echo 'Configuring Global PSQL command...'
 
-                bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
+                script {
+
+                    runTrackedStage(
+                        'Configure Global PSQL'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring Global PSQL command...'
+
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
+                    }
+                }
             }
         }
 
+
         stage('Validate Environment') {
+
             steps {
-                bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+                    }
+                }
             }
         }
     }
+
 
     post {
 
@@ -151,7 +372,9 @@ pipeline {
 
             script {
 
-                def adminResult = readFile('admin_status.txt').trim()
+                def adminResult = readFile(
+                    'admin_status.txt'
+                ).trim()
 
                 if (adminResult == 'true') {
 
@@ -166,11 +389,50 @@ pipeline {
             }
         }
 
+
         failure {
+
             echo 'POSTGRESQL SETUP FAILED'
         }
 
+
         always {
+
+            echo 'FINALIZING POSTGRESQL SETUP LOGGING AND REPORTING'
+
+            script {
+
+                def finalStatus = currentBuild.currentResult
+
+                bat """
+                    python scripts\\logging\\logger.py finalize ^
+                    --database postgresql ^
+                    --action setup ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --status "${finalStatus}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_report.py ^
+                    --database postgresql ^
+                    --action setup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_history.py ^
+                    --database postgresql ^
+                    --action setup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+            }
+
+            archiveArtifacts(
+                artifacts: "logs/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                fingerprint: true,
+                allowEmptyArchive: true
+            )
+
             echo 'POSTGRESQL SETUP PIPELINE COMPLETED'
         }
     }

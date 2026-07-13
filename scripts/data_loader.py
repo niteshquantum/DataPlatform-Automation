@@ -110,7 +110,7 @@ def get_database_connection(db_type, config):
     if db_type == 'mssql':
         if pyodbc is None:
             raise ImportError('pyodbc is not installed')
-        driver = config.get('MSSQL_DRIVER', 'ODBC Driver 18 for SQL Server')
+        driver = config.get('MSSQL_DRIVER', 'ODBC Driver 17 for SQL Server')
         return pyodbc.connect(
             f"DRIVER={{{driver}}};"
             f"SERVER={config.get('MSSQL_HOST', 'localhost')},{config.get('MSSQL_PORT', 1433)};"
@@ -239,8 +239,10 @@ def insert_rows(conn, db_type, table_name, actual_columns, rows):
 
 
 def read_csv_file(path):
+
     rows = []
 
+<<<<<<< HEAD
     encodings = ["utf-8-sig", "cp1252", "latin-1"]
     last_error = None
 
@@ -273,9 +275,51 @@ def read_csv_file(path):
 
     if last_error:
         raise last_error
+=======
+    encodings = [
+        "utf-8-sig",
+        "utf-8",
+        "cp1252",
+        "latin1"
+    ]
 
-    return rows
+    last_error = None
 
+    for encoding in encodings:
+
+        try:
+>>>>>>> main
+
+            rows.clear()
+
+            with open(path, "r", encoding=encoding, newline="") as f:
+
+                reader = csv.DictReader(f)
+
+                reader.fieldnames = [
+                    h.replace("\ufeff", "").strip()
+                    for h in reader.fieldnames
+                ]
+
+                for row in reader:
+
+                    rows.append({
+                        k.replace("\ufeff", "").strip():
+                        (v if v != "" else None)
+                        for k, v in row.items()
+                    })
+
+            logging.info(f"CSV Encoding Detected : {encoding}")
+
+            return rows
+
+        except UnicodeDecodeError as e:
+
+            last_error = e
+
+            continue
+
+    raise last_error
 
 def read_json_file(path):
     with open(path, 'r', encoding='utf-8') as f:

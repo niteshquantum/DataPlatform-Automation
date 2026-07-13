@@ -4,26 +4,43 @@ set -e
 
 source "$(dirname "$0")/../common/set_project_root.sh"
 
+echo
+echo "====================================="
+echo "STARTING LOCAL MSSQL SETUP PIPELINE"
+echo "====================================="
+echo
+
+# 1. Validate Python Runtime
 bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
 
+# 2. Install Python Requirements
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_python_requirements.sh"
+
+# 3. Validate Python Requirements
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_python_requirements.sh"
+
+# 4. Validate Java Runtime
 bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_terraform.sh"
+# 5. Install Common Tools
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/install_tools.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_liquibase.sh"
+# 6. Deploy SQL Server
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/deploy_mssql.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/common/install_mssql_driver.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/validate_tools.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/start_mssql.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/install_mssql.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_mssql.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/install_sqlcmd.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/create_database.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/start_mssql.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_environment.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/create_database.sh"
+echo
+echo "====================================="
+echo "LOCAL MSSQL SETUP PIPELINE COMPLETED"
+echo "====================================="
+echo
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/run_liquibase.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mssql/validate_environment.sh"
+exit 0

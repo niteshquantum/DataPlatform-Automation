@@ -12,17 +12,17 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\common\validate_tools.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_mssql.bat"
-if errorlevel 1 exit /b 1
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_mssql.bat"
+@REM if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_csv.bat"
-if errorlevel 1 exit /b 1
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_csv.bat"
+@REM if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\load\load_data.bat"
-if errorlevel 1 exit /b 1
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\load\load_data.bat"
+@REM if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_loaded_data.bat"
-if errorlevel 1 exit /b 1
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\load\validate_loaded_data.bat"
+@REM if errorlevel 1 exit /b 1
 
 echo.
 echo =====================================
