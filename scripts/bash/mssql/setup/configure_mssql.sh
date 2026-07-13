@@ -12,15 +12,23 @@ echo
 
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mssql.conf"
 
+# =====================================
+# VALIDATE CONFIG
+# =====================================
+
 if [ ! -f "$CONFIG_FILE" ]
 then
-    echo "Configuration file not found:"
-    echo "$CONFIG_FILE"
+    echo "Configuration file not found."
+    echo "Expected: $CONFIG_FILE"
     exit 1
 fi
 
 MSSQL_PASSWORD=$(grep "^MSSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
 MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
+
+# =====================================
+# VALIDATE INSTALLATION
+# =====================================
 
 if [ ! -x "/opt/mssql/bin/mssql-conf" ]
 then
@@ -28,11 +36,20 @@ then
     exit 1
 fi
 
-echo "Running SQL Server setup..."
+# =====================================
+# CONFIGURE SQL SERVER
+# =====================================
 
-sudo MSSQL_PID="$MSSQL_PID" \
-MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
-/opt/mssql/bin/mssql-conf -n setup accept-eula
+if [ -f "/var/opt/mssql/mssql.conf" ]
+then
+    echo "SQL Server is already configured."
+else
+    echo "Running SQL Server setup..."
+
+    sudo MSSQL_PID="$MSSQL_PID" \
+         MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
+         /opt/mssql/bin/mssql-conf -n setup accept-eula
+fi
 
 echo
 echo "Enabling SQL Server service..."
@@ -40,23 +57,55 @@ echo "Enabling SQL Server service..."
 sudo systemctl enable mssql-server
 
 echo
-echo "Restarting SQL Server service..."
 
-sudo systemctl restart mssql-server
+# =====================================
+# START / RESTART SERVICE
+# =====================================
+
+if sudo systemctl is-active --quiet mssql-server
+then
+    echo "Restarting SQL Server service..."
+    sudo systemctl restart mssql-server
+else
+    echo "Starting SQL Server service..."
+    sudo systemctl start mssql-server
+fi
 
 echo
-echo "Waiting for SQL Server to initialize..."
+echo "Waiting for SQL Server service..."
 
 sleep 10
 
-if ! systemctl is-active --quiet mssql-server
+# =====================================
+# VALIDATE SERVICE
+# =====================================
+
+if ! sudo systemctl is-active --quiet mssql-server
 then
     echo "SQL Server service failed to start."
     exit 1
 fi
 
-echo
-echo "SQL Server service is running."
+# =====================================
+# VALIDATE CONNECTION
+# =====================================
+
+SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
+
+if [ -x "$SQLCMD" ]
+then
+    echo
+    echo "Validating SQL Server connection..."
+
+    "$SQLCMD" \
+    -S localhost \
+    -U sa \
+    -P "$MSSQL_PASSWORD" \
+    -C \
+    -Q "SELECT @@VERSION;" > /dev/null
+
+    echo "SQL Server connection validated."
+fi
 
 echo
 echo "====================================="
