@@ -32,9 +32,15 @@ MSSQL_PASSWORD=$(grep "^MSSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
 # VALIDATE INSTALLATION
 # =====================================
 
-if [ ! -x "/opt/mssql/bin/mssql-conf" ]
+if [ ! -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "SQL Server is not installed."
+    exit 1
+fi
+
+if [ ! -x "/opt/mssql/bin/mssql-conf" ]
+then
+    echo "mssql-conf utility not found."
     exit 1
 fi
 
@@ -45,6 +51,10 @@ then
     echo "sqlcmd not found."
     exit 1
 fi
+
+# =====================================
+# ENABLE SERVICE
+# =====================================
 
 echo "Enabling SQL Server service..."
 
@@ -66,7 +76,11 @@ else
 fi
 
 echo
-echo "Waiting for SQL Server service..."
+echo "Waiting up to 120 seconds for SQL Server..."
+
+# =====================================
+# WAIT FOR SERVICE
+# =====================================
 
 for i in {1..60}
 do
@@ -89,7 +103,13 @@ then
 fi
 
 echo
-echo "Validating SQL Server connection..."
+echo "SQL Server service is running."
+
+echo
+echo "====================================="
+echo "VALIDATING SQL SERVER CONNECTION"
+echo "====================================="
+echo
 
 "$SQLCMD" \
 -S "${MSSQL_HOST},${MSSQL_PORT}" \
@@ -100,6 +120,10 @@ echo "Validating SQL Server connection..."
 
 echo
 echo "SQL Server connection validated."
+
+echo "Host : $MSSQL_HOST"
+echo "Port : $MSSQL_PORT"
+echo "User : $MSSQL_USER"
 
 echo
 echo "====================================="
