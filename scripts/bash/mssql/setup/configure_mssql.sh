@@ -66,10 +66,13 @@ echo
 # START / RESTART SERVICE
 # =====================================
 
+# =====================================
+# START SERVICE IF REQUIRED
+# =====================================
+
 if sudo systemctl is-active --quiet mssql-server
 then
-    echo "Restarting SQL Server service..."
-    sudo systemctl restart mssql-server
+    echo "SQL Server service is already running."
 else
     echo "Starting SQL Server service..."
     sudo systemctl start mssql-server
