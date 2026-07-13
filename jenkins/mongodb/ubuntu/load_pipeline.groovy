@@ -190,6 +190,18 @@ pipeline {
                 sh 'python3 scripts/python/mongodb/setup/create_indexes.py'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                sh './scripts/bash/mongodb/assessment/run_assessment.sh all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                sh './scripts/bash/common/generate_assessment_report.sh'
+            }
+        }
     }
 
 
@@ -240,7 +252,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

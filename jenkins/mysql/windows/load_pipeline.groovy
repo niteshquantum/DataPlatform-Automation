@@ -240,6 +240,18 @@ pipeline {
                 bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+            }
+        }
     }
 
 
@@ -290,7 +302,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mysql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

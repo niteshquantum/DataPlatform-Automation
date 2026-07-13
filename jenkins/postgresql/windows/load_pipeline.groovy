@@ -238,6 +238,18 @@ pipeline {
                 bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+            }
+        }
     }
 
 
@@ -288,7 +300,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

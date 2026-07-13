@@ -241,6 +241,18 @@ pipeline {
                 sh './scripts/bash/postgresql/objects/validate_objects.sh'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                sh './scripts/bash/postgresql/assessment/run_assessment.sh all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                sh './scripts/bash/common/generate_assessment_report.sh'
+            }
+        }
     }
 
 
@@ -291,7 +303,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

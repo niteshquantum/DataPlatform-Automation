@@ -200,12 +200,18 @@ pipeline {
         stage('Validate Stored Procedures') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
         stage('Deploy Triggers') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
         stage('Validate Triggers') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
-        stage('Database Inventory') { steps { sh './scripts/bash/mssql/load/database_inventory.sh' } }
-        stage('Table Inventory') { steps { sh './scripts/bash/mssql/load/table_inventory.sh' } }
-        stage('SQL Agent Inventory') { steps { sh './scripts/bash/mssql/load/sql_agent.sh inventory' } }
-        stage('SQL Agent Validation') { steps { sh './scripts/bash/mssql/load/sql_agent.sh validation' } }
-        stage('SQL Agent History') { steps { sh './scripts/bash/mssql/load/sql_agent.sh history' } }
-        stage('SQL Agent Assessment') { steps { sh './scripts/bash/mssql/load/sql_agent.sh assessment' } }
+        stage('Database Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh database' } }
+        stage('Schema Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh schema' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh table' } }
+        stage('View Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh view' } }
+        stage('Stored Procedure Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh procedure' } }
+        stage('Function Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh function' } }
+        stage('Trigger Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh trigger' } }
+        stage('SQL Agent Inventory') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_inventory' } }
+        stage('SQL Agent Validation') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_validation' } }
+        stage('SQL Agent History') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_history' } }
+        stage('SQL Agent Assessment') { steps { sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_assessment' } }
+        stage('Final Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 
@@ -254,7 +260,7 @@ pipeline {
             }
 
             archiveArtifacts(
-                artifacts: "logs/mssql/load/build_${env.BUILD_NUMBER}/**, reports/mssql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mssql/load/build_${env.BUILD_NUMBER}/**, reports/mssql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mssql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

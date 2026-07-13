@@ -202,6 +202,18 @@ pipeline {
                 bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+            }
+        }
     }
 
 
@@ -252,7 +264,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

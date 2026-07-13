@@ -56,12 +56,18 @@ pipeline {
         stage('Validate Stored Procedures') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
         stage('Deploy Triggers') { steps { bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat' } }
         stage('Validate Triggers') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
-        stage('Database Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\database_inventory.bat' } }
-        stage('Table Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\table_inventory.bat' } }
-        stage('SQL Agent Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat inventory' } }
-        stage('SQL Agent Validation') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat validation' } }
-        stage('SQL Agent History') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat history' } }
-        stage('SQL Agent Assessment') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat assessment' } }
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat database' } }
+        stage('Schema Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat schema' } }
+        stage('Table Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat table' } }
+        stage('View Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat view' } }
+        stage('Stored Procedure Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat procedure' } }
+        stage('Function Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat function' } }
+        stage('Trigger Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat trigger' } }
+        stage('SQL Agent Inventory') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat sql_agent_inventory' } }
+        stage('SQL Agent Validation') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat sql_agent_validation' } }
+        stage('SQL Agent History') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat sql_agent_history' } }
+        stage('SQL Agent Assessment') { steps { bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat sql_agent_assessment' } }
+        stage('Final Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
 
     }
 

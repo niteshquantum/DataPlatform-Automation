@@ -241,6 +241,18 @@ pipeline {
                 sh './scripts/bash/mysql/objects/validate_objects.sh'
             }
         }
+
+        stage('Assessment Inventories') {
+            steps {
+                sh './scripts/bash/mysql/assessment/run_assessment.sh all'
+            }
+        }
+
+        stage('Final Assessment Report') {
+            steps {
+                sh './scripts/bash/common/generate_assessment_report.sh'
+            }
+        }
     }
 
 
@@ -291,7 +303,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mysql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
