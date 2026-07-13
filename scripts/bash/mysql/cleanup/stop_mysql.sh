@@ -6,41 +6,58 @@ source "$(dirname "$0")/../../common/set_project_root.sh"
 
 echo
 echo "====================================="
-echo "STOPPING MYSQL"
+echo "STOPPING MYSQL SERVER"
 echo "====================================="
 echo
 
-if ! systemctl list-unit-files mysql.service >/dev/null 2>&1
+# =====================================
+# CHECK MYSQL SERVICE
+# =====================================
+
+if ! systemctl list-unit-files mysql.service \
+    >/dev/null 2>&1
 then
-    echo "MYSQL SERVICE NOT FOUND"
+    echo "MySQL service does not exist."
     echo "Nothing to stop."
+    echo
+
     exit 0
 fi
 
+# =====================================
+# STOP MYSQL
+# =====================================
+
 if systemctl is-active --quiet mysql
 then
+    echo "MySQL service is running."
     echo "Stopping MySQL service..."
+    echo
 
     sudo systemctl stop mysql
-
-    sleep 3
 else
     echo "MySQL service is already stopped."
 fi
 
+# =====================================
+# VALIDATE SERVICE STATUS
+# =====================================
+
 echo
 echo "Validating MySQL service status..."
+echo
 
 if systemctl is-active --quiet mysql
 then
-    echo
-    echo "ERROR: MYSQL SERVICE IS STILL RUNNING"
+    echo "ERROR: MySQL service is still running."
     exit 1
 fi
 
+echo "MySQL service validation passed."
+
 echo
 echo "====================================="
-echo "MYSQL STOPPED SUCCESSFULLY"
+echo "MYSQL STOP SUCCESSFUL"
 echo "====================================="
 echo
 
