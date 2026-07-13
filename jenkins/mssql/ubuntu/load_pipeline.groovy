@@ -1,328 +1,268 @@
-stages {
+def runTrackedStage(String stageName, Closure stageBody) {
 
-    stage('Initialize Logging') {
+    sh """
+        python3 scripts/logging/logger.py stage-start \
+        --database mssql \
+        --action load \
+        --build-number "${env.BUILD_NUMBER}" \
+        --stage-name "${stageName}"
+    """
 
-        steps {
+    try {
 
-            sh """
-                python3 scripts/logging/logger.py init \
-                --database mssql \
-                --action load \
-                --os ubuntu \
-                --build-number "${env.BUILD_NUMBER}" \
-                --job-name "${env.JOB_NAME}" \
-                --build-url "${env.BUILD_URL}"
-            """
-        }
+        stageBody()
+
+        sh """
+            python3 scripts/logging/logger.py stage-end \
+            --database mssql \
+            --action load \
+            --build-number "${env.BUILD_NUMBER}" \
+            --stage-name "${stageName}" \
+            --status SUCCESS
+        """
+
+    } catch (Exception error) {
+
+        sh """
+            python3 scripts/logging/logger.py stage-end \
+            --database mssql \
+            --action load \
+            --build-number "${env.BUILD_NUMBER}" \
+            --stage-name "${stageName}" \
+            --status FAILURE
+        """
+
+        sh """
+            python3 scripts/logging/logger.py set-error \
+            --database mssql \
+            --action load \
+            --build-number "${env.BUILD_NUMBER}" \
+            --failed-stage "${stageName}" \
+            --message "Stage execution failed"
+        """
+
+        throw error
+    }
+}
+
+pipeline {
+
+    agent any
+
+    options {
+        disableConcurrentBuilds()
     }
 
-    stage('Set Permissions') {
+    stages {
 
-        steps {
+        stage('Initialize Logging') {
 
-            script {
+            steps {
 
-                runTrackedStage('Set Permissions') {
+                sh """
+                    python3 scripts/logging/logger.py init \
+                    --database mssql \
+                    --action load \
+                    --os ubuntu \
+                    --build-number "${env.BUILD_NUMBER}" \
+                    --job-name "${env.JOB_NAME}" \
+                    --build-url "${env.BUILD_URL}"
+                """
+            }
+        }
 
-                    sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \;
-                    '''
+        stage('Set Permissions') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Set Permissions') {
+
+                        sh '''
+                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+                    }
                 }
             }
         }
-    }
 
-    stage('Validate Python Runtime') {
+                stage('Validate Python Runtime') {
 
-        steps {
+            steps {
 
-            script {
+                script {
 
-                runTrackedStage('Validate Python Runtime') {
+                    runTrackedStage('Validate Python Runtime') {
 
-                    sh './scripts/bash/common/validate_python_runtime.sh'
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Validate Python Requirements') {
 
-        steps {
+        stage('Validate Python Requirements') {
 
-            script {
+            steps {
 
-                runTrackedStage('Validate Python Requirements') {
+                script {
 
-                    sh './scripts/bash/mssql/setup/validate_python_requirements.sh'
+                    runTrackedStage('Validate Python Requirements') {
+
+                        sh './scripts/bash/mssql/setup/validate_python_requirements.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Start MSSQL') {
 
-        steps {
+        stage('Start MSSQL') {
 
-            script {
+            steps {
 
-                runTrackedStage('Start MSSQL') {
+                script {
 
-                    sh './scripts/bash/mssql/setup/start_mssql.sh'
+                    runTrackedStage('Start MSSQL') {
+
+                        sh './scripts/bash/mssql/setup/start_mssql.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Validate MSSQL') {
 
-        steps {
+        stage('Validate MSSQL') {
 
-            script {
+            steps {
 
-                runTrackedStage('Validate MSSQL') {
+                script {
 
-                    sh './scripts/bash/mssql/setup/validate_mssql.sh'
+                    runTrackedStage('Validate MSSQL') {
+
+                        sh './scripts/bash/mssql/setup/validate_mssql.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Download Dataset') {
 
-        steps {
+        stage('Download Dataset') {
 
-            script {
+            steps {
 
-                runTrackedStage('Download Dataset') {
+                script {
 
-                    sh './scripts/bash/common/download_dataset.sh'
+                    runTrackedStage('Download Dataset') {
+
+                        sh './scripts/bash/common/download_dataset.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Load Data') {
+                stage('Load Data') {
 
-        steps {
+            steps {
 
-            script {
+                script {
 
-                runTrackedStage('Load Data') {
+                    runTrackedStage('Load Data') {
 
-                    sh './scripts/bash/mssql/load/load_data.sh'
+                        sh './scripts/bash/mssql/load/load_data.sh'
+                    }
                 }
             }
         }
-    }
 
-    stage('Validate Loaded Data') {
 
-        steps {
+        stage('Validate Loaded Data') {
 
-            script {
+            steps {
 
-                runTrackedStage('Validate Loaded Data') {
+                script {
 
-                    sh './scripts/bash/mssql/load/validate_loaded_data.sh'
+                    runTrackedStage('Validate Loaded Data') {
+
+                        sh './scripts/bash/mssql/load/validate_loaded_data.sh'
+                    }
                 }
             }
         }
+
+     
+
+        stage('Deploy Views') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Views') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Functions') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Functions') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Stored Procedures') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Stored Procedures') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Triggers') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Triggers') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Database Inventory') { steps { sh './scripts/bash/mssql/load/database_inventory.sh' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/mssql/load/table_inventory.sh' } }
+        stage('SQL Agent Inventory') { steps { sh './scripts/bash/mssql/load/sql_agent.sh inventory' } }
+        stage('SQL Agent Validation') { steps { sh './scripts/bash/mssql/load/sql_agent.sh validation' } }
+        stage('SQL Agent History') { steps { sh './scripts/bash/mssql/load/sql_agent.sh history' } }
+        stage('SQL Agent Assessment') { steps { sh './scripts/bash/mssql/load/sql_agent.sh assessment' } }
     }
 
-    stage('Deploy Views') {
 
-        steps {
+    post {
 
-            script {
+        success {
 
-                runTrackedStage('Deploy Views') {
-
-                    sh './scripts/bash/mssql/objects/deploy_objects.sh'
-                }
-            }
+            echo 'UBUNTU MSSQL LOAD SUCCESSFUL'
         }
-    }
 
-    stage('Validate Views') {
 
-        steps {
+        failure {
 
-            script {
-
-                runTrackedStage('Validate Views') {
-
-                    sh './scripts/bash/mssql/objects/validate_objects.sh'
-                }
-            }
+            echo 'UBUNTU MSSQL LOAD FAILED'
         }
-    }
 
-    stage('Deploy Functions') {
+                always {
 
-        steps {
-
-            script {
-
-                runTrackedStage('Deploy Functions') {
-
-                    sh './scripts/bash/mssql/objects/deploy_objects.sh'
-                }
-            }
-        }
-    }
-
-    stage('Validate Functions') {
-
-        steps {
+            echo 'FINALIZING UBUNTU MSSQL LOAD LOGGING AND REPORTING'
 
             script {
 
-                runTrackedStage('Validate Functions') {
+                def finalStatus = currentBuild.currentResult
 
-                    sh './scripts/bash/mssql/objects/validate_objects.sh'
-                }
+                sh """
+                    python3 scripts/logging/logger.py finalize \
+                    --database mssql \
+                    --action load \
+                    --build-number "${env.BUILD_NUMBER}" \
+                    --status "${finalStatus}"
+                """
+
+                sh """
+                    python3 scripts/reporting/generate_report.py \
+                    --database mssql \
+                    --action load \
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+
+                sh """
+                    python3 scripts/reporting/generate_history.py \
+                    --database mssql \
+                    --action load \
+                    --build-number "${env.BUILD_NUMBER}"
+                """
             }
-        }
-    }
 
-    stage('Deploy Stored Procedures') {
+            archiveArtifacts(
+                artifacts: "logs/mssql/load/build_${env.BUILD_NUMBER}/**, reports/mssql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                fingerprint: true,
+                allowEmptyArchive: true
+            )
 
-        steps {
-
-            script {
-
-                runTrackedStage('Deploy Stored Procedures') {
-
-                    sh './scripts/bash/mssql/objects/deploy_objects.sh'
-                }
-            }
-        }
-    }
-
-    stage('Validate Stored Procedures') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('Validate Stored Procedures') {
-
-                    sh './scripts/bash/mssql/objects/validate_objects.sh'
-                }
-            }
-        }
-    }
-
-    stage('Deploy Triggers') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('Deploy Triggers') {
-
-                    sh './scripts/bash/mssql/objects/deploy_objects.sh'
-                }
-            }
-        }
-    }
-
-    stage('Validate Triggers') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('Validate Triggers') {
-
-                    sh './scripts/bash/mssql/objects/validate_objects.sh'
-                }
-            }
-        }
-    }
-
-    stage('Database Inventory') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('Database Inventory') {
-
-                    sh './scripts/bash/mssql/load/database_inventory.sh'
-                }
-            }
-        }
-    }
-
-    stage('Table Inventory') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('Table Inventory') {
-
-                    sh './scripts/bash/mssql/load/table_inventory.sh'
-                }
-            }
-        }
-    }
-
-    stage('SQL Agent Inventory') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('SQL Agent Inventory') {
-
-                    sh './scripts/bash/mssql/load/sql_agent.sh inventory'
-                }
-            }
-        }
-    }
-
-    stage('SQL Agent Validation') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('SQL Agent Validation') {
-
-                    sh './scripts/bash/mssql/load/sql_agent.sh validation'
-                }
-            }
-        }
-    }
-
-    stage('SQL Agent History') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('SQL Agent History') {
-
-                    sh './scripts/bash/mssql/load/sql_agent.sh history'
-                }
-            }
-        }
-    }
-
-    stage('SQL Agent Assessment') {
-
-        steps {
-
-            script {
-
-                runTrackedStage('SQL Agent Assessment') {
-
-                    sh './scripts/bash/mssql/load/sql_agent.sh assessment'
-                }
-            }
+            echo 'UBUNTU MSSQL LOAD PIPELINE COMPLETED'
         }
     }
 }
+
+
+
