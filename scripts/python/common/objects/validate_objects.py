@@ -129,7 +129,9 @@ def _expected_names(db_name: str, root: Path) -> dict:
                 if start == -1:
                     continue
                 name_text = sql_text[start + len(prefix):].strip()
-                if object_type == "triggers":
+                if object_type == "triggers" or (
+                    db_name == "mssql" and object_type == "procedures"
+                ):
                     name = name_text.split(None, 1)[0]
                 else:
                     name = name_text.split("(", 1)[0].strip()

@@ -1,2 +1,6 @@
-<?xml version='1.0' encoding='utf-8'?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"><include file="001_create_clickstream.xml" relativeToChangelogFile="true" /><include file="002_create_customer_sessions.xml" relativeToChangelogFile="true" /><include file="003_create_gps_telemetry.xml" relativeToChangelogFile="true" /><include file="004_create_sales_reconciliation.xml" relativeToChangelogFile="true" /><include file="005_create_shipping_logs.xml" relativeToChangelogFile="true" /></databaseChangeLog>
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+</databaseChangeLog>
