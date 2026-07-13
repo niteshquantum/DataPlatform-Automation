@@ -308,7 +308,6 @@ pipeline {
             }
         }
 
-<<<<<<< HEAD
         stage('Deploy Views') {
             steps {
                 script {
@@ -436,8 +435,6 @@ pipeline {
                 }
             }
         }
-=======
->>>>>>> main
 
         stage('Configure Global MySQL') {
 

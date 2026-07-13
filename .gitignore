@@ -110,7 +110,6 @@ liquibase/*/*
 
 # Keep required Liquibase configuration files
 !liquibase/*/master.xml
-<<<<<<< HEAD
 !liquibase/*/liquibase.properties
 !liquibase/mysql/*.xml
 !liquibase/mysql/objects/
@@ -118,7 +117,3 @@ liquibase/*/*
 !liquibase/postgresql/*.xml
 !liquibase/postgresql/objects/
 !liquibase/postgresql/objects/**
-
-=======
-!liquibase/*/liquibase.properties
->>>>>>> main
