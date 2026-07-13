@@ -40,6 +40,12 @@ fi
 
 SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
 
+if [ ! -x "$SQLCMD" ]
+then
+    echo "sqlcmd not found."
+    exit 1
+fi
+
 echo "Enabling SQL Server service..."
 
 sudo systemctl enable mssql-server
@@ -62,7 +68,7 @@ fi
 echo
 echo "Waiting for SQL Server service..."
 
-for i in {1..30}
+for i in {1..60}
 do
     if sudo systemctl is-active --quiet mssql-server
     then
@@ -90,7 +96,7 @@ echo "Validating SQL Server connection..."
 -U "$MSSQL_USER" \
 -P "$MSSQL_PASSWORD" \
 -C \
--Q "SELECT @@VERSION;" > /dev/null
+-Q "SELECT @@VERSION;"
 
 echo
 echo "SQL Server connection validated."
