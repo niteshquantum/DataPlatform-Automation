@@ -189,6 +189,31 @@ pipeline {
                 }
             }
         }
+
+        stage('Validate CSV') {
+            steps {
+                script {
+                    runTrackedStage('Validate CSV') {
+                        sh './scripts/bash/mssql/load/validate_csv.sh'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Views') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Views') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Functions') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Functions') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Stored Procedures') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Stored Procedures') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Deploy Triggers') { steps { sh './scripts/bash/mssql/objects/deploy_objects.sh' } }
+        stage('Validate Triggers') { steps { sh './scripts/bash/mssql/objects/validate_objects.sh' } }
+        stage('Database Inventory') { steps { sh './scripts/bash/mssql/load/database_inventory.sh' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/mssql/load/table_inventory.sh' } }
+        stage('SQL Agent Inventory') { steps { sh './scripts/bash/mssql/load/sql_agent.sh inventory' } }
+        stage('SQL Agent Validation') { steps { sh './scripts/bash/mssql/load/sql_agent.sh validation' } }
+        stage('SQL Agent History') { steps { sh './scripts/bash/mssql/load/sql_agent.sh history' } }
+        stage('SQL Agent Assessment') { steps { sh './scripts/bash/mssql/load/sql_agent.sh assessment' } }
     }
 
 

@@ -69,6 +69,25 @@ OBJECT_QUERIES = {
             WHERE trigger_schema = 'public'
         """,
     },
+    "mssql": {
+        "views": """
+            SELECT name
+            FROM sys.views
+        """,
+        "functions": """
+            SELECT name
+            FROM sys.objects
+            WHERE type IN ('FN', 'IF', 'TF', 'FS', 'FT')
+        """,
+        "procedures": """
+            SELECT name
+            FROM sys.procedures
+        """,
+        "triggers": """
+            SELECT name
+            FROM sys.triggers
+        """,
+    },
 }
 
 

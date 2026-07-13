@@ -28,6 +28,8 @@ pipeline {
             }
         }
 
+        
+
         stage('Download Dataset') {
             steps {
                 bat 'scripts\\batch\\common\\download_dataset.bat'
@@ -45,6 +47,21 @@ pipeline {
                 bat 'scripts\\batch\\mssql\\load\\validate_loaded_data.bat'
             }
         }
+
+        stage('Deploy Views') { steps { bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat' } }
+        stage('Validate Views') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
+        stage('Deploy Functions') { steps { bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat' } }
+        stage('Validate Functions') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
+        stage('Deploy Stored Procedures') { steps { bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat' } }
+        stage('Validate Stored Procedures') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
+        stage('Deploy Triggers') { steps { bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat' } }
+        stage('Validate Triggers') { steps { bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat' } }
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\database_inventory.bat' } }
+        stage('Table Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\table_inventory.bat' } }
+        stage('SQL Agent Inventory') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat inventory' } }
+        stage('SQL Agent Validation') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat validation' } }
+        stage('SQL Agent History') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat history' } }
+        stage('SQL Agent Assessment') { steps { bat 'scripts\\batch\\mssql\\load\\sql_agent.bat assessment' } }
 
     }
 

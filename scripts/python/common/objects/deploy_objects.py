@@ -45,6 +45,10 @@ RUNNER_PATHS = {
         "sh": "scripts/bash/postgresql/setup/run_liquibase.sh",
         "bat": "scripts/batch/postgresql/setup/run_liquibase.bat",
     },
+    "mssql": {
+        "sh": "scripts/bash/mssql/setup/run_liquibase.sh",
+        "bat": "scripts/batch/mssql/setup/run_liquibase.bat",
+    },
 }
 
 

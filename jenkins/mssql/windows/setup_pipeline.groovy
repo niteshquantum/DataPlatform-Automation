@@ -96,6 +96,12 @@ pipeline {
             }
         }
 
+        stage('Run Liquibase') {
+            steps {
+                bat 'scripts\\batch\\mssql\\setup\\run_liquibase.bat'
+            }
+        }
+
         stage('Validate Environment') {
             steps {
                 bat 'scripts\\batch\\mssql\\setup\\validate_environment.bat'
