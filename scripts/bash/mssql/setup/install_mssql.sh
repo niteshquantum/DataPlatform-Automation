@@ -12,15 +12,36 @@ echo
 
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mssql.conf"
 
+if [ ! -f "$CONFIG_FILE" ]
+then
+    echo "Configuration file not found."
+    echo "Expected: $CONFIG_FILE"
+    exit 1
+fi
+
+MSSQL_PASSWORD=$(grep "^MSSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
+MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
+
 export DEBIAN_FRONTEND=noninteractive
+
+INSTALL_REQUIRED=false
+
+# =====================================
+# CHECK EXISTING INSTALLATION
+# =====================================
 
 if [ -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "MSSQL Server is already installed."
 else
+    INSTALL_REQUIRED=true
+
+    echo
     echo "Installing prerequisite packages..."
+    echo
 
     sudo apt-get update
+
     sudo apt-get install -y \
         curl \
         gnupg \
@@ -45,7 +66,7 @@ else
     if [ ! -f "/etc/apt/sources.list.d/mssql-server-2025.list" ]
     then
         curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/mssql-server-2025.list \
-        | sudo tee /etc/apt/sources.list.d/mssql-server-2025.list > /dev/null
+        | sudo tee /etc/apt/sources.list.d/mssql-server-2025.list >/dev/null
     else
         echo "SQL Server 2025 repository already exists."
     fi
@@ -57,7 +78,7 @@ else
     if [ ! -f "/etc/apt/sources.list.d/microsoft-prod.list" ]
     then
         curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/prod.list \
-        | sudo tee /etc/apt/sources.list.d/microsoft-prod.list > /dev/null
+        | sudo tee /etc/apt/sources.list.d/microsoft-prod.list >/dev/null
     else
         echo "Microsoft Product repository already exists."
     fi
@@ -75,6 +96,14 @@ else
     sudo apt-get install -y mssql-server
 
     echo
+    echo "Running SQL Server initial setup..."
+    echo
+
+    sudo MSSQL_PID="$MSSQL_PID" \
+         MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
+         /opt/mssql/bin/mssql-conf -n setup accept-eula
+
+    echo
     echo "Installing SQL Server Tools..."
     echo
 
@@ -84,9 +113,23 @@ else
         unixodbc-dev
 fi
 
+# =====================================
+# SQLCMD LINK
+# =====================================
+
 if [ ! -L "/usr/local/bin/sqlcmd" ]
 then
     sudo ln -sf /opt/mssql-tools18/bin/sqlcmd /usr/local/bin/sqlcmd
+fi
+
+# =====================================
+# VALIDATE SQLCMD
+# =====================================
+
+if [ ! -x "/opt/mssql-tools18/bin/sqlcmd" ]
+then
+    echo "sqlcmd installation failed."
+    exit 1
 fi
 
 echo
