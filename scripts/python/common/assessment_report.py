@@ -28,7 +28,23 @@ def generate_report():
     output = ASSESSMENT_ROOT / "assessment_report.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"Assessment report: {output.relative_to(ROOT)}")
+    categories = sorted({name for inventories in platforms.values() for name in inventories})
+    overall_status = "PASS" if all(
+        item["status"] == "complete"
+        for inventories in platforms.values()
+        for item in inventories.values()
+    ) else "FAIL"
+    print(
+        f"\n{'=' * 50}\n"
+        "ASSESSMENT REPORT\n"
+        f"{'=' * 50}\n\n"
+        f"Databases Assessed : {report['platform_count']}\n"
+        f"Inventory Categories Executed : {len(categories)}\n"
+        f"Inventory Runs Completed : {report['inventory_count']}\n\n"
+        "Categories\n\n"
+        + "\n".join(f"{index}. {category.replace('_', ' ').title()}" for index, category in enumerate(categories, start=1))
+        + f"\n\nSummary\n\nAssessment completed successfully.\n\nOverall Status\n\n{overall_status}\n\nRecommendation\n\nReview any empty inventories as part of normal capacity planning.\n\n{'=' * 50}\n"
+    )
     return output
 
 
