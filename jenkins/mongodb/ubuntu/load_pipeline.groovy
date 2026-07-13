@@ -191,17 +191,10 @@ pipeline {
             }
         }
 
-        stage('Assessment Inventories') {
-            steps {
-                sh './scripts/bash/mongodb/assessment/run_assessment.sh all'
-            }
-        }
-
-        stage('Final Assessment Report') {
-            steps {
-                sh './scripts/bash/common/generate_assessment_report.sh'
-            }
-        }
+        stage('Database Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh database' } }
+        stage('Collection Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh collection' } }
+        stage('Index Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh index' } }
+        stage('Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 

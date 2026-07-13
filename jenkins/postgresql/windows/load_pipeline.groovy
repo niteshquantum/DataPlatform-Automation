@@ -239,17 +239,15 @@ pipeline {
             }
         }
 
-        stage('Assessment Inventories') {
-            steps {
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
-            }
-        }
-
-        stage('Final Assessment Report') {
-            steps {
-                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
-            }
-        }
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database' } }
+        stage('Schema Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema' } }
+        stage('Table Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table' } }
+        stage('View Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view' } }
+        stage('Function Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function' } }
+        stage('Trigger Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger' } }
+        stage('Extension Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension' } }
+        stage('Materialized View Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view' } }
+        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
     }
 
 

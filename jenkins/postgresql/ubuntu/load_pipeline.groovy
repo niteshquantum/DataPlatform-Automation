@@ -242,17 +242,15 @@ pipeline {
             }
         }
 
-        stage('Assessment Inventories') {
-            steps {
-                sh './scripts/bash/postgresql/assessment/run_assessment.sh all'
-            }
-        }
-
-        stage('Final Assessment Report') {
-            steps {
-                sh './scripts/bash/common/generate_assessment_report.sh'
-            }
-        }
+        stage('Database Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh database' } }
+        stage('Schema Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh schema' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh table' } }
+        stage('View Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh view' } }
+        stage('Function Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh function' } }
+        stage('Trigger Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh trigger' } }
+        stage('Extension Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh extension' } }
+        stage('Materialized View Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh materialized_view' } }
+        stage('Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 

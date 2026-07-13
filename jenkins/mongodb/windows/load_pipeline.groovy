@@ -203,17 +203,10 @@ pipeline {
             }
         }
 
-        stage('Assessment Inventories') {
-            steps {
-                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
-            }
-        }
-
-        stage('Final Assessment Report') {
-            steps {
-                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
-            }
-        }
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database' } }
+        stage('Collection Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection' } }
+        stage('Index Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index' } }
+        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
     }
 
 
