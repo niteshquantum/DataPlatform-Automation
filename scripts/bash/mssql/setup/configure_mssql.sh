@@ -23,35 +23,39 @@ then
     exit 1
 fi
 
+MSSQL_HOST=$(grep "^MSSQL_HOST=" "$CONFIG_FILE" | cut -d'=' -f2)
+MSSQL_PORT=$(grep "^MSSQL_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
+MSSQL_USER=$(grep "^MSSQL_USER=" "$CONFIG_FILE" | cut -d'=' -f2)
 MSSQL_PASSWORD=$(grep "^MSSQL_PASSWORD=" "$CONFIG_FILE" | cut -d'=' -f2)
-MSSQL_PID=$(grep "^MSSQL_PID=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 # =====================================
 # VALIDATE INSTALLATION
 # =====================================
 
-if [ ! -x "/opt/mssql/bin/mssql-conf" ]
+if [ ! -x "/opt/mssql/bin/sqlservr" ]
 then
     echo "SQL Server is not installed."
     exit 1
 fi
 
-# =====================================
-# CONFIGURE SQL SERVER
-# =====================================
-
-if [ -f "/var/opt/mssql/mssql.conf" ]
+if [ ! -x "/opt/mssql/bin/mssql-conf" ]
 then
-    echo "SQL Server is already configured."
-else
-    echo "Running SQL Server setup..."
-
-    sudo MSSQL_PID="$MSSQL_PID" \
-         MSSQL_SA_PASSWORD="$MSSQL_PASSWORD" \
-         /opt/mssql/bin/mssql-conf -n setup accept-eula
+    echo "mssql-conf utility not found."
+    exit 1
 fi
 
-echo
+SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
+
+if [ ! -x "$SQLCMD" ]
+then
+    echo "sqlcmd not found."
+    exit 1
+fi
+
+# =====================================
+# ENABLE SERVICE
+# =====================================
+
 echo "Enabling SQL Server service..."
 
 sudo systemctl enable mssql-server
@@ -62,19 +66,34 @@ echo
 # START / RESTART SERVICE
 # =====================================
 
+# =====================================
+# START SERVICE IF REQUIRED
+# =====================================
+
 if sudo systemctl is-active --quiet mssql-server
 then
-    echo "Restarting SQL Server service..."
-    sudo systemctl restart mssql-server
+    echo "SQL Server service is already running."
 else
     echo "Starting SQL Server service..."
     sudo systemctl start mssql-server
 fi
 
 echo
-echo "Waiting for SQL Server service..."
+echo "Waiting up to 120 seconds for SQL Server..."
 
-sleep 10
+# =====================================
+# WAIT FOR SERVICE
+# =====================================
+
+for i in {1..60}
+do
+    if sudo systemctl is-active --quiet mssql-server
+    then
+        break
+    fi
+
+    sleep 2
+done
 
 # =====================================
 # VALIDATE SERVICE
@@ -86,26 +105,28 @@ then
     exit 1
 fi
 
-# =====================================
-# VALIDATE CONNECTION
-# =====================================
+echo
+echo "SQL Server service is running."
 
-SQLCMD="/opt/mssql-tools18/bin/sqlcmd"
+echo
+echo "====================================="
+echo "VALIDATING SQL SERVER CONNECTION"
+echo "====================================="
+echo
 
-if [ -x "$SQLCMD" ]
-then
-    echo
-    echo "Validating SQL Server connection..."
+"$SQLCMD" \
+-S "${MSSQL_HOST},${MSSQL_PORT}" \
+-U "$MSSQL_USER" \
+-P "$MSSQL_PASSWORD" \
+-C \
+-Q "SELECT @@VERSION;"
 
-    "$SQLCMD" \
-    -S localhost \
-    -U sa \
-    -P "$MSSQL_PASSWORD" \
-    -C \
-    -Q "SELECT @@VERSION;" > /dev/null
+echo
+echo "SQL Server connection validated."
 
-    echo "SQL Server connection validated."
-fi
+echo "Host : $MSSQL_HOST"
+echo "Port : $MSSQL_PORT"
+echo "User : $MSSQL_USER"
 
 echo
 echo "====================================="
