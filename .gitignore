@@ -118,3 +118,6 @@ liquibase/*/*
 !liquibase/postgresql/*.xml
 !liquibase/postgresql/objects/
 !liquibase/postgresql/objects/**
+!liquibase/mssql/*.xml
+!liquibase/mssql/objects/
+!liquibase/mssql/objects/**

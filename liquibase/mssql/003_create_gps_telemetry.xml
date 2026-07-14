@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ 
+    <changeSet id="003" author="tanisha">
+ 
+    <preConditions onFail="MARK_RAN">
+        <not>
+            <tableExists tableName="gps_telemetry"/>
+        </not>
+    </preConditions>
+ 
+    <createTable tableName="gps_telemetry">
+
+        <column name="Telemetry_ID" type="VARCHAR(255)"/>
+
+        <column name="Manifest_ID" type="VARCHAR(255)"/>
+
+        <column name="Dispatch_Timestamp" type="VARCHAR(255)"/>
+
+        <column name="Last_Known_GPS_Coordinates" type="VARCHAR(255)"/>
+
+        <column name="Next_Transit_Node" type="VARCHAR(255)"/>
+
+        <column name="Temperature_Log_Celsius" type="VARCHAR(255)"/>
+
+        <column name="Delay_Risk_Probability_Percentage" type="VARCHAR(255)"/>
+
+        <column name="created_at" type="VARCHAR(255)"/>
+
+        <column name="updated_at" type="VARCHAR(255)"/>
+
+        <column name="source_system" type="VARCHAR(255)"/>
+
+        <column name="etl_load_timestamp" type="VARCHAR(255)"/>
+
+        <column name="record_version" type="VARCHAR(255)"/>
+
+        <column name="is_active" type="VARCHAR(255)"/>
+
+        </createTable>
+ 
+    </changeSet>
+ 
+</databaseChangeLog>

@@ -118,7 +118,7 @@ resource "null_resource" "create_mysql_user_windows" {
   depends_on = [null_resource.start_mysql_windows]
 
   triggers = {
-    bootstrap_version = "config-driven-mysql-user-v1"
+    bootstrap_version = "config-driven-mysql-user-v2"
     config_sha        = filesha256("../../config/windows/mysql.conf")
   }
 
