@@ -1,0 +1,59 @@
+# Database Migration Checklist
+
+Before Migration
+
+□ Run working Setup pipeline
+
+□ Run working Load pipeline
+
+□ Identify executed files
+
+Migration
+
+□ Move one file
+
+□ Update config
+
+□ Update imports
+
+□ Update paths
+
+□ Update Jenkins
+
+□ Update Batch
+
+□ Update Bash
+
+□ Update PowerShell
+
+□ Update Python
+
+Verification
+
+□ Search broken references
+
+□ Search duplicate implementations
+
+□ Search old config paths
+
+□ Search old imports
+
+□ Search moved file references
+
+Testing
+
+□ Test Setup
+
+□ Test Load
+
+□ Verify outputs
+
+Completion
+
+□ Commit
+
+□ Archive legacy
+
+□ Remove dead code
+
+□ Start next file

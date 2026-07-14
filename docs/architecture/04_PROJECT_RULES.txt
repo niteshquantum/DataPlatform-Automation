@@ -1,0 +1,37 @@
+# Project Rules
+
+Always use config_loader.py.
+
+Always use PROJECT_ROOT.
+
+Always use config/windows on Windows.
+
+Always use config/ubuntu on Ubuntu.
+
+Always separate Setup and Load.
+
+Always keep Windows and Ubuntu structures identical.
+
+Always keep Jenkins synchronized with Batch and Bash.
+
+Always search after moving files.
+
+Always update dependent scripts.
+
+Always test immediately.
+
+Never hardcode paths.
+
+Never duplicate business logic.
+
+Never duplicate configuration.
+
+Never place database-specific logic inside common.
+
+Never redesign architecture during debugging.
+
+Never delete legacy code directly.
+
+Archive first.
+
+Delete only after verification.

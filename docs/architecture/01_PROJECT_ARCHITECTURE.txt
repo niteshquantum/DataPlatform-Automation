@@ -1,0 +1,835 @@
+# PROJECT ARCHITECTURE KNOWLEDGE EXTRACTION
+
+## 1. Final Project Vision
+
+Build a reusable, enterprise-grade Data Engineering Automation Framework that automates the complete lifecycle of multiple databases across Windows and Ubuntu.
+
+Supported databases:
+
+* MySQL
+* MSSQL
+* MongoDB
+* PostgreSQL
+
+The framework should support:
+
+```text
+Git Clone
+    │
+    ▼
+Validate Runtime
+    │
+    ▼
+Install Dependencies
+    │
+    ▼
+Install Tools
+    │
+    ▼
+Deploy Database
+    │
+    ▼
+Start Database
+    │
+    ▼
+Create Database
+    │
+    ▼
+Schema Deployment
+    │
+    ▼
+Environment Validation
+    │
+    ▼
+Load Data
+    │
+    ▼
+Validate Loaded Data
+```
+
+Every database should follow the same architecture while owning its own implementation.
+
+---
+
+# 2. Final Folder Structure
+
+```text
+config/
+├── windows/
+│   ├── mysql.conf
+│   ├── mssql.conf
+│   ├── mongodb.conf
+│   └── postgresql.conf
+│
+└── ubuntu/
+    ├── mysql.conf
+    ├── mssql.conf
+    ├── mongodb.conf
+    └── postgresql.conf
+
+requirements/
+├── common.txt
+├── mysql.txt
+├── mssql.txt
+├── mongodb.txt
+└── postgresql.txt
+
+incoming/
+├── mysql/
+├── mssql/
+├── mongodb/
+└── postgresql/
+
+scripts/
+
+├── batch/
+│
+│   ├── common/
+│
+│   ├── mysql/
+│   │      setup/
+│   │      load/
+│   │
+│   ├── mssql/
+│   │      setup/
+│   │      load/
+│   │
+│   ├── mongodb/
+│   │      setup/
+│   │      load/
+│   │
+│   └── postgresql/
+│          setup/
+│          load/
+│
+├── bash/
+│
+├── python/
+│
+└── powershell/
+
+jenkins/
+
+terraform/
+
+liquibase/
+
+datasets/ (temporary)
+
+docs/
+
+archive/
+```
+
+---
+
+# 3. Project Architecture
+
+Architecture layers:
+
+```text
+Jenkins
+
+↓
+
+Batch / Bash
+
+↓
+
+Python / PowerShell
+
+↓
+
+Terraform
+
+↓
+
+Database
+
+↓
+
+Liquibase
+
+↓
+
+Validation
+```
+
+Responsibilities:
+
+* Jenkins orchestrates.
+* Batch/Bash orchestrates OS-specific execution.
+* Python performs business logic.
+* PowerShell performs Windows-specific automation.
+* Terraform provisions infrastructure.
+* Liquibase manages schema.
+* Validation verifies everything.
+
+---
+
+# 4. Common vs Database-specific Design
+
+## Common
+
+Contains only reusable functionality.
+
+Examples:
+
+* Project root detection
+* Runtime validation
+* Java validation
+* Liquibase installation
+* Liquibase validation
+* Terraform installation
+
+Common must never contain database-specific logic.
+
+---
+
+## Database-specific
+
+Every database owns:
+
+* Drivers
+* Deployment
+* Startup
+* Database creation
+* Validation
+* Data loading
+* Requirements
+* Configuration
+* Liquibase execution
+
+Example:
+
+```text
+mysql/
+
+install_mysql_driver
+
+validate_mysql_driver
+
+deploy_mysql
+
+start_mysql
+
+create_database
+
+run_liquibase
+
+validate_mysql
+```
+
+---
+
+# 5. Config Management Rules
+
+Configuration is centralized.
+
+Never hardcode:
+
+* Host
+* Port
+* Username
+* Password
+* Driver version
+* Database name
+
+Always read from:
+
+```text
+config/windows/
+
+config/ubuntu/
+```
+
+Every script must obtain configuration through config files.
+
+No duplicated configuration.
+
+---
+
+# 6. Python Architecture
+
+Python contains business logic.
+
+Examples:
+
+* Port validation
+* CSV validation
+* Data loading
+* Database validation
+
+Pattern:
+
+```text
+Batch
+
+↓
+
+Python
+```
+
+Never duplicate business logic inside Batch.
+
+Python determines project root using:
+
+```python
+Path(__file__).resolve().parents[n]
+```
+
+---
+
+# 7. Batch Architecture
+
+Batch is an orchestration layer.
+
+Responsibilities:
+
+* Call Python
+* Call PowerShell
+* Call Terraform
+* Call Liquibase
+* Control execution order
+
+Batch should never contain heavy business logic.
+
+Every Batch starts with:
+
+```text
+set_project_root
+
+↓
+
+PROJECT_ROOT
+```
+
+No script should rely on the current working directory.
+
+---
+
+# 8. Bash Architecture
+
+Ubuntu mirrors Windows.
+
+Structure must remain identical.
+
+Responsibilities:
+
+* Runtime validation
+* Tool installation
+* Database deployment
+* Environment validation
+* Load pipeline
+
+Only implementation differs.
+
+Architecture remains identical.
+
+---
+
+# 9. PowerShell Architecture
+
+PowerShell is Windows-specific.
+
+Responsibilities:
+
+* Download drivers
+* Start services
+* Stop services
+* Windows automation
+
+Every script begins with:
+
+```powershell
+$PROJECT_ROOT =
+Resolve-Path(...)
+```
+
+Never rely on relative paths.
+
+Configuration always comes from:
+
+```text
+config/windows
+```
+
+---
+
+# 10. Jenkins Architecture
+
+Jenkins performs orchestration only.
+
+It never contains business logic.
+
+Setup pipeline:
+
+```text
+Validate Runtime
+
+↓
+
+Install Requirements
+
+↓
+
+Install Tools
+
+↓
+
+Deploy
+
+↓
+
+Start
+
+↓
+
+Create Database
+
+↓
+
+Liquibase
+
+↓
+
+Validate Environment
+```
+
+Load pipeline:
+
+```text
+Validate Runtime
+
+↓
+
+Validate Requirements
+
+↓
+
+Validate Database
+
+↓
+
+Validate CSV
+
+↓
+
+Load Data
+
+↓
+
+Validate Loaded Data
+```
+
+---
+
+# 11. Liquibase Architecture
+
+Liquibase is used for relational databases only.
+
+Supported:
+
+* MySQL
+* MSSQL
+* PostgreSQL
+
+MongoDB does not require Liquibase.
+
+Liquibase structure:
+
+```text
+liquibase/
+
+mysql/
+
+mssql/
+
+postgresql/
+```
+
+Every database owns its changelog.
+
+---
+
+# 12. Data Loader Architecture
+
+Loading is separated from setup.
+
+Pipeline:
+
+```text
+Validate CSV
+
+↓
+
+Load Data
+
+↓
+
+Validate Loaded Data
+```
+
+Incoming datasets are currently local.
+
+Future architecture:
+
+External configurable dataset location.
+
+---
+
+# 13. Validation Architecture
+
+Validation is hierarchical.
+
+Environment validation becomes the final quality gate.
+
+It performs:
+
+```text
+Validate Runtime
+
+↓
+
+Validate Requirements
+
+↓
+
+Validate Tools
+
+↓
+
+Validate Port
+
+↓
+
+Validate Database
+```
+
+No duplicate validation stages should exist inside Jenkins.
+
+---
+
+# 14. Reusable Design Patterns
+
+Use orchestration pattern.
+
+```text
+Jenkins
+
+↓
+
+Batch
+
+↓
+
+Python
+
+↓
+
+Database
+```
+
+Single Responsibility Principle.
+
+Every script performs exactly one task.
+
+Composition over duplication.
+
+Database ownership.
+
+Centralized configuration.
+
+Layered validation.
+
+---
+
+# 15. Coding Standards
+
+* No duplicated logic.
+* No hardcoded paths.
+* No duplicated configuration.
+* Small focused scripts.
+* Reusable utilities in common.
+* Database-specific implementation stays inside database folders.
+* Fail immediately on errors.
+* Validate after every installation.
+
+---
+
+# 16. Folder Naming Standards
+
+Every database:
+
+```text
+setup
+
+load
+```
+
+Every platform:
+
+```text
+windows
+
+ubuntu
+```
+
+Configuration:
+
+```text
+config/windows
+
+config/ubuntu
+```
+
+Requirements:
+
+```text
+requirements/
+```
+
+Incoming data:
+
+```text
+incoming/
+```
+
+---
+
+# 17. Script Naming Standards
+
+Setup:
+
+```text
+install_*
+
+validate_*
+
+deploy_*
+
+start_*
+
+create_database
+
+run_liquibase
+```
+
+Load:
+
+```text
+validate_csv
+
+load_data
+
+validate_loaded_data
+```
+
+Cleanup:
+
+```text
+cleanup_*
+
+destroy_*
+```
+
+---
+
+# 18. Pipeline Standards
+
+Setup Pipeline:
+
+```text
+Validate Runtime
+
+Install Requirements
+
+Install Tools
+
+Deploy
+
+Start
+
+Create Database
+
+Liquibase
+
+Validate Environment
+```
+
+Load Pipeline:
+
+```text
+Validate Runtime
+
+Validate Requirements
+
+Validate Database
+
+Validate CSV
+
+Load Data
+
+Validate Loaded Data
+```
+
+Pipelines remain identical across databases.
+
+Only called scripts change.
+
+---
+
+# 19. Mandatory Rules
+
+* Every database owns its scripts.
+* Common contains reusable utilities only.
+* Configuration is centralized.
+* Runtime validation always executes first.
+* Environment validation is always the final setup stage.
+* Every script has a single responsibility.
+* Every file movement must be followed by path updates and testing.
+* Test every moved script immediately after refactoring.
+
+---
+
+# 20. Things that should NEVER be done again
+
+* Hardcode project paths.
+* Read configuration directly from arbitrary locations.
+* Duplicate logic across databases.
+* Put MySQL-specific code in common.
+* Mix setup and load responsibilities.
+* Depend on the current working directory.
+* Place business logic inside Jenkins.
+* Skip testing after moving files.
+* Add duplicate validation stages to Jenkins.
+* Use one shared requirements file for all databases.
+
+---
+
+# 21. Lessons Learned
+
+* Architecture should be finalized before large-scale refactoring.
+* Move one file at a time.
+* Test immediately after each move.
+* Standardize root path detection.
+* Standardize configuration loading.
+* Standardize requirements.
+* Keep orchestration separate from implementation.
+* Avoid fixing many files simultaneously.
+
+---
+
+# 22. Future Database Migration Strategy
+
+Migration order:
+
+1. MySQL
+2. MSSQL
+3. MongoDB
+4. PostgreSQL
+
+For every database:
+
+1. Move setup scripts.
+2. Fix root paths.
+3. Centralize config.
+4. Update requirements.
+5. Update Jenkins.
+6. Test setup.
+7. Move load scripts.
+8. Test load.
+9. Remove legacy files.
+
+Never migrate multiple databases simultaneously.
+
+---
+
+# 23. Generic Database Onboarding Process
+
+To add a new database:
+
+1. Create config files.
+2. Create requirements file.
+3. Create setup folder.
+4. Create load folder.
+5. Create PowerShell/Bash/Python folders.
+6. Create Terraform module.
+7. Create Liquibase changelog (if relational).
+8. Create Jenkins setup pipeline.
+9. Create Jenkins load pipeline.
+10. Validate architecture.
+11. Test manually.
+12. Remove legacy code.
+
+---
+
+# 24. Project Cleanup Strategy
+
+Cleanup phases:
+
+Phase 1
+
+Inventory
+
+Phase 2
+
+Dependency analysis
+
+Phase 3
+
+Dead code detection
+
+Phase 4
+
+Duplicate removal
+
+Phase 5
+
+Folder restructuring
+
+Phase 6
+
+Path refactoring
+
+Phase 7
+
+Validation
+
+Phase 8
+
+Archive legacy files
+
+Phase 9
+
+Delete archived legacy after verification
+
+Never delete directly.
+
+Always archive first.
+
+---
+
+# 25. Recommended Final Architecture
+
+The final architecture is based on these principles:
+
+* Layered architecture
+* Single responsibility
+* Database ownership
+* Reusable common utilities
+* Configuration centralization
+* OS-independent project structure
+* Platform-specific implementation
+* Pipeline consistency
+* Immediate validation after changes
+* Modular onboarding for future databases
+* Minimal duplication
+* Enterprise maintainability
+* Easy extensibility
+* Predictable execution flow
+* Clean repository organization
+* Long-term maintainability over short-term convenience
+
+This document should be treated as the permanent engineering reference for the DataPlatform-Automation project. Future development, refactoring, onboarding of new databases, and repository cleanup should follow these architectural principles consistently.
+	

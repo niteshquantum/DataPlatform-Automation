@@ -1,0 +1,2 @@
+{"timestamp": "2026-07-14T01:26:56.858154", "file": "demo.csv", "sha256": "94af6b539bfa54dcea866bf48e8446200f8fff900f1ee4f2bba19f943239a6ca", "table": "demo", "rows_inserted": 50, "status": "SUCCESS"}
+{"timestamp": "2026-07-14T12:16:22.323970", "file": "demo.csv", "sha256": "1dda08730c42163836e3f3ef1fa95a0a44a087697159f1da14079de2dbe20aea", "table": "demo", "rows_inserted": 60, "status": "SUCCESS"}
