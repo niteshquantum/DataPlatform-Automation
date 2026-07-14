@@ -32,7 +32,7 @@ REM LIQUIBASE
 REM =====================================
 
 echo Checking Liquibase...
-call "%ROOT%\scripts\batch\common\validate_liquibase.bat"
+call "%ROOT%\scripts\batch\mssql\setup\validate_liquibase.bat"
 if errorlevel 1 exit /b 1
 
 REM =====================================
