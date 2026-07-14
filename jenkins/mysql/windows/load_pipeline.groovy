@@ -158,7 +158,23 @@ pipeline {
             }
         }
 
-        
+
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mysql'
+                    }
+                }
+            }
+        }
+
 
         stage('Load Data') {
 
@@ -193,63 +209,311 @@ pipeline {
             }
         }
 
+
         stage('Deploy Views') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
+
 
         stage('Validate Views') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
+
 
         stage('Deploy Functions') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
+
 
         stage('Validate Functions') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
+
 
         stage('Deploy Stored Procedures') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
+
 
         stage('Validate Stored Procedures') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
 
+
         stage('Deploy Triggers') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
             }
         }
 
+
         stage('Validate Triggers') {
+
             steps {
+
                 bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
             }
         }
 
-        stage('Database Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat database' } }
-        stage('Schema Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat schema' } }
-        stage('Table Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat table' } }
-        stage('View Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat view' } }
-        stage('Stored Procedure Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat procedure' } }
-        stage('Function Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat function' } }
-        stage('Trigger Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat trigger' } }
-        stage('Event Inventory') { steps { bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat event' } }
-        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
+
+        stage('Database Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat database'
+            }
+        }
+
+
+        stage('Schema Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat schema'
+            }
+        }
+
+
+        stage('Table Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat table'
+            }
+        }
+
+
+        stage('View Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat view'
+            }
+        }
+
+
+        stage('Stored Procedure Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat procedure'
+            }
+        }
+
+
+        stage('Function Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat function'
+            }
+        }
+
+
+        stage('Trigger Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat trigger'
+            }
+        }
+
+
+        stage('Event Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat event'
+            }
+        }
+
+
+        stage('Assessment Report') {
+
+            steps {
+
+                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+            }
+        }
+
+
+        stage('Reconcile Source and Target Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Reconcile Source and Target Data'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Discover Database Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Discover Database Environment'
+                    ) {
+
+                        bat 'python scripts\\discovery\\discovery_engine.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Database Growth') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Database Growth'
+                    ) {
+
+                        bat 'python scripts\\discovery\\growth_analyzer.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Migration Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Migration Requirements'
+                    ) {
+
+                        bat 'python scripts\\discovery\\requirement_analyzer.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assess Migration') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Assess Migration'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Migration Recommendations') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Migration Recommendations'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Governance Action Plan') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Governance Action Plan'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Technical Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Technical Migration Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Executive Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Executive Migration Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat mysql'
+                    }
+                }
+            }
+        }
     }
 
 
@@ -300,7 +564,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mysql/**, outputs/assessments/assessment_report.json",
+                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, reports/migration/mysql/**, outputs/assessments/mysql/**, outputs/assessments/assessment_report.json, metadata/profiling/mysql/**, metadata/reconciliation/mysql/**, metadata/discovery/mysql/**, metadata/assessment/mysql/**, metadata/recommendation/mysql/**, metadata/governance/mysql/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

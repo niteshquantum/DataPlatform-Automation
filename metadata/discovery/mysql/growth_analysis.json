@@ -1,0 +1,118 @@
+{
+    "database": "mysql",
+    "generated_at": "2026-07-14T06:48:14.066842+00:00",
+    "growth_status": "ANALYZED",
+    "comparison": {
+        "previous_snapshot_generated_at": "2026-07-14T06:46:35.114037+00:00",
+        "current_snapshot_generated_at": "2026-07-14T06:48:11.947825+00:00"
+    },
+    "summary": {
+        "previous_total_records": 1563355,
+        "current_total_records": 1563355,
+        "total_record_growth": 0,
+        "overall_growth_rate_percent": 0.0,
+        "datasets_with_growth": 0,
+        "datasets_with_reduction": 0,
+        "datasets_without_change": 12,
+        "new_datasets": 0,
+        "removed_datasets": 0
+    },
+    "dataset_growth": [
+        {
+            "dataset_name": "brands",
+            "status": "NO_CHANGE",
+            "previous_record_count": 221,
+            "current_record_count": 221,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "categories",
+            "status": "NO_CHANGE",
+            "previous_record_count": 56,
+            "current_record_count": 56,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "customer_loyalty",
+            "status": "NO_CHANGE",
+            "previous_record_count": 99441,
+            "current_record_count": 99441,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "databasechangelog",
+            "status": "NO_CHANGE",
+            "previous_record_count": 10,
+            "current_record_count": 10,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "databasechangeloglock",
+            "status": "NO_CHANGE",
+            "previous_record_count": 1,
+            "current_record_count": 1,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "demo",
+            "status": "NO_CHANGE",
+            "previous_record_count": 110,
+            "current_record_count": 110,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "inventory",
+            "status": "NO_CHANGE",
+            "previous_record_count": 105000,
+            "current_record_count": 105000,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "price_history",
+            "status": "NO_CHANGE",
+            "previous_record_count": 1048575,
+            "current_record_count": 1048575,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "products",
+            "status": "NO_CHANGE",
+            "previous_record_count": 105000,
+            "current_record_count": 105000,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "sellers",
+            "status": "NO_CHANGE",
+            "previous_record_count": 105000,
+            "current_record_count": 105000,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "suppliers",
+            "status": "NO_CHANGE",
+            "previous_record_count": 500,
+            "current_record_count": 500,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        },
+        {
+            "dataset_name": "support_tickets",
+            "status": "NO_CHANGE",
+            "previous_record_count": 99441,
+            "current_record_count": 99441,
+            "record_growth": 0,
+            "growth_rate_percent": 0.0
+        }
+    ]
+}

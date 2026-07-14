@@ -54,6 +54,7 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+
     stages {
 
         stage('Initialize Logging') {
@@ -158,6 +159,23 @@ pipeline {
         }
 
 
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
         stage('Load Data') {
 
             steps {
@@ -191,22 +209,212 @@ pipeline {
             }
         }
 
+
         stage('Validate Collections') {
+
             steps {
+
                 bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
             }
         }
 
+
         stage('Validate Indexes') {
+
             steps {
+
                 bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
             }
         }
 
-        stage('Database Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database' } }
-        stage('Collection Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection' } }
-        stage('Index Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index' } }
-        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
+
+        stage('Database Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database'
+            }
+        }
+
+
+        stage('Collection Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection'
+            }
+        }
+
+
+        stage('Index Inventory') {
+
+            steps {
+
+                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index'
+            }
+        }
+
+
+        stage('Assessment Report') {
+
+            steps {
+
+                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+            }
+        }
+
+
+        stage('Reconcile Source and Target Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Reconcile Source and Target Data'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Discover Database Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Discover Database Environment'
+                    ) {
+
+                        bat 'python scripts\\discovery\\discovery_engine.py --database mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Database Growth') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Database Growth'
+                    ) {
+
+                        bat 'python scripts\\discovery\\growth_analyzer.py --database mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Migration Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Migration Requirements'
+                    ) {
+
+                        bat 'python scripts\\discovery\\requirement_analyzer.py --database mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assess Migration') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Assess Migration'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Migration Recommendations') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Migration Recommendations'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Governance Action Plan') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Governance Action Plan'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Technical Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Technical Migration Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat mongodb'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Executive Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Executive Migration Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat mongodb'
+                    }
+                }
+            }
+        }
     }
 
 
@@ -257,7 +465,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json",
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, reports/migration/mongodb/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json, metadata/profiling/mongodb/**, metadata/reconciliation/mongodb/**, metadata/discovery/mongodb/**, metadata/assessment/mongodb/**, metadata/recommendation/mongodb/**, metadata/governance/mongodb/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
