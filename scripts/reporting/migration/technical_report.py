@@ -1358,7 +1358,7 @@ def build_assessment_breakdown(
 
     return f"""
     <section class="report-section">
-        <h2>9. Migration Assessment Breakdown</h2>
+        <h2>8. Migration Assessment Breakdown</h2>
 
         <div class="assessment-grid">
 

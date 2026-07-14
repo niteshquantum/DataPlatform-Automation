@@ -911,7 +911,7 @@ def build_business_concerns(
     return f"""
     <section class="report-section">
 
-        <h2>3. Key Business Concerns</h2>
+        <h2>4. Key Business Concerns</h2>
 
         <p class="section-description">
             Highest-priority issues that may affect
@@ -942,7 +942,7 @@ def build_reconciliation_health(
     return f"""
     <section class="report-section">
 
-        <h2>4. Migration Completeness</h2>
+        <h2>5. Migration Completeness</h2>
 
         <p class="section-description">
             Comparison between expected source datasets
@@ -1143,7 +1143,7 @@ def build_priority_actions(
     return f"""
     <section class="report-section">
 
-        <h2>5. Priority Action Plan</h2>
+        <h2>6. Priority Action Plan</h2>
 
         <p class="section-description">
             Recommended actions requiring management

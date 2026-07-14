@@ -128,7 +128,11 @@ def discover_mysql(
             SELECT TABLE_NAME
             FROM information_schema.tables
             WHERE table_schema = DATABASE()
-              AND table_type = 'BASE TABLE'
+            AND table_type = 'BASE TABLE'
+            AND LOWER(TABLE_NAME) NOT IN (
+                'databasechangelog',
+                'databasechangeloglock'
+            )
             ORDER BY TABLE_NAME
             """
         )
@@ -205,7 +209,11 @@ def discover_postgresql(
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
-              AND table_type = 'BASE TABLE'
+            AND table_type = 'BASE TABLE'
+            AND LOWER(table_name) NOT IN (
+                'databasechangelog',
+                'databasechangeloglock'
+            )
             ORDER BY table_name
             """
         )
