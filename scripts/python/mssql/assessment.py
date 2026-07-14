@@ -13,7 +13,7 @@ QUERIES = {
     "view": "SELECT s.name AS schema_name, v.name AS view_name, v.create_date, v.modify_date FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id ORDER BY s.name,v.name",
     "procedure": "SELECT s.name AS schema_name, p.name AS procedure_name, p.create_date, p.modify_date FROM sys.procedures p JOIN sys.schemas s ON s.schema_id=p.schema_id ORDER BY s.name,p.name",
     "function": "SELECT s.name AS schema_name, o.name AS function_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('FN','IF','TF','FS','FT') ORDER BY s.name,o.name",
-    "trigger": "SELECT s.name AS schema_name, t.name AS trigger_name, OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema, OBJECT_NAME(t.parent_id) AS parent_name, t.is_disabled FROM sys.triggers t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.parent_class=1 ORDER BY s.name,t.name",
+    "trigger": "SELECT s.name AS schema_name, t.name AS trigger_name, OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema, OBJECT_NAME(t.parent_id) AS parent_name, t.is_disabled FROM sys.triggers t JOIN sys.objects o ON o.object_id=t.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE t.parent_class=1 ORDER BY s.name,t.name",
 }
 
 
