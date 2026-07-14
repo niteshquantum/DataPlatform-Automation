@@ -59,10 +59,29 @@ SUPPORTED_FILE_TYPES = (
 
 def read_csv_file(file_path: Path) -> pd.DataFrame:
     """
-    Read a CSV file into a pandas DataFrame.
+    Read a CSV file into a pandas DataFrame
+    with cross-platform encoding fallback.
     """
 
-    return pd.read_csv(file_path)
+    encodings = (
+        "utf-8",
+        "cp1252",
+        "latin-1",
+    )
+
+    last_error = None
+
+    for encoding in encodings:
+        try:
+            return pd.read_csv(
+                file_path,
+                encoding=encoding,
+            )
+
+        except UnicodeDecodeError as error:
+            last_error = error
+
+    raise last_error
 
 
 def read_json_file(file_path: Path) -> pd.DataFrame:
