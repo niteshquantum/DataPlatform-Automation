@@ -85,30 +85,17 @@ else {
         -Force `
         -ErrorAction Stop
 
-    $Timeout = 60
-    $Elapsed = 0
-
-    do {
-
-        Start-Sleep -Seconds 2
-
-        $Service = Get-Service `
-            -Name $ServiceName `
-            -ErrorAction SilentlyContinue
-
-        $Elapsed += 2
-
-    } until (
-        $null -eq $Service -or
-        $Service.Status -eq "Stopped" -or
-        $Elapsed -ge $Timeout
+    $Service.WaitForStatus(
+        [System.ServiceProcess.ServiceControllerStatus]::Stopped,
+        [TimeSpan]::FromSeconds(60)
     )
+    $Service.Refresh()
 
     if (
         $null -ne $Service -and
         $Service.Status -ne "Stopped"
     ) {
-        throw "SQL Server service failed to stop within $Timeout seconds."
+        throw "SQL Server service failed to stop within 60 seconds."
     }
 
     Write-Host "SQL Server service stopped successfully."

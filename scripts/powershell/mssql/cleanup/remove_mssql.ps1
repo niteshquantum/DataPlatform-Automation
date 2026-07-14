@@ -23,6 +23,7 @@ $Config = Load-Config "$PROJECT_ROOT\config\windows\mssql.conf"
 $Instance = $Config["MSSQL_INSTANCE"]
 $Features = $Config["MSSQL_FEATURES"]
 $Database = $Config["MSSQL_DB"]
+$AcceptEula = $Config["MSSQL_ACCEPT_EULA"]
 
 if ([string]::IsNullOrWhiteSpace($Instance)) {
     throw "MSSQL_INSTANCE is missing in config/windows/mssql.conf"
@@ -30,6 +31,10 @@ if ([string]::IsNullOrWhiteSpace($Instance)) {
 
 if ([string]::IsNullOrWhiteSpace($Features)) {
     throw "MSSQL_FEATURES is missing in config/windows/mssql.conf"
+}
+
+if ($AcceptEula -notin @("True", "true", "1")) {
+    throw "MSSQL_ACCEPT_EULA must explicitly accept the SQL Server license terms for unattended removal."
 }
 
 # =====================================
@@ -74,6 +79,18 @@ Write-Host ""
 $Service = Get-Service `
     -Name $ServiceName `
     -ErrorAction SilentlyContinue
+
+$InstanceRegistry = Get-ItemProperty `
+    -Path "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" `
+    -ErrorAction SilentlyContinue
+$InstanceRegistered = $null -ne $InstanceRegistry -and $null -ne $InstanceRegistry.PSObject.Properties[$Instance]
+
+if ($Service -and !$InstanceRegistered) {
+    Write-Host "Removing orphaned SQL Server service '$ServiceName' left by a prior incomplete uninstall."
+    & sc.exe delete $ServiceName | Write-Host
+    if ($LASTEXITCODE -ne 0) { throw "Unable to remove orphaned SQL Server service '$ServiceName'." }
+    $Service = $null
+}
 
 if (!$Service) {
 
@@ -187,6 +204,7 @@ $Arguments = @(
     "/ACTION=Uninstall"
     "/INSTANCENAME=$Instance"
     "/FEATURES=$Features"
+    "/IACCEPTSQLSERVERLICENSETERMS"
 )
 
 $Process = Start-Process `

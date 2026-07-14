@@ -528,21 +528,13 @@ function Wait-ServiceRunning {
 
     $service = Get-Service -Name $ServiceName -ErrorAction Stop
 
-    $elapsed = 0
+    $service.WaitForStatus(
+        [System.ServiceProcess.ServiceControllerStatus]::Running,
+        [TimeSpan]::FromSeconds($TimeoutSeconds)
+    )
+    $service.Refresh()
 
-    while ($service.Status -ne "Running") {
-
-        if ($elapsed -ge $TimeoutSeconds) {
-
-            throw "Service '$ServiceName' failed to reach Running state."
-        }
-
-        Start-Sleep -Seconds 2
-
-        $elapsed += 2
-
-        $service.Refresh()
-    }
+    if ($service.Status -ne "Running") { throw "Service '$ServiceName' failed to reach Running state." }
 
     Write-Success "Service '$ServiceName' is running."
 }
