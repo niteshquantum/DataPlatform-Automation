@@ -224,7 +224,6 @@ pipeline {
             }
         }
 
-
         stage('Create Database') {
 
             steps {
@@ -239,7 +238,11 @@ pipeline {
             }
         }
 
-
+        stage('Run Liquibase') {
+            steps {
+                sh './scripts/bash/postgresql/setup/run_liquibase.sh'
+            }
+        }
         stage('Configure Global PSQL') {
 
             steps {

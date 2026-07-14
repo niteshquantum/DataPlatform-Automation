@@ -190,6 +190,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Validate Collections') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+            }
+        }
+
+        stage('Validate Indexes') {
+            steps {
+                bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
+            }
+        }
+
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database' } }
+        stage('Collection Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection' } }
+        stage('Index Inventory') { steps { bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index' } }
+        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
     }
 
 
@@ -240,7 +257,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

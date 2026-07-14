@@ -182,6 +182,16 @@ pipeline {
             }
         }
 
+        stage('Configure MSSQL') {
+            steps {
+                script {
+                    runTrackedStage('Configure MSSQL') {
+                        sh './scripts/bash/mssql/setup/configure_mssql.sh'
+                    }
+                }
+            }
+        }
+
                 stage('Start MSSQL') {
 
             steps {
@@ -210,6 +220,16 @@ pipeline {
                     ) {
 
                         sh './scripts/bash/mssql/setup/create_database.sh'
+                    }
+                }
+            }
+        }
+
+        stage('Run Liquibase') {
+            steps {
+                script {
+                    runTrackedStage('Run Liquibase') {
+                        sh './scripts/bash/mssql/setup/run_liquibase.sh'
                     }
                 }
             }

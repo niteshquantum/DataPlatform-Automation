@@ -21,7 +21,7 @@ POSTGRESQL_DRIVER_VERSION=$(grep "^POSTGRESQL_DRIVER_VERSION=" "$CONFIG_FILE" | 
 
 LB="$PROJECT_ROOT/tools/liquibase/liquibase"
 DRIVER="$PROJECT_ROOT/tools/drivers/postgresql-${POSTGRESQL_DRIVER_VERSION}.jar"
-CHANGELOG="liquibase/postgresql/master.xml"
+CHANGELOG="${1:-liquibase/postgresql/master.xml}"
 
 cd "$PROJECT_ROOT"
 

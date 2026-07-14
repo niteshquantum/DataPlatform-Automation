@@ -24,6 +24,7 @@ logs/
 # =====================================================
 
 reports/
+outputs/assessments/
 
 # =====================================================
 # Python
@@ -111,3 +112,9 @@ liquibase/*/*
 # Keep required Liquibase configuration files
 !liquibase/*/master.xml
 !liquibase/*/liquibase.properties
+!liquibase/mysql/*.xml
+!liquibase/mysql/objects/
+!liquibase/mysql/objects/**
+!liquibase/postgresql/*.xml
+!liquibase/postgresql/objects/
+!liquibase/postgresql/objects/**

@@ -193,6 +193,64 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy Views') {
+            steps {
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Views') {
+            steps {
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Functions') {
+            steps {
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Functions') {
+            steps {
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Stored Procedures') {
+            steps {
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Stored Procedures') {
+            steps {
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Triggers') {
+            steps {
+                sh './scripts/bash/postgresql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Triggers') {
+            steps {
+                sh './scripts/bash/postgresql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Database Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh database' } }
+        stage('Schema Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh schema' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh table' } }
+        stage('View Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh view' } }
+        stage('Function Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh function' } }
+        stage('Trigger Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh trigger' } }
+        stage('Extension Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh extension' } }
+        stage('Materialized View Inventory') { steps { sh './scripts/bash/postgresql/assessment/run_assessment.sh materialized_view' } }
+        stage('Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 
@@ -243,7 +301,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

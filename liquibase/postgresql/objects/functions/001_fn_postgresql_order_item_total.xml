@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001_fn_postgresql_order_item_total" author="tanisha">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*)
+                FROM information_schema.routines
+                WHERE specific_schema = 'public'
+                  AND routine_name = 'fn_postgresql_order_item_total'
+                  AND routine_type = 'FUNCTION'
+            </sqlCheck>
+        </preConditions>
+
+        <sql splitStatements="false" stripComments="false">
+            CREATE FUNCTION public.fn_postgresql_order_item_total(order_id_value VARCHAR)
+            RETURNS NUMERIC
+            LANGUAGE plpgsql
+            AS $$
+            DECLARE
+                total_value NUMERIC;
+            BEGIN
+                SELECT COALESCE(SUM(NULLIF("Net_Selling_Price", '')::NUMERIC), 0)
+                INTO total_value
+                FROM public.order_items
+                WHERE "Order_ID" = order_id_value;
+
+                RETURN total_value;
+            END;
+            $$;
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

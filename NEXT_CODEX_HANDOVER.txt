@@ -1,0 +1,826 @@
+NEXT CODEX HANDOVER
+Generated for repository state verified from:
+C:\Users\admin\Desktop\main-automation\DataPlatform-Automation
+
+==============================================================================
+1. REPOSITORY ROOT
+==============================================================================
+
+Repository Root:
+C:\Users\admin\Desktop\main-automation\DataPlatform-Automation
+
+This repository is the only source of truth.
+
+The repository currently contains automation for:
+1. MySQL
+2. PostgreSQL
+3. MongoDB
+4. MSSQL
+
+Current verified reference implementations:
+1. MySQL
+2. PostgreSQL
+
+Next database to implement:
+MongoDB
+
+Do not use previous chat history as source material. Verify all current facts from
+the repository before making any future code changes.
+
+==============================================================================
+2. CURRENT REPOSITORY ARCHITECTURE
+==============================================================================
+
+Top-level architecture observed in the repository:
+
+1. Jenkins pipelines
+   - jenkins/mysql/
+   - jenkins/postgresql/
+   - jenkins/mongodb/
+   - jenkins/mssql/
+
+2. Windows Batch entry points
+   - scripts/batch/mysql/
+   - scripts/batch/postgresql/
+   - scripts/batch/mongodb/
+   - scripts/batch/mssql/
+   - scripts/batch/common/
+
+3. Ubuntu Bash entry points
+   - scripts/bash/mysql/
+   - scripts/bash/postgresql/
+   - scripts/bash/mongodb/
+   - scripts/bash/mssql/
+   - scripts/bash/common/
+
+4. Python automation
+   - scripts/python/mysql/
+   - scripts/python/postgresql/
+   - scripts/python/mongodb/
+   - scripts/python/common/
+   - scripts/python/common/objects/
+
+5. Shared data loader
+   - scripts/data_loader.py
+   - scripts/schema_detector.py
+
+6. Liquibase table changelogs
+   - liquibase/mysql/
+   - liquibase/postgresql/
+   - liquibase/mssql/
+
+7. Liquibase object changelogs
+   - liquibase/mysql/objects/
+   - liquibase/postgresql/objects/
+
+8. Configuration
+   - config/windows/
+   - config/ubuntu/
+   - config/common/
+   - config/python.conf
+
+9. Data and metadata
+   - archive/mysql/
+   - archive/postgresql/
+   - archive/mongodb/
+   - archive/mssql/
+   - metadata/mysql/
+   - metadata/postgresql/
+   - metadata/mongodb/
+   - metadata/mssql/
+
+10. Terraform
+    - terraform/mysql/
+    - terraform/postgresql/
+    - terraform/mongodb/
+    - terraform/mssql/
+
+11. Local tool installation
+    - tools/
+
+Shared object framework currently exists at:
+1. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\generate_master_objects.py
+2. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\deploy_objects.py
+3. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\validate_objects.py
+
+The shared object framework currently supports MySQL and PostgreSQL object
+deployment/validation.
+
+==============================================================================
+3. OVERALL EXECUTION FLOW
+==============================================================================
+
+Approved execution flow:
+
+Jenkins
+  |
+  v
+Setup Pipeline
+  |
+  v
+Load Pipeline
+  |
+  v
+Liquibase
+  |
+  v
+Database Objects
+  |
+  v
+Validation
+  |
+  v
+End-to-End Testing
+
+Reference implementation behavior:
+
+1. Jenkins setup pipeline invokes the database-specific setup scripts.
+2. Setup pipeline validates runtimes and tools.
+3. Setup pipeline deploys/starts the database service.
+4. Setup pipeline creates the database.
+5. Setup pipeline runs database table Liquibase changesets.
+6. Load pipeline validates runtime dependencies.
+7. Load pipeline starts or validates the database service.
+8. Load pipeline downloads or verifies the dataset.
+9. Load pipeline detects schema and updates Liquibase table master XML.
+10. Load pipeline runs Liquibase update.
+11. Load pipeline loads data through the shared data loader.
+12. Load pipeline validates data and row counts.
+13. Object deployment regenerates master_objects.xml from object XML files.
+14. Object deployment delegates Liquibase execution to the existing
+    database-specific run_liquibase script.
+15. Object validation checks the database catalog for declared views,
+    functions, stored procedures, and triggers.
+
+==============================================================================
+4. MYSQL STATUS
+==============================================================================
+
+Setup Pipeline Status:
+Production-ready reference implementation. Windows setup flow was verified in a
+previous implementation pass. Ubuntu flow exists and was reviewed as part of the
+reference architecture, but Ubuntu runtime was not available on this Windows host.
+
+Load Pipeline Status:
+Production-ready reference implementation. MySQL has root load pipeline entry
+points for Windows and Ubuntu.
+
+Liquibase Status:
+Implemented for tables and objects.
+
+Table Liquibase files currently present:
+1. liquibase/mysql/001_create_brands.xml
+2. liquibase/mysql/002_create_categories.xml
+3. liquibase/mysql/003_create_customer_loyalty.xml
+4. liquibase/mysql/004_create_inventory.xml
+5. liquibase/mysql/005_create_price_history.xml
+6. liquibase/mysql/006_create_products.xml
+7. liquibase/mysql/007_create_sellers.xml
+8. liquibase/mysql/008_create_suppliers.xml
+9. liquibase/mysql/009_create_support_tickets.xml
+10. liquibase/mysql/master.xml
+
+Objects Status:
+Implemented through Liquibase object XML and the shared object framework.
+
+Views:
+1. liquibase/mysql/objects/views/001_v_customer_address.xml
+2. liquibase/mysql/objects/views/002_v_customer_demographics.xml
+3. liquibase/mysql/objects/views/003_v_customer_loyalty.xml
+4. liquibase/mysql/objects/views/004_v_customer_segments.xml
+5. liquibase/mysql/objects/views/005_v_customer_support_tickets.xml
+6. liquibase/mysql/objects/views/006_v_mysql_product_price_history_fixed.xml
+
+Functions:
+1. liquibase/mysql/objects/functions/001_fn_customer_support_ticket_duration.xml
+
+Stored Procedures:
+1. liquibase/mysql/objects/procedures/001_sp_get_customer_loyalty_summary.xml
+
+Triggers:
+1. liquibase/mysql/objects/triggers/001_trg_customer_segments_insert.xml
+
+Validation Status:
+Object validation wrappers exist:
+1. scripts/batch/mysql/objects/validate_objects.bat
+2. scripts/bash/mysql/objects/validate_objects.sh
+
+Jenkins Status:
+MySQL Jenkins setup/load pipelines exist for Windows and Ubuntu:
+1. jenkins/mysql/windows/setup_pipeline.groovy
+2. jenkins/mysql/windows/load_pipeline.groovy
+3. jenkins/mysql/ubuntu/setup_pipeline.groovy
+4. jenkins/mysql/ubuntu/load_pipeline.groovy
+
+Windows Status:
+Implemented and verified in the MySQL reference pass.
+
+Ubuntu Status:
+Scripts and Jenkins files exist. Runtime execution was not available on this
+Windows host because WSL has no installed distribution.
+
+Production Readiness:
+MySQL is the first verified reference implementation.
+
+What Was Implemented:
+1. MySQL setup pipeline table Liquibase stage.
+2. MySQL table changelogs.
+3. MySQL object changelogs.
+4. MySQL object deployment wrappers.
+5. MySQL object validation wrappers.
+6. Shared object framework support for MySQL.
+7. MySQL data-load portability fixes.
+
+Testing Completed:
+1. MySQL setup flow was verified in the previous MySQL pass.
+2. MySQL load flow was verified in the previous MySQL pass.
+3. Liquibase table deployment was verified.
+4. Object deployment was verified.
+5. Object validation was verified.
+6. Row-count validation was verified.
+
+Remaining Issues:
+1. Ubuntu runtime execution remains manually required on an Ubuntu or Jenkins
+   Ubuntu agent.
+2. Do not assume untracked MySQL files are committed; git status shows MySQL
+   Liquibase and object files are currently untracked.
+
+==============================================================================
+5. POSTGRESQL STATUS
+==============================================================================
+
+Setup Pipeline Status:
+Production-ready for the verified Windows path. Full PostgreSQL setup pipeline
+passed during the PostgreSQL pass.
+
+Verified Windows setup pipeline:
+C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\postgresql_setup_pipeline.bat
+
+Load Pipeline Status:
+Production-ready for the verified Windows path. Full PostgreSQL load pipeline
+passed during the PostgreSQL pass.
+
+Verified Windows load pipeline:
+C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\postgresql_load_pipeline.bat
+
+Liquibase Status:
+Implemented for tables and objects.
+
+Table Liquibase files currently present:
+1. liquibase/postgresql/001_create_addresses.xml
+2. liquibase/postgresql/002_create_customers.xml
+3. liquibase/postgresql/003_create_deals.xml
+4. liquibase/postgresql/004_create_demographics.xml
+5. liquibase/postgresql/005_create_orders.xml
+6. liquibase/postgresql/006_create_order_items.xml
+7. liquibase/postgresql/007_create_order_status.xml
+8. liquibase/postgresql/008_create_payments.xml
+9. liquibase/postgresql/master.xml
+
+Objects Status:
+Implemented through Liquibase object XML and the shared object framework.
+
+Views:
+1. liquibase/postgresql/objects/views/001_v_postgresql_customer_address.xml
+2. liquibase/postgresql/objects/views/002_v_postgresql_customer_demographics.xml
+3. liquibase/postgresql/objects/views/003_v_postgresql_customer_profile.xml
+4. liquibase/postgresql/objects/views/004_v_postgresql_order_summary.xml
+5. liquibase/postgresql/objects/views/005_v_postgresql_payment_summary.xml
+6. liquibase/postgresql/objects/views/006_v_postgresql_order_status_history.xml
+
+Functions:
+1. liquibase/postgresql/objects/functions/001_fn_postgresql_order_item_total.xml
+2. liquibase/postgresql/objects/triggers/001_fn_postgresql_customers_default_status.xml
+   - This is a PostgreSQL trigger support function.
+
+Stored Procedures:
+1. liquibase/postgresql/objects/procedures/001_sp_postgresql_customer_order_summary.xml
+
+Triggers:
+1. liquibase/postgresql/objects/triggers/002_trg_postgresql_customers_default_status.xml
+
+Validation Status:
+Object validation wrappers exist:
+1. scripts/batch/postgresql/objects/validate_objects.bat
+2. scripts/bash/postgresql/objects/validate_objects.sh
+
+Shared validator supports PostgreSQL public-schema catalog queries in:
+scripts/python/common/objects/validate_objects.py
+
+Jenkins Status:
+PostgreSQL Jenkins setup/load pipelines exist for Windows and Ubuntu:
+1. jenkins/postgresql/windows/setup_pipeline.groovy
+2. jenkins/postgresql/windows/load_pipeline.groovy
+3. jenkins/postgresql/ubuntu/setup_pipeline.groovy
+4. jenkins/postgresql/ubuntu/load_pipeline.groovy
+
+Windows Status:
+Verified.
+
+Ubuntu Status:
+Scripts and Jenkins files exist. Static review completed. Runtime execution was
+not available on this Windows host because WSL has no installed distribution.
+
+Production Readiness:
+PostgreSQL is production-ready for the verified Windows path and aligned with
+the MySQL reference architecture. Ubuntu/Jenkins runtime execution still needs
+manual verification on actual agents.
+
+What Was Implemented:
+1. PostgreSQL setup pipeline table Liquibase stage.
+2. PostgreSQL table changelogs.
+3. PostgreSQL object changelogs.
+4. PostgreSQL object deployment wrappers.
+5. PostgreSQL object validation wrappers.
+6. PostgreSQL root load pipeline wrappers.
+7. Shared object framework validation support for PostgreSQL.
+8. PostgreSQL run_liquibase optional changelog support.
+9. PostgreSQL Windows service start idempotency/reachability handling.
+10. PostgreSQL config version alignment with observed PostgreSQL 17.5 runtime.
+
+Testing Completed:
+1. python -m compileall scripts\python\common\objects scripts\python\postgresql
+2. PostgreSQL Liquibase XML parse check.
+3. scripts\batch\postgresql\setup\start_postgresql.bat
+4. scripts\batch\postgresql\setup\create_database.bat
+5. scripts\batch\postgresql\setup\validate_environment.bat
+6. scripts\batch\postgresql\setup\run_liquibase.bat
+7. Liquibase validate for liquibase\postgresql\master.xml
+8. scripts\batch\postgresql\load\load_data.bat
+9. scripts\batch\postgresql\load\validate_loaded_data.bat
+10. scripts\batch\postgresql\objects\deploy_objects.bat
+11. Liquibase validate for liquibase\postgresql\objects\master_objects.xml
+12. scripts\batch\postgresql\objects\validate_objects.bat
+13. Direct SQL object inventory through psql.
+14. scripts\batch\postgresql\postgresql_load_pipeline.bat
+15. scripts\batch\postgresql\postgresql_setup_pipeline.bat
+
+PostgreSQL row-count validation observed:
+1. addresses: 45420
+2. customers: 99441
+3. deals: 48656
+4. demographics: 45420
+5. orders: 120000
+6. order_items: 360180
+7. order_status: 839508
+8. payments: 178419
+
+Remaining Issues:
+1. Ubuntu runtime execution remains manually required on an Ubuntu or Jenkins
+   Ubuntu agent.
+2. Do not assume untracked PostgreSQL files are committed; git status shows
+   PostgreSQL Liquibase and object files are currently untracked.
+
+==============================================================================
+6. MONGODB STATUS
+==============================================================================
+
+Setup Pipeline Status:
+Scaffolding exists, but MongoDB implementation is not yet verified as
+production-ready. Current repository contains MongoDB setup scripts and Jenkins
+files, but MongoDB has not yet been completed using the verified MySQL and
+PostgreSQL architecture.
+
+Load Pipeline Status:
+Scaffolding exists:
+1. scripts/batch/mongodb/mongodb_load_pipeline.bat
+2. scripts/bash/mongodb/mongodb_load_pipeline.sh
+3. jenkins/mongodb/windows/load_pipeline.groovy
+4. jenkins/mongodb/ubuntu/load_pipeline.groovy
+
+Liquibase Status:
+MongoDB has no liquibase/mongodb directory in the current repository inventory.
+MongoDB is not a relational Liquibase-table implementation in the current tree.
+The next Codex must verify the approved blueprint before deciding how MongoDB
+objects/collections should be represented.
+
+Objects Status:
+Not implemented as a verified object layer.
+
+Views:
+Not implemented.
+
+Functions:
+Not implemented.
+
+Stored Procedures:
+Not implemented.
+
+Triggers:
+Not implemented.
+
+Validation Status:
+Basic MongoDB validation scripts exist, including:
+1. scripts/batch/mongodb/setup/validate_mongodb.bat
+2. scripts/bash/mongodb/setup/validate_mongodb.sh
+3. scripts/python/mongodb/setup/validate_database.py
+4. scripts/python/mongodb/load/validate_loaded_data.py
+5. scripts/python/mongodb/load/validate_data.py
+
+However, the implementation has not been end-to-end verified in this pass.
+
+Jenkins Status:
+MongoDB Jenkins files exist:
+1. jenkins/mongodb/windows/setup_pipeline.groovy
+2. jenkins/mongodb/windows/load_pipeline.groovy
+3. jenkins/mongodb/windows/mongodb_cleanup.groovy
+4. jenkins/mongodb/ubuntu/setup_pipeline.groovy
+5. jenkins/mongodb/ubuntu/load_pipeline.groovy
+
+Windows Status:
+Scaffolding exists. Not verified production-ready.
+
+Ubuntu Status:
+Scaffolding exists. Not verified production-ready.
+
+Production Readiness:
+Not production-ready.
+
+Current Repository Evidence:
+1. MongoDB setup/load/cleanup scripts exist under scripts/batch/mongodb/.
+2. MongoDB setup/load scripts exist under scripts/bash/mongodb/.
+3. MongoDB Python files exist under scripts/python/mongodb/.
+4. MongoDB config files exist under config/windows/mongodb.conf and
+   config/ubuntu/mongodb.conf.
+5. MongoDB Terraform files exist under terraform/mongodb/.
+6. MongoDB metadata exists under metadata/mongodb/.
+7. MongoDB archive data exists under archive/mongodb/.
+
+Known MongoDB Limitations From Repository Review:
+1. scripts/batch/mongodb/setup/create_collections.bat references
+   scripts/python/mongodb/setup/create_collections.py, but that Python file is
+   not present in the current inventory.
+2. scripts/batch/mongodb/setup/create_indexes.bat references
+   scripts/python/mongodb/setup/create_indexes.py, but that Python file is not
+   present in the current inventory.
+3. scripts/python/mongodb/load/load_pipeline.py references create_collections.py
+   and create_indexes.py.
+4. MongoDB object deployment/validation wrappers analogous to MySQL/PostgreSQL
+   do not currently exist.
+5. MongoDB is the next database to implement.
+
+Where The Next Implementation Should Begin:
+1. Review all MongoDB folders:
+   - scripts/python/mongodb/
+   - scripts/batch/mongodb/
+   - scripts/bash/mongodb/
+   - jenkins/mongodb/
+   - config/windows/mongodb.conf
+   - config/ubuntu/mongodb.conf
+   - metadata/mongodb/
+   - archive/mongodb/
+   - terraform/mongodb/
+2. Compare with the verified MySQL and PostgreSQL execution architecture.
+3. Identify MongoDB-specific differences only.
+4. Fix missing MongoDB collection/index setup scripts if required by the
+   approved blueprint.
+5. Implement MongoDB-only object/collection validation using the existing shared
+   patterns where applicable.
+6. Run full MongoDB setup and load pipelines before touching MSSQL.
+
+==============================================================================
+7. MSSQL STATUS
+==============================================================================
+
+Setup Pipeline Status:
+Scaffolding exists, but MSSQL is not production-ready.
+
+Load Pipeline Status:
+Scaffolding exists, but references are inconsistent in the current repository.
+
+Liquibase Status:
+Only liquibase/mssql/master.xml exists in current inventory. No MSSQL table
+changesets or object changesets were found in the current inventory.
+
+Objects Status:
+Not implemented as a verified object layer.
+
+Views:
+Not implemented.
+
+Functions:
+Not implemented.
+
+Stored Procedures:
+Not implemented.
+
+Triggers:
+Not implemented.
+
+Validation Status:
+Not verified.
+
+Jenkins Status:
+MSSQL Jenkins files exist:
+1. jenkins/mssql/windows/setup_pipeline.groovy
+2. jenkins/mssql/windows/load_pipeline.groovy
+3. jenkins/mssql/ubuntu/setup_pipeline.groovy
+4. jenkins/mssql/ubuntu/load_pipeline.groovy
+
+Windows Status:
+Not production-ready. Current repository shows broken or inconsistent paths.
+
+Ubuntu Status:
+Not production-ready. Runtime was not tested.
+
+Production Readiness:
+Not production-ready. Do not start MSSQL until MongoDB is completed and verified.
+
+Known MSSQL Limitations From Repository Review:
+1. scripts/batch/mssql/mssql_setup_pipeline.bat references:
+   - scripts/batch/mssql/setup/deploy_mssql.bat
+   - scripts/batch/mssql/setup/start_mssql.bat
+   - scripts/batch/mssql/setup/create_database.bat
+   - scripts/batch/mssql/setup/run_liquibase.bat
+   - scripts/batch/mssql/setup/validate_environment.bat
+2. Those referenced setup files were not present in the current
+   scripts/batch/mssql/setup/ inventory.
+3. scripts/batch/mssql/setup/ contains deploy_mysql.bat, which appears
+   inconsistent for MSSQL.
+4. scripts/batch/mssql/mssql_load_pipeline.bat references files under
+   scripts/batch/mssql/load/, but no scripts/batch/mssql/load/ directory was
+   present in the current inventory.
+5. jenkins/mssql/windows/setup_pipeline.groovy references scripts directly under
+   scripts\batch\mssql\, while current Windows Batch setup files are under
+   scripts\batch\mssql\setup\.
+6. MSSQL should not be modified until MongoDB is complete.
+
+==============================================================================
+8. FILES CHANGED
+==============================================================================
+
+This section reflects current git status and repository inventory.
+
+New Files:
+1. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\admin_status.txt
+2. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\001_create_brands.xml
+3. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\002_create_categories.xml
+4. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\003_create_customer_loyalty.xml
+5. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\004_create_inventory.xml
+6. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\005_create_price_history.xml
+7. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\006_create_products.xml
+8. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\007_create_sellers.xml
+9. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\008_create_suppliers.xml
+10. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\009_create_support_tickets.xml
+11. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\functions\001_fn_customer_support_ticket_duration.xml
+12. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\procedures\001_sp_get_customer_loyalty_summary.xml
+13. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\triggers\001_trg_customer_segments_insert.xml
+14. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\001_v_customer_address.xml
+15. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\002_v_customer_demographics.xml
+16. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\003_v_customer_loyalty.xml
+17. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\004_v_customer_segments.xml
+18. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\005_v_customer_support_tickets.xml
+19. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\views\006_v_mysql_product_price_history_fixed.xml
+20. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\001_create_addresses.xml
+21. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\002_create_customers.xml
+22. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\003_create_deals.xml
+23. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\004_create_demographics.xml
+24. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\005_create_orders.xml
+25. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\006_create_order_items.xml
+26. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\007_create_order_status.xml
+27. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\008_create_payments.xml
+28. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\functions\001_fn_postgresql_order_item_total.xml
+29. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\procedures\001_sp_postgresql_customer_order_summary.xml
+30. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\triggers\001_fn_postgresql_customers_default_status.xml
+31. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\triggers\002_trg_postgresql_customers_default_status.xml
+32. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\001_v_postgresql_customer_address.xml
+33. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\002_v_postgresql_customer_demographics.xml
+34. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\003_v_postgresql_customer_profile.xml
+35. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\004_v_postgresql_order_summary.xml
+36. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\005_v_postgresql_payment_summary.xml
+37. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\views\006_v_postgresql_order_status_history.xml
+38. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\metadata\data_load_history.jsonl
+39. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mysql\objects\deploy_objects.sh
+40. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mysql\objects\validate_objects.sh
+41. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql\objects\deploy_objects.sh
+42. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql\objects\validate_objects.sh
+43. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql\postgresql_load_pipeline.sh
+44. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\objects\deploy_objects.bat
+45. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\objects\validate_objects.bat
+46. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\objects\deploy_objects.bat
+47. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\objects\validate_objects.bat
+48. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\postgresql_load_pipeline.bat
+49. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\deploy_objects.py
+50. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\generate_master_objects.py
+51. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\common\objects\validate_objects.py
+52. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\NEXT_CODEX_HANDOVER.txt
+
+Modified Files:
+1. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\.gitignore
+2. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\config\windows\postgresql.conf
+3. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\mysql\ubuntu\setup_pipeline.groovy
+4. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\mysql\windows\setup_pipeline.groovy
+5. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\postgresql\ubuntu\setup_pipeline.groovy
+6. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\postgresql\windows\setup_pipeline.groovy
+7. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\master.xml
+8. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\master.xml
+9. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mysql\mysql_setup_pipeline.sh
+10. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mysql\setup\run_liquibase.sh
+11. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql\postgresql_setup_pipeline.sh
+12. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql\setup\run_liquibase.sh
+13. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\load\load_data.bat
+14. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\load\validate_loaded_data.bat
+15. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\mysql_setup_pipeline.bat
+16. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\setup\deploy_mysql.bat
+17. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql\setup\run_liquibase.bat
+18. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\load\load_data.bat
+19. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\postgresql_setup_pipeline.bat
+20. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql\setup\run_liquibase.bat
+21. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\data_loader.py
+22. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\powershell\mysql\start_mysql.ps1
+23. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\powershell\postgresql\start_postgresql.ps1
+24. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\mysql\load\testcsvschema.py
+25. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\mysql\load\validate_csv.py
+26. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\mysql\load\validate_loaded_data.py
+27. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\postgresql\load\validate_loaded_data.py
+
+Generated Files:
+1. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\admin_status.txt
+2. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\metadata\data_load_history.jsonl
+3. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\master.xml
+4. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql\objects\master_objects.xml
+5. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\master.xml
+6. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql\objects\master_objects.xml
+
+==============================================================================
+9. NEXT DATABASE TO IMPLEMENT
+==============================================================================
+
+The next database is MongoDB.
+
+Rules:
+1. The architecture must follow the verified MySQL and PostgreSQL
+   implementations.
+2. Reuse the shared object framework where it applies.
+3. Do not redesign the repository.
+4. Do not modify MySQL.
+5. Do not modify PostgreSQL.
+6. Do not modify MSSQL.
+7. Implement MongoDB only.
+8. Do not move or rename repository folders.
+9. Do not change Jenkins architecture unless a verified MongoDB bug requires it.
+10. Do not change Terraform unless a verified MongoDB bug requires it.
+
+Folders that should NOT be modified during MongoDB work:
+1. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\mysql
+2. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\liquibase\postgresql
+3. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mysql
+4. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\postgresql
+5. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mysql
+6. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\postgresql
+7. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\mysql
+8. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\postgresql
+9. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\mysql
+10. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\postgresql
+11. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\terraform\mysql
+12. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\terraform\postgresql
+13. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\batch\mssql
+14. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\bash\mssql
+15. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\scripts\python\mssql
+16. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\jenkins\mssql
+17. C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\terraform\mssql
+
+Shared folders may be modified only if absolutely required for MongoDB support
+and backward compatibility with MySQL/PostgreSQL is preserved:
+1. scripts/python/common/
+2. scripts/python/common/objects/
+3. scripts/data_loader.py
+4. scripts/schema_detector.py
+5. scripts/batch/common/
+6. scripts/bash/common/
+7. .gitignore
+
+==============================================================================
+10. PENDING TASKS
+==============================================================================
+
+MongoDB implementation checklist:
+1. Review scripts/python/mongodb/ completely.
+2. Review scripts/batch/mongodb/ completely.
+3. Review scripts/bash/mongodb/ completely.
+4. Review jenkins/mongodb/ completely.
+5. Review config/windows/mongodb.conf and config/ubuntu/mongodb.conf.
+6. Review metadata/mongodb/schema_registry.json.
+7. Review archive/mongodb/ data files.
+8. Review terraform/mongodb/.
+9. Compare MongoDB setup pipeline with MySQL/PostgreSQL reference flow.
+10. Compare MongoDB load pipeline with MySQL/PostgreSQL reference flow.
+11. Verify whether MongoDB should use Liquibase, collection scripts, or another
+    already-approved repository pattern.
+12. Fix missing create_collections.py only if required by the existing MongoDB
+    scripts and approved architecture.
+13. Fix missing create_indexes.py only if required by the existing MongoDB
+    scripts and approved architecture.
+14. Implement MongoDB object/collection deployment only within MongoDB folders
+    or shared framework if absolutely required.
+15. Implement MongoDB validation only within MongoDB folders or shared framework
+    if absolutely required.
+16. Run MongoDB setup pipeline.
+17. Run MongoDB load pipeline.
+18. Validate MongoDB service.
+19. Validate MongoDB data load.
+20. Validate MongoDB collections.
+21. Validate MongoDB indexes.
+22. Validate Jenkins Windows flow statically and, if available, on Jenkins.
+23. Validate Jenkins Ubuntu flow statically and, if available, on Jenkins.
+24. Verify portability and remove hardcoded machine-specific assumptions.
+25. Do not move to MSSQL until MongoDB passes end to end.
+
+Manual verification still required:
+1. Run MySQL Ubuntu flow on a real Ubuntu/Jenkins Ubuntu agent.
+2. Run PostgreSQL Ubuntu flow on a real Ubuntu/Jenkins Ubuntu agent.
+3. Run MongoDB Windows setup/load after implementation.
+4. Run MongoDB Ubuntu setup/load on a real Ubuntu/Jenkins Ubuntu agent.
+5. Run MongoDB Jenkins Windows setup/load after implementation.
+6. Run MongoDB Jenkins Ubuntu setup/load after implementation.
+7. Confirm whether generated/untracked files should be added to version control.
+8. Confirm whether admin_status.txt and metadata/data_load_history.jsonl should
+   remain untracked generated files.
+
+Known limitations:
+1. WSL is not installed on the current Windows host, so Bash/Ubuntu scripts could
+   not be executed locally.
+2. Git status is dirty and includes both modified tracked files and untracked
+   generated/new files.
+3. MySQL and PostgreSQL are verified reference implementations, but the current
+   git status shows their new Liquibase/object files are untracked.
+4. MongoDB is scaffolded but not completed.
+5. MSSQL is scaffolded and has broken/inconsistent references.
+
+==============================================================================
+11. NEXT CODEX INSTRUCTIONS
+==============================================================================
+
+The next Codex session must continue with MongoDB only.
+
+Where to continue:
+1. Start in repository root:
+   C:\Users\admin\Desktop\main-automation\DataPlatform-Automation
+2. Read this handover file first:
+   C:\Users\admin\Desktop\main-automation\DataPlatform-Automation\NEXT_CODEX_HANDOVER.txt
+3. Run git status before making changes.
+4. Review all MongoDB-specific files before modifying anything.
+
+What must be verified first:
+1. Verify current git status.
+2. Verify MongoDB scripts under scripts/batch/mongodb/.
+3. Verify MongoDB scripts under scripts/bash/mongodb/.
+4. Verify MongoDB Python under scripts/python/mongodb/.
+5. Verify MongoDB Jenkins files under jenkins/mongodb/.
+6. Verify MongoDB configs under config/windows/ and config/ubuntu/.
+7. Verify MongoDB archive data under archive/mongodb/.
+8. Verify MongoDB metadata under metadata/mongodb/.
+9. Verify MongoDB Terraform under terraform/mongodb/.
+10. Verify whether the missing create_collections.py and create_indexes.py files
+    are required by the approved MongoDB architecture.
+
+What must never be modified during MongoDB implementation:
+1. Do not modify MySQL files.
+2. Do not modify PostgreSQL files.
+3. Do not modify MSSQL files.
+4. Do not redesign the repository.
+5. Do not rename folders.
+6. Do not change Jenkins architecture unless a verified MongoDB issue requires
+   a minimal MongoDB-only fix.
+7. Do not change Terraform unless a verified MongoDB issue requires a minimal
+   MongoDB-only fix.
+8. Do not change shared code unless MongoDB support absolutely requires it.
+9. If shared code is changed, preserve MySQL and PostgreSQL backward
+   compatibility.
+
+MongoDB implementation order:
+1. Read the complete MongoDB implementation.
+2. Compare MongoDB with verified MySQL and PostgreSQL architecture.
+3. Identify only MongoDB-specific gaps.
+4. List every file that will change before modifying anything.
+5. Apply minimal MongoDB-only fixes.
+6. Implement missing MongoDB collection/index/data validation behavior only if
+   required by the existing repository architecture.
+7. Reuse existing scripts and shared framework patterns.
+8. Run MongoDB setup pipeline.
+9. Run MongoDB load pipeline.
+10. Validate MongoDB service.
+11. Validate MongoDB collections/data.
+12. Validate MongoDB indexes if implemented.
+13. Validate Jenkins Windows flow.
+14. Validate Jenkins Ubuntu flow if an Ubuntu/Jenkins agent is available.
+15. Run portability checks for hardcoded paths and broken references.
+16. Stop after MongoDB passes end to end.
+
+Testing that must pass before moving to MSSQL:
+1. MongoDB setup pipeline passes.
+2. MongoDB load pipeline passes.
+3. MongoDB service validation passes.
+4. MongoDB data load validation passes.
+5. MongoDB collection existence validation passes.
+6. MongoDB row/document count validation passes.
+7. MongoDB index validation passes if index creation is part of the approved
+   architecture.
+8. MongoDB Windows flow passes.
+9. MongoDB Ubuntu flow is either executed successfully on a real agent or clearly
+   documented as pending due missing Ubuntu runtime.
+10. MongoDB Jenkins flow is statically verified and executed where available.
+11. Portability review passes.
+12. No MySQL, PostgreSQL, or MSSQL files are modified.
+
+End of handover.

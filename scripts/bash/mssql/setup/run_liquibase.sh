@@ -30,7 +30,7 @@ LB="$PROJECT_ROOT/tools/liquibase/liquibase"
 
 DRIVER="$PROJECT_ROOT/tools/drivers/mssql-jdbc-${MSSQL_DRIVER_VERSION}.jre11.jar"
 
-CHANGELOG="liquibase/mssql/master.xml"
+CHANGELOG="${1:-liquibase/mssql/master.xml}"
 
 if [ ! -f "$LB" ]
 then

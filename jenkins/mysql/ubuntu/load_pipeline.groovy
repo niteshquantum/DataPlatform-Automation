@@ -193,6 +193,64 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy Views') {
+            steps {
+                sh './scripts/bash/mysql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Views') {
+            steps {
+                sh './scripts/bash/mysql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Functions') {
+            steps {
+                sh './scripts/bash/mysql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Functions') {
+            steps {
+                sh './scripts/bash/mysql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Stored Procedures') {
+            steps {
+                sh './scripts/bash/mysql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Stored Procedures') {
+            steps {
+                sh './scripts/bash/mysql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Deploy Triggers') {
+            steps {
+                sh './scripts/bash/mysql/objects/deploy_objects.sh'
+            }
+        }
+
+        stage('Validate Triggers') {
+            steps {
+                sh './scripts/bash/mysql/objects/validate_objects.sh'
+            }
+        }
+
+        stage('Database Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh database' } }
+        stage('Schema Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh schema' } }
+        stage('Table Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh table' } }
+        stage('View Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh view' } }
+        stage('Stored Procedure Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh procedure' } }
+        stage('Function Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh function' } }
+        stage('Trigger Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh trigger' } }
+        stage('Event Inventory') { steps { sh './scripts/bash/mysql/assessment/run_assessment.sh event' } }
+        stage('Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 
@@ -243,7 +301,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mysql/load/build_${env.BUILD_NUMBER}/**, reports/mysql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mysql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

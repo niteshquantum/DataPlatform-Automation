@@ -72,7 +72,8 @@ if not exist "%DRIVER%" (
 
 cd /d "%ROOT%"
 
-set "CHANGELOG=liquibase\mssql\master.xml"
+set "CHANGELOG=%~1"
+if "%CHANGELOG%"=="" set "CHANGELOG=liquibase\mssql\master.xml"
 
 if not exist "%CHANGELOG%" (
     echo ERROR: CHANGELOG NOT FOUND

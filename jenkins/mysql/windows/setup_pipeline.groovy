@@ -308,7 +308,6 @@ pipeline {
             }
         }
 
-
         stage('Configure Global MySQL') {
 
             when {

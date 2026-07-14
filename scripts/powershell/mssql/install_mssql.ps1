@@ -22,6 +22,7 @@ $Config = Load-Config "$PROJECT_ROOT\config\windows\mssql.conf"
 
 $Instance = $Config["MSSQL_INSTANCE"]
 $Password = $Config["MSSQL_PASSWORD"]
+$Port     = $Config["MSSQL_PORT"]
 
 # =====================================
 # SERVICE NAME
@@ -43,6 +44,28 @@ $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($Service) {
 
     Write-Host "SQL Server instance '$Instance' already installed."
+
+    $sqlcmd = Get-Command sqlcmd -ErrorAction SilentlyContinue
+
+    if (!$sqlcmd) {
+        throw "sqlcmd utility not found in PATH. Cannot bootstrap the existing SQL Server instance."
+    }
+
+    Write-Host "Applying configured sa password to the existing SQL Server instance..."
+
+    sqlcmd `
+        -S "localhost,$Port" `
+        -E `
+        -C `
+        -d master `
+        -v SAPWD="$Password" `
+        -Q "ALTER LOGIN [sa] ENABLE; ALTER LOGIN [sa] WITH PASSWORD = N'`$(SAPWD)' UNLOCK;"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to bootstrap the sa login for existing SQL Server instance '$Instance'. Ensure the deployment account is a SQL Server sysadmin."
+    }
+
+    Write-Host "Configured sa password applied to existing SQL Server instance."
     exit 0
 
 }

@@ -190,6 +190,64 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy Views') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+            }
+        }
+
+        stage('Validate Views') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+            }
+        }
+
+        stage('Deploy Functions') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+            }
+        }
+
+        stage('Validate Functions') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+            }
+        }
+
+        stage('Deploy Stored Procedures') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+            }
+        }
+
+        stage('Validate Stored Procedures') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+            }
+        }
+
+        stage('Deploy Triggers') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+            }
+        }
+
+        stage('Validate Triggers') {
+            steps {
+                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+            }
+        }
+
+        stage('Database Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database' } }
+        stage('Schema Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema' } }
+        stage('Table Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table' } }
+        stage('View Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view' } }
+        stage('Function Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function' } }
+        stage('Trigger Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger' } }
+        stage('Extension Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension' } }
+        stage('Materialized View Inventory') { steps { bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view' } }
+        stage('Assessment Report') { steps { bat 'scripts\\batch\\common\\generate_assessment_report.bat' } }
     }
 
 
@@ -240,7 +298,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

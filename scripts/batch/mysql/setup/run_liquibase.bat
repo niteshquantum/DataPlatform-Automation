@@ -44,7 +44,7 @@ REM =====================================
 REM VALIDATE LIQUIBASE
 REM =====================================
 
-call "%ROOT%\scripts\batch\common\validate_liquibase.bat"
+call "%ROOT%\scripts\batch\mysql\setup\validate_liquibase.bat"
 
 if errorlevel 1 (
 exit /b 1
@@ -76,7 +76,8 @@ exit /b 1
 
 cd /d "%ROOT%"
 
-set "CHANGELOG=liquibase\mysql\master.xml"
+set "CHANGELOG=%~1"
+if "%CHANGELOG%"=="" set "CHANGELOG=liquibase\mysql\master.xml"
 
 if not exist "%CHANGELOG%" (
     echo ERROR: CHANGELOG NOT FOUND

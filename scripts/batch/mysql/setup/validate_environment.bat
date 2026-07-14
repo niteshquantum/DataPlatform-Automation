@@ -25,7 +25,7 @@ if errorlevel 1 (
 )
 
 echo [3/5] Validating Tools...
-call "%ROOT%\scripts\batch\common\validate_tools.bat"
+call "%ROOT%\scripts\batch\mysql\setup\validate_tools.bat"
 if errorlevel 1 (
     echo ERROR: TOOLS VALIDATION FAILED
     exit /b 1

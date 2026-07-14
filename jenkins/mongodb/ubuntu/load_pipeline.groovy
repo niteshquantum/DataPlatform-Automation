@@ -178,6 +178,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Validate Collections') {
+            steps {
+                sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
+            }
+        }
+
+        stage('Validate Indexes') {
+            steps {
+                sh 'python3 scripts/python/mongodb/setup/create_indexes.py'
+            }
+        }
+
+        stage('Database Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh database' } }
+        stage('Collection Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh collection' } }
+        stage('Index Inventory') { steps { sh './scripts/bash/mongodb/assessment/run_assessment.sh index' } }
+        stage('Assessment Report') { steps { sh './scripts/bash/common/generate_assessment_report.sh' } }
     }
 
 
@@ -228,7 +245,7 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/mongodb/load/build_${env.BUILD_NUMBER}/**, reports/history/**, outputs/assessments/mongodb/**, outputs/assessments/assessment_report.json",
                 fingerprint: true,
                 allowEmptyArchive: true
             )

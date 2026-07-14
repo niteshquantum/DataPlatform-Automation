@@ -49,8 +49,29 @@ if (!(Test-Path $dataDir)) {
 
 Get-Process mysqld -ErrorAction SilentlyContinue |
 ForEach-Object {
-    Write-Host "Stopping existing mysqld process (PID: $($_.Id))"
-    Stop-Process -Id $_.Id -Force
+    $processPath = $null
+
+    try {
+        $processPath = $_.Path
+    }
+    catch {
+        Write-Host "Skipping mysqld process with unreadable path (PID: $($_.Id))"
+        return
+    }
+
+    if ($processPath -ne $mysqld) {
+        Write-Host "Skipping non-project mysqld process (PID: $($_.Id))"
+        return
+    }
+
+    Write-Host "Stopping existing project mysqld process (PID: $($_.Id))"
+
+    try {
+        Stop-Process -Id $_.Id -Force -ErrorAction Stop
+    }
+    catch {
+        Write-Host "WARNING: Could not stop project mysqld process (PID: $($_.Id)): $($_.Exception.Message)"
+    }
 }
 
 Start-Sleep -Seconds 3
