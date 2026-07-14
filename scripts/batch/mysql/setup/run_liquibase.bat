@@ -44,7 +44,7 @@ REM =====================================
 REM VALIDATE LIQUIBASE
 REM =====================================
 
-call "%ROOT%\scripts\batch\common\validate_liquibase.bat"
+call "%ROOT%\scripts\batch\mysql\setup\validate_liquibase.bat"
 
 if errorlevel 1 (
 exit /b 1
