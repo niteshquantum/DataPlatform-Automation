@@ -43,9 +43,11 @@ else
     sudo apt-get update
 
     sudo apt-get install -y \
-        curl \
-        gnupg \
-        ca-certificates
+    curl \
+    gnupg \
+    ca-certificates \
+    libldap-2.5-0 \
+    liblber-2.5-0
 
     echo
     echo "Registering Microsoft GPG Key..."
@@ -60,17 +62,16 @@ else
     fi
 
     echo
-    echo "Registering SQL Server 2025 Repository..."
+    echo "Registering SQL Server 2022 Repository..."
     echo
-
-    if [ ! -f "/etc/apt/sources.list.d/mssql-server-2025.list" ]
+    
+    if [ ! -f "/etc/apt/sources.list.d/mssql-server.list" ]
     then
-        curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/mssql-server-2025.list \
-        | sudo tee /etc/apt/sources.list.d/mssql-server-2025.list >/dev/null
+        curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/prod.list \
+        | sudo tee /etc/apt/sources.list.d/microsoft-prod.list >/dev/null
     else
-        echo "SQL Server 2025 repository already exists."
+        echo "SQL Server 2022 repository already exists."
     fi
-
     echo
     echo "Registering Microsoft Product Repository..."
     echo
