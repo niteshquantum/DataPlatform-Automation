@@ -581,7 +581,7 @@ if (currentBuild.number == 1) {
 
                         sh 'bash ./scripts/bash/mssql/setup/install_mssql.sh'
 
-                        sh 'bash ./scripts/bash/mssql/setup/install_sqlcmd.sh'
+                        
 
                         sh 'bash ./scripts/bash/mssql/setup/start_mssql.sh'
 
