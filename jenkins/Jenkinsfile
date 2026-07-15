@@ -264,26 +264,16 @@ stage('Validate Selection') {
 
         script {
 
-    if (currentBuild.number == 1) {
+if (currentBuild.number == 1) {
 
-        echo """
-======================================================
-Pipeline parameters have been registered successfully.
+    currentBuild.description = "Parameters Registered"
 
-Please refresh the job page.
+    error("""
+Pipeline parameters have been registered.
 
-Now click 'Build with Parameters' and select:
-- Database
-- Action
-- Cleanup Mode (if required)
-
-Then run the pipeline again.
-======================================================
-"""
-
-        currentBuild.result = 'NOT_BUILT'
-        return
-    }
+Refresh the page and use 'Build with Parameters'.
+""")
+}
 
     echo "============================================"
     echo "MASTER DATABASE PIPELINE"
@@ -296,7 +286,7 @@ Then run the pipeline again.
     }
 
     echo "============================================"
-}
+
                 }
             }
         }
