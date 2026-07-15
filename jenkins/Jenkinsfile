@@ -268,11 +268,9 @@ if (currentBuild.number == 1) {
 
     currentBuild.description = "Parameters Registered"
 
-    error("""
-Pipeline parameters have been registered.
-
-Refresh the page and use 'Build with Parameters'.
-""")
+if (currentBuild.number == 1) {
+    echo "First build detected. Parameters will be available after this build."
+}
 }
 
     echo "============================================"
