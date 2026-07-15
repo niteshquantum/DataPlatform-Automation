@@ -376,7 +376,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MYSQL'
                     }
@@ -482,9 +482,9 @@ if (currentBuild.number == 1) {
 
 
             when {
-
+				
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MYSQL'
                     }
@@ -542,7 +542,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MSSQL'
                     }
@@ -613,7 +613,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MSSQL'
                     }
@@ -731,7 +731,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MSSQL'
                     }
@@ -789,7 +789,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MONGODB'
                     }
@@ -881,7 +881,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MONGODB'
                     }
@@ -973,7 +973,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'MONGODB'
                     }
@@ -1027,7 +1027,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'POSTGRESQL'
                     }
@@ -1094,7 +1094,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'POSTGRESQL'
                     }
@@ -1198,7 +1198,7 @@ if (currentBuild.number == 1) {
             when {
 
                 allOf {
-
+					expression { currentBuild.number > 1 }
                     expression {
                         params.DATABASE == 'POSTGRESQL'
                     }
