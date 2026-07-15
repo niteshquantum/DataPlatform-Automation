@@ -306,19 +306,13 @@ Refresh the page and use 'Build with Parameters'.
             }
 
 
-            when {
-
-                allOf {
-
-                    expression {
-                        params.DATABASE == 'MYSQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'SETUP'
-                    }
-                }
-            }
+		when {
+		    allOf {
+		        expression { currentBuild.number > 1 }
+		        expression { params.DATABASE == 'MYSQL' }
+		        expression { params.ACTION == 'SETUP' }
+		    }
+		}
 
 
             steps {
