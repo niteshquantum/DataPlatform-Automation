@@ -46,8 +46,7 @@ else
     curl \
     gnupg \
     ca-certificates \
-    libldap-2.5-0 \
-    liblber-2.5-0
+    libldap-2.5-0 
 
     echo
     echo "Registering Microsoft GPG Key..."
