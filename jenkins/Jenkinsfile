@@ -256,27 +256,47 @@ pipeline {
         ============================================================
         */
 
-        stage('Validate Selection') {
+stage('Validate Selection') {
 
-            agent any
+    agent any
 
+    steps {
 
-            steps {
+        script {
 
-                script {
+    if (currentBuild.number == 1) {
 
-                    echo "============================================"
-                    echo "MASTER DATABASE PIPELINE"
-                    echo "============================================"
-                    echo "DATABASE     : ${params.DATABASE}"
-                    echo "ACTION       : ${params.ACTION}"
+        echo """
+======================================================
+Pipeline parameters have been registered successfully.
 
-                    if (params.ACTION == 'CLEANUP') {
+Please refresh the job page.
 
-                        echo "CLEANUP MODE : ${params.CLEANUP_MODE}"
-                    }
+Now click 'Build with Parameters' and select:
+- Database
+- Action
+- Cleanup Mode (if required)
 
-                    echo "============================================"
+Then run the pipeline again.
+======================================================
+"""
+
+        currentBuild.result = 'NOT_BUILT'
+        return
+    }
+
+    echo "============================================"
+    echo "MASTER DATABASE PIPELINE"
+    echo "============================================"
+    echo "DATABASE     : ${params.DATABASE}"
+    echo "ACTION       : ${params.ACTION}"
+
+    if (params.ACTION == 'CLEANUP') {
+        echo "CLEANUP MODE : ${params.CLEANUP_MODE}"
+    }
+
+    echo "============================================"
+}
                 }
             }
         }
