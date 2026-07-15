@@ -235,6 +235,21 @@ pipeline {
             }
         }
 
+                stage('Configure Global MySQL') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure Global MySQL'
+                    ) {
+
+                        sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
+                    }
+                }
+            }
+        
 
         stage('Validate Environment') {
 
