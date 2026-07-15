@@ -119,10 +119,24 @@ def executePipeline(
                             --build-number "${env.BUILD_NUMBER}"
                     """
 
+                    sh """
+                        python3 scripts/reporting/generate_history.py \
+                            --database "${database}" \
+                            --action "${action}" \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
                 } else {
 
                     bat """
                         python scripts\\reporting\\generate_report.py ^
+                            --database "${database}" ^
+                            --action "${action}" ^
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    bat """
+                        python scripts\\reporting\\generate_history.py ^
                             --database "${database}" ^
                             --action "${action}" ^
                             --build-number "${env.BUILD_NUMBER}"
@@ -147,7 +161,16 @@ def executePipeline(
                     artifacts:
                         "logs/${database}/${action}/build_${env.BUILD_NUMBER}/**," +
                         "reports/${database}/${action}/build_${env.BUILD_NUMBER}/**," +
-                        "reports/history/**",
+                        "reports/history/**," +
+                        "reports/migration/${database}/**," +
+                        "outputs/assessments/${database}/**," +
+                        "outputs/assessments/assessment_report.json," +
+                        "metadata/profiling/${database}/**," +
+                        "metadata/reconciliation/${database}/**," +
+                        "metadata/discovery/${database}/**," +
+                        "metadata/assessment/${database}/**," +
+                        "metadata/recommendation/${database}/**," +
+                        "metadata/governance/${database}/**",
                     fingerprint: true,
                     allowEmptyArchive: true
                 )
@@ -242,20 +265,6 @@ pipeline {
 
                 script {
 
-                    if (
-                        params.ACTION == 'CLEANUP' &&
-                        (
-                            params.DATABASE == 'MYSQL' ||
-                            params.DATABASE == 'MSSQL'
-                        )
-                    ) {
-
-                        error(
-                            "CLEANUP is not available for Ubuntu database ${params.DATABASE}"
-                        )
-                    }
-
-
                     echo "============================================"
                     echo "MASTER DATABASE PIPELINE"
                     echo "============================================"
@@ -336,6 +345,8 @@ pipeline {
                         sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
 
                         sh 'bash ./scripts/bash/mysql/setup/create_database.sh'
+						
+						sh 'bash ./scripts/bash/mysql/setup/run_liquibase.sh'
 
                         sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
 
@@ -388,23 +399,124 @@ pipeline {
                         'ubuntu'
                     ) {
 
-                                            sh '''
-                        find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                    '''
-                    
-                    sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
-                    
-                    sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
-                    
-                    sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
-                    
-                    sh 'bash ./scripts/bash/mysql/setup/validate_mysql.sh'
-                    
-                    sh 'bash ./scripts/bash/common/download_dataset.sh'
-                    
-                    sh 'bash ./scripts/bash/mysql/load/load_data.sh'
-                    
-                    sh 'bash ./scripts/bash/mysql/load/validate_loaded_data.sh'
+                        sh '''
+                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                        '''
+
+                        sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/validate_python_requirements.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/start_mysql.sh'
+
+                        sh 'bash ./scripts/bash/mysql/setup/validate_mysql.sh'
+
+                        sh 'bash ./scripts/bash/common/download_dataset.sh'
+
+                        sh 'bash ./scripts/bash/common/migration/run_data_profiling.sh mysql'
+
+                        sh 'bash ./scripts/bash/mysql/load/load_data.sh'
+
+                        sh 'bash ./scripts/bash/mysql/load/validate_loaded_data.sh'
+
+                        sh './scripts/bash/mysql/objects/deploy_objects.sh'
+
+                        sh './scripts/bash/mysql/objects/validate_objects.sh'
+
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh database'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh schema'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh table'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh view'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh procedure'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh function'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh trigger'
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh event'
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+
+                        sh './scripts/bash/common/migration/run_reconciliation.sh mysql'
+
+                        sh 'python3 scripts/discovery/discovery_engine.py --database mysql'
+
+                        sh 'python3 scripts/discovery/growth_analyzer.py --database mysql'
+
+                        sh 'python3 scripts/discovery/requirement_analyzer.py --database mysql'
+
+                        sh './scripts/bash/common/migration/run_assessment.sh mysql'
+
+                        sh './scripts/bash/common/migration/run_recommendation.sh mysql'
+
+                        sh './scripts/bash/common/migration/run_action_plan.sh mysql'
+
+                        sh './scripts/bash/common/migration/generate_technical_report.sh mysql'
+
+                        sh './scripts/bash/common/migration/generate_executive_report.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        /*
+        ============================================================
+        MYSQL CLEANUP
+        UBUNTU
+        ============================================================
+        */
+
+        stage('MySQL Cleanup') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MYSQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'CLEANUP'
+                    }
+                }
+            }
+
+
+            steps {
+
+                checkout scm
+
+
+                script {
+
+                    executePipeline(
+                        'mysql',
+                        'cleanup',
+                        'ubuntu'
+                    ) {
+
+                        withEnv([
+                            "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                        ]) {
+
+                            sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                            '''
+
+                            sh 'bash scripts/bash/mysql/cleanup/mysql_cleanup_pipeline.sh'
+                        }
                     }
                 }
             }
@@ -461,21 +573,21 @@ pipeline {
 
                         sh 'bash ./scripts/bash/common/validate_java_runtime.sh'
 
-                        sh 'bash ./scripts/bash/common/install_tools.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_tools.sh'
 
-                        sh 'bash ./scripts/bash/common/install_mssql_driver.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_mssql_driver.sh'
 
-                        sh 'bash ./scripts/bash/mssql/install_mssql.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_mssql.sh'
 
-                        sh 'bash ./scripts/bash/mssql/install_sqlcmd.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_sqlcmd.sh'
 
-                        sh 'bash ./scripts/bash/mssql/start_mssql.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/start_mssql.sh'
 
-                        sh 'bash ./scripts/bash/mssql/create_database.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/create_database.sh'
 
-                        sh 'bash ./scripts/bash/mssql/run_liquibase.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/run_liquibase.sh'
 
-                        sh 'bash ./scripts/bash/mssql/validate_environment.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/validate_environment.sh'
                     }
                 }
             }
@@ -530,19 +642,128 @@ pipeline {
 
                         sh 'bash ./scripts/bash/common/validate_python_runtime.sh'
 
-                        sh 'bash ./scripts/bash/install_python_requirements.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_python_requirements.sh'
 
-                        sh 'bash ./scripts/bash/validate_python_requirements.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/validate_python_requirements.sh'
 
-                        sh 'bash ./scripts/bash/common/install_tools.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/install_tools.sh'
 
-                        sh 'bash ./scripts/bash/mssql/validate_tools.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/validate_tools.sh'
 
-                        sh 'bash ./scripts/bash/mssql/validate_mssql.sh'
+                        sh 'bash ./scripts/bash/mssql/setup/validate_mssql.sh'
 
-                        sh 'bash ./scripts/bash/mssql/load_data.sh'
+                        sh 'bash ./scripts/bash/common/download_dataset.sh'
 
-                        sh 'bash ./scripts/bash/mssql/validate_loaded_data.sh'
+                        sh 'bash ./scripts/bash/common/migration/run_data_profiling.sh mssql'
+
+                        sh 'bash ./scripts/bash/mssql/load/load_data.sh'
+
+                        sh 'bash ./scripts/bash/mssql/load/validate_loaded_data.sh'
+
+                        sh './scripts/bash/mssql/objects/deploy_objects.sh'
+
+                        sh './scripts/bash/mssql/objects/validate_objects.sh'
+
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh database'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh schema'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh table'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh view'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh procedure'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh function'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh trigger'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_inventory'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_validation'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_history'
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_assessment'
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+
+                        sh './scripts/bash/common/migration/run_reconciliation.sh mssql'
+
+                        sh 'python3 scripts/discovery/discovery_engine.py --database mssql'
+
+                        sh 'python3 scripts/discovery/growth_analyzer.py --database mssql'
+
+                        sh 'python3 scripts/discovery/requirement_analyzer.py --database mssql'
+
+                        sh './scripts/bash/common/migration/run_assessment.sh mssql'
+
+                        sh './scripts/bash/common/migration/run_recommendation.sh mssql'
+
+                        sh './scripts/bash/common/migration/run_action_plan.sh mssql'
+
+                        sh './scripts/bash/common/migration/generate_technical_report.sh mssql'
+
+                        sh './scripts/bash/common/migration/generate_executive_report.sh mssql'
+                    }
+                }
+            }
+        }
+
+
+        /*
+        ============================================================
+        MSSQL CLEANUP
+        UBUNTU
+        ============================================================
+        */
+
+        stage('MSSQL Cleanup') {
+
+            agent {
+                label 'ubuntu-node'
+            }
+
+
+            when {
+
+                allOf {
+
+                    expression {
+                        params.DATABASE == 'MSSQL'
+                    }
+
+                    expression {
+                        params.ACTION == 'CLEANUP'
+                    }
+                }
+            }
+
+
+            steps {
+
+                checkout scm
+
+
+                script {
+
+                    executePipeline(
+                        'mssql',
+                        'cleanup',
+                        'ubuntu'
+                    ) {
+
+                        withEnv([
+                            "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                        ]) {
+
+                            sh '''
+                                find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                            '''
+
+                            sh 'bash scripts/bash/mssql/cleanup/mssql_cleanup_pipeline.sh'
+                        }
                     }
                 }
             }
@@ -693,9 +914,40 @@ pipeline {
 
                         bat 'scripts\\batch\\common\\download_dataset.bat'
 
+                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mongodb'
+
                         bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
 
                         bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
+
+
+                        bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
+
+                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database'
+
+                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection'
+
+                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index'
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+
+                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat mongodb'
+
+                        bat 'python scripts\\discovery\\discovery_engine.py --database mongodb'
+
+                        bat 'python scripts\\discovery\\growth_analyzer.py --database mongodb'
+
+                        bat 'python scripts\\discovery\\requirement_analyzer.py --database mongodb'
+
+                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat mongodb'
+
+                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat mongodb'
+
+                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat mongodb'
+
+                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat mongodb'
+
+                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat mongodb'
                     }
                 }
             }
@@ -873,9 +1125,54 @@ pipeline {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
 
+                        bat 'scripts\\batch\\common\\download_dataset.bat'
+
+                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat postgresql'
+
                         bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
 
                         bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
+
+                        bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+
+                        bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension'
+
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view'
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+
+                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat postgresql'
+
+                        bat 'python scripts\\discovery\\discovery_engine.py --database postgresql'
+
+                        bat 'python scripts\\discovery\\growth_analyzer.py --database postgresql'
+
+                        bat 'python scripts\\discovery\\requirement_analyzer.py --database postgresql'
+
+                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat postgresql'
+
+                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat postgresql'
+
+                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat postgresql'
+
+                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat postgresql'
+
+                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat postgresql'
                     }
                 }
             }
