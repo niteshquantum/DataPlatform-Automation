@@ -589,6 +589,8 @@ if (currentBuild.number == 1) {
 
                         sh 'bash ./scripts/bash/mssql/setup/run_liquibase.sh'
 
+						sh 'bash ./scripts/bash/mssql/setup/configure_global_mssql.sh'
+						
                         sh 'bash ./scripts/bash/mssql/setup/validate_environment.sh'
                     }
                 }
