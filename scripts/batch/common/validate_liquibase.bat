@@ -1,6 +1,19 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+
+call "%~dp0validate_java_runtime.bat"
+
+if errorlevel 1 exit /b 1
+
+echo.
+echo ============================
+echo JAVA_HOME AFTER VALIDATION
+echo %JAVA_HOME%
+echo ============================
+echo.
+
+
 echo.
 echo =====================================
 echo VALIDATING LIQUIBASE
@@ -73,15 +86,30 @@ echo Java Found:
 where java
 
 echo.
+echo ==========================
+echo JAVA_HOME BEFORE LIQUIBASE
+echo %JAVA_HOME%
+echo.
+
+echo JAVA PATH USED
+echo %JAVA_HOME%\bin\java.exe
+echo.
+
+"%JAVA_HOME%\bin\java.exe" -version
+echo.
+
+
+echo.
 echo Checking Liquibase Version...
 echo.
 
+set JAVA_PATH=%JAVA_HOME%\bin\java.exe
 call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
 
 if errorlevel 1 (
-echo ERROR: LIQUIBASE EXECUTION FAILED
-del "%TEMP%\liquibase_version.txt" >nul 2>&1
-exit /b 1
+    echo.
+    echo ERROR: LIQUIBASE EXECUTION FAILED
+    exit /b 1
 )
 
 type "%TEMP%\liquibase_version.txt"
