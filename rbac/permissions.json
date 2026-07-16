@@ -1,51 +1,41 @@
 {
-    "setup.execute": {
-        "name": "Setup Pipeline",
-        "description": "Execute database setup pipeline"
+    "mysql.setup": {
+        "name": "MySQL Setup"
+    },
+    "mysql.load": {
+        "name": "MySQL Load"
+    },
+    "mysql.cleanup": {
+        "name": "MySQL Cleanup"
     },
 
-    "load.execute": {
-        "name": "Load Pipeline",
-        "description": "Execute data loading pipeline"
+    "mongodb.setup": {
+        "name": "MongoDB Setup"
+    },
+    "mongodb.load": {
+        "name": "MongoDB Load"
+    },
+    "mongodb.cleanup": {
+        "name": "MongoDB Cleanup"
     },
 
-    "cleanup.execute": {
-        "name": "Cleanup Pipeline",
-        "description": "Execute cleanup pipeline"
+    "postgresql.setup": {
+        "name": "PostgreSQL Setup"
+    },
+    "postgresql.load": {
+        "name": "PostgreSQL Load"
+    },
+    "postgresql.cleanup": {
+        "name": "PostgreSQL Cleanup"
     },
 
-    "profiling.execute": {
-        "name": "Profiling Pipeline",
-        "description": "Execute data profiling"
+    "mssql.setup": {
+        "name": "MSSQL Setup"
     },
-
-    "reconciliation.execute": {
-        "name": "Reconciliation Pipeline",
-        "description": "Execute reconciliation process"
+    "mssql.load": {
+        "name": "MSSQL Load"
     },
-
-    "assessment.execute": {
-        "name": "Assessment Pipeline",
-        "description": "Execute assessment process"
-    },
-
-    "recommendation.execute": {
-        "name": "Recommendation Pipeline",
-        "description": "Execute recommendation engine"
-    },
-
-    "governance.execute": {
-        "name": "Governance Pipeline",
-        "description": "Execute governance process"
-    },
-
-    "report.view": {
-        "name": "View Reports",
-        "description": "View generated reports"
-    },
-
-    "history.view": {
-        "name": "View History",
-        "description": "View execution history"
+    "mssql.cleanup": {
+        "name": "MSSQL Cleanup"
     }
 }

@@ -122,3 +122,6 @@ liquibase/*/*
 !liquibase/mssql/*.xml
 !liquibase/mssql/objects/
 !liquibase/mssql/objects/**
+
+# RBAC Credentials
+rbac/credentials.json

@@ -16,7 +16,34 @@ def executePipeline(
     def loggingInitialized = false
 
     try {
+        /*
+============================================================
+RBAC AUTHORIZATION
+============================================================
+*/
 
+        def permission = "${database}.${action}".toLowerCase()
+
+        echo "RBAC Permission : ${permission}"
+
+        if (isUnix()) {
+
+            sh """
+                python3 -m rbac.cli \
+                    --username "${params.USERNAME}" \
+                    --password "${params.PASSWORD}" \
+                    --permission "${permission}"
+            """
+
+        } else {
+
+            bat """
+                python -m rbac.cli ^
+                    --username "${params.USERNAME}" ^
+                    --password "${params.PASSWORD}" ^
+                    --permission "${permission}"
+            """
+        }
         /*
         ============================================================
         INITIALIZE LOGGING
@@ -245,6 +272,18 @@ pipeline {
             ],
             description: 'Used only for Windows CLEANUP action'
         )
+
+        string(
+            name: 'USERNAME',
+            defaultValue: '',
+            description: 'RBAC Username'
+        )
+
+        password(
+            name: 'PASSWORD',
+            defaultValue: '',
+            description: 'RBAC Password'
+)
     }
 
 

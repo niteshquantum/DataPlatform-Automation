@@ -1,51 +1,54 @@
 {
     "Admin": {
-        "description": "Full system access",
+        "description": "Full Access",
         "permissions": [
-            "setup.execute",
-            "load.execute",
-            "cleanup.execute",
-            "profiling.execute",
-            "reconciliation.execute",
-            "assessment.execute",
-            "recommendation.execute",
-            "governance.execute",
-            "report.view",
-            "history.view"
+            "mysql.setup",
+            "mysql.load",
+            "mysql.cleanup",
+
+            "mongodb.setup",
+            "mongodb.load",
+            "mongodb.cleanup",
+
+            "postgresql.setup",
+            "postgresql.load",
+            "postgresql.cleanup",
+
+            "mssql.setup",
+            "mssql.load",
+            "mssql.cleanup"
         ]
     },
 
     "Developer": {
-        "description": "Development access",
+        "description": "Developer Access",
         "permissions": [
-            "setup.execute",
-            "load.execute",
-            "profiling.execute",
-            "reconciliation.execute",
-            "assessment.execute",
-            "recommendation.execute",
-            "report.view",
-            "history.view"
+            "mysql.setup",
+            "mysql.load",
+
+            "mongodb.setup",
+            "mongodb.load",
+
+            "postgresql.setup",
+            "postgresql.load",
+
+            "mssql.setup",
+            "mssql.load"
         ]
     },
 
     "QA": {
-        "description": "Testing access",
+        "description": "QA Access",
         "permissions": [
-            "load.execute",
-            "profiling.execute",
-            "reconciliation.execute",
-            "assessment.execute",
-            "report.view",
-            "history.view"
+            "mysql.load",
+            "mongodb.load",
+            "postgresql.load",
+            "mssql.load"
         ]
     },
 
     "Viewer": {
-        "description": "Read only access",
-        "permissions": [
-            "report.view",
-            "history.view"
-        ]
+        "description": "Read Only",
+        "permissions": []
     }
 }
