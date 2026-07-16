@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableDelayedExpansion
+
 
 echo.
 echo =====================================
@@ -89,9 +89,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo.
+echo ===== AFTER DRIVER =====
+echo JAVA_HOME=%JAVA_HOME%
+echo PATH=%PATH%
+echo ========================
+echo.
+
 REM =====================================
 REM PATHS
 REM =====================================
+set JAVA_HOME
 
 set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
 
@@ -148,6 +156,20 @@ set "PASSWORD_OPTION="
 if defined POSTGRESQL_PASSWORD (
     set "PASSWORD_OPTION=--password=%POSTGRESQL_PASSWORD%"
 )
+
+REM =====================================
+REM RUN LIQUIBASE
+REM =====================================
+
+REM =====================================
+REM REFRESH JAVA ENVIRONMENT
+REM =====================================
+
+call "%ROOT%\scripts\batch\common\discover_java.bat"
+if errorlevel 1 exit /b 1
+
+echo FINAL JAVA_HOME=%JAVA_HOME%
+"%JAVA_HOME%\bin\java.exe" -version
 
 REM =====================================
 REM RUN LIQUIBASE
