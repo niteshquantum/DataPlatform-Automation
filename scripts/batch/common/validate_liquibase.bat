@@ -76,12 +76,12 @@ echo.
 echo Checking Liquibase Version...
 echo.
 
-call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
+call "%LIQUIBASE_BAT%" --version
 
 if errorlevel 1 (
-echo ERROR: LIQUIBASE EXECUTION FAILED
-del "%TEMP%\liquibase_version.txt" >nul 2>&1
-exit /b 1
+    echo.
+    echo ERROR: LIQUIBASE EXECUTION FAILED
+    exit /b 1
 )
 
 type "%TEMP%\liquibase_version.txt"
