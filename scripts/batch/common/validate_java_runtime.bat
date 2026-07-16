@@ -1,14 +1,13 @@
 @echo off
-setlocal EnableDelayedExpansion
 
-echo.
 echo =====================================
 echo VALIDATING JAVA RUNTIME
 echo =====================================
-echo.
-call "%~dp0discover_java.bat"
 
+call "%~dp0discover_java.bat"
 if errorlevel 1 exit /b 1
+
+...
 where java >nul 2>&1
 
 if errorlevel 1 (
@@ -84,5 +83,6 @@ echo =====================================
 echo JAVA RUNTIME VALIDATED
 echo =====================================
 echo.
+
 
 exit /b 0

@@ -1,3 +1,7 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+
 call "%~dp0validate_java_runtime.bat"
 
 if errorlevel 1 exit /b 1
@@ -9,8 +13,6 @@ echo %JAVA_HOME%
 echo ============================
 echo.
 
-@echo off
-setlocal EnableDelayedExpansion
 
 echo.
 echo =====================================
@@ -95,7 +97,7 @@ echo.
 
 "%JAVA_HOME%\bin\java.exe" -version
 echo.
-pause
+
 
 echo.
 echo Checking Liquibase Version...
