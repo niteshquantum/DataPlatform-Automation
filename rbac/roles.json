@@ -1,0 +1,51 @@
+{
+    "Admin": {
+        "description": "Full system access",
+        "permissions": [
+            "setup.execute",
+            "load.execute",
+            "cleanup.execute",
+            "profiling.execute",
+            "reconciliation.execute",
+            "assessment.execute",
+            "recommendation.execute",
+            "governance.execute",
+            "report.view",
+            "history.view"
+        ]
+    },
+
+    "Developer": {
+        "description": "Development access",
+        "permissions": [
+            "setup.execute",
+            "load.execute",
+            "profiling.execute",
+            "reconciliation.execute",
+            "assessment.execute",
+            "recommendation.execute",
+            "report.view",
+            "history.view"
+        ]
+    },
+
+    "QA": {
+        "description": "Testing access",
+        "permissions": [
+            "load.execute",
+            "profiling.execute",
+            "reconciliation.execute",
+            "assessment.execute",
+            "report.view",
+            "history.view"
+        ]
+    },
+
+    "Viewer": {
+        "description": "Read only access",
+        "permissions": [
+            "report.view",
+            "history.view"
+        ]
+    }
+}

@@ -1,0 +1,51 @@
+{
+    "setup.execute": {
+        "name": "Setup Pipeline",
+        "description": "Execute database setup pipeline"
+    },
+
+    "load.execute": {
+        "name": "Load Pipeline",
+        "description": "Execute data loading pipeline"
+    },
+
+    "cleanup.execute": {
+        "name": "Cleanup Pipeline",
+        "description": "Execute cleanup pipeline"
+    },
+
+    "profiling.execute": {
+        "name": "Profiling Pipeline",
+        "description": "Execute data profiling"
+    },
+
+    "reconciliation.execute": {
+        "name": "Reconciliation Pipeline",
+        "description": "Execute reconciliation process"
+    },
+
+    "assessment.execute": {
+        "name": "Assessment Pipeline",
+        "description": "Execute assessment process"
+    },
+
+    "recommendation.execute": {
+        "name": "Recommendation Pipeline",
+        "description": "Execute recommendation engine"
+    },
+
+    "governance.execute": {
+        "name": "Governance Pipeline",
+        "description": "Execute governance process"
+    },
+
+    "report.view": {
+        "name": "View Reports",
+        "description": "View generated reports"
+    },
+
+    "history.view": {
+        "name": "View History",
+        "description": "View execution history"
+    }
+}
