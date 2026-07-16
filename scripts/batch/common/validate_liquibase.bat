@@ -104,7 +104,7 @@ echo Checking Liquibase Version...
 echo.
 
 set JAVA_PATH=%JAVA_HOME%\bin\java.exe
-call "%LIQUIBASE_BAT%" --version
+call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
 
 if errorlevel 1 (
     echo.
