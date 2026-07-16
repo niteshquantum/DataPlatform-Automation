@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableDelayedExpansion
+
 
 echo.
 echo =====================================
