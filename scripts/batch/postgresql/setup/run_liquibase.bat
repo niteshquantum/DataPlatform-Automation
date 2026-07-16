@@ -89,9 +89,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo.
+echo ===== AFTER DRIVER =====
+echo JAVA_HOME=%JAVA_HOME%
+echo PATH=%PATH%
+echo ========================
+echo.
+
 REM =====================================
 REM PATHS
 REM =====================================
+set JAVA_HOME
 
 set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
 
