@@ -161,6 +161,20 @@ REM =====================================
 REM RUN LIQUIBASE
 REM =====================================
 
+REM =====================================
+REM REFRESH JAVA ENVIRONMENT
+REM =====================================
+
+call "%ROOT%\scripts\batch\common\discover_java.bat"
+if errorlevel 1 exit /b 1
+
+echo FINAL JAVA_HOME=%JAVA_HOME%
+"%JAVA_HOME%\bin\java.exe" -version
+
+REM =====================================
+REM RUN LIQUIBASE
+REM =====================================
+
 call "%LB_BAT%" ^
 --classpath="%DRIVER%" ^
 --driver=org.postgresql.Driver ^
