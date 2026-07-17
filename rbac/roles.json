@@ -16,7 +16,9 @@
 
             "mssql.setup",
             "mssql.load",
-            "mssql.cleanup"
+            "mssql.cleanup",
+
+            "report.view"
         ]
     },
 
@@ -33,7 +35,9 @@
             "postgresql.load",
 
             "mssql.setup",
-            "mssql.load"
+            "mssql.load",
+
+            "report.view"
         ]
     },
 
@@ -43,12 +47,16 @@
             "mysql.load",
             "mongodb.load",
             "postgresql.load",
-            "mssql.load"
+            "mssql.load",
+
+            "report.view"
         ]
     },
 
     "Viewer": {
         "description": "Read Only",
-        "permissions": []
+        "permissions": [
+            "report.view"
+        ]
     }
 }

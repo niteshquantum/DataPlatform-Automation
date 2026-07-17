@@ -24,26 +24,59 @@ RBAC AUTHORIZATION
 
         def permission = "${database}.${action}".toLowerCase()
 
-        echo "RBAC Permission : ${permission}"
+            echo "RBAC Permission : ${permission}"
 
-        if (isUnix()) {
+            def authResult
 
-                sh """
-                python3 rbac/cli.py \
-                    --username "${params.USERNAME}" \
-                    --password "${params.PASSWORD}" \
-                    --permission "${permission}"
-                """
+            if (isUnix()) {
 
-        } else {
+                authResult = sh(
+                    script: """
+                        python3 rbac/cli.py \
+                            --username "${params.USERNAME}" \
+                            --password "${params.PASSWORD}" \
+                            --permission "${permission}"
+                    """,
+                    returnStdout: true
+                ).trim()
 
-                bat """
-                python rbac\\cli.py ^
-                    --username "${params.USERNAME}" ^
-                    --password "${params.PASSWORD}" ^
-                    --permission "${permission}"
-                """
-        }
+            } else {
+
+                authResult = bat(
+                    script: """
+                        @echo off
+                        python rbac\\cli.py ^
+                            --username "${params.USERNAME}" ^
+                            --password "${params.PASSWORD}" ^
+                            --permission "${permission}"
+                    """,
+                    returnStdout: true
+                ).trim()
+            }
+
+            def role = authResult.readLines().last().replace("AUTHORIZED:", "").trim()
+
+            echo "Logged in Role : ${role}"
+
+            if (role.equalsIgnoreCase("Viewer")) {
+
+                echo "=========================================="
+                echo "Viewer role detected."
+                echo "Skipping pipeline execution."
+                echo "Publishing Executive Report..."
+                echo "=========================================="
+
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: "reports/migration/${database}",
+                    reportFiles: "executive_report.html",
+                    reportName: "${database.toUpperCase()} Executive Report"
+                ])
+
+                return
+            }
         /*
         ============================================================
         INITIALIZE LOGGING
@@ -201,6 +234,14 @@ RBAC AUTHORIZATION
                     fingerprint: true,
                     allowEmptyArchive: true
                 )
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: "reports/migration/${database}",
+                    reportFiles: "executive_report.html",
+                    reportName: "${database.toUpperCase()} Executive Report"
+                ])
 
             } catch (Exception archiveError) {
 

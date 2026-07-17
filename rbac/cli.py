@@ -31,5 +31,5 @@ if not has_permission(role, args.permission):
     print("ACCESS_DENIED")
     sys.exit(2)
 
-print("AUTHORIZED")
+print(f"AUTHORIZED:{role}")
 sys.exit(0)
