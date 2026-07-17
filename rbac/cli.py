@@ -1,10 +1,12 @@
-import argparse
+import os
 import sys
+
+sys.path.insert(0, os.getcwd())
+
+import argparse
 
 from rbac.auth import authenticate
 from rbac.authorization import has_permission
-
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--username", required=True)

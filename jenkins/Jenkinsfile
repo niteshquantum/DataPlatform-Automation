@@ -28,21 +28,21 @@ RBAC AUTHORIZATION
 
         if (isUnix()) {
 
-            sh """
-                python3 -m rbac.cli \
+                sh """
+                python3 rbac/cli.py \
                     --username "${params.USERNAME}" \
                     --password "${params.PASSWORD}" \
                     --permission "${permission}"
-            """
+                """
 
         } else {
 
-            bat """
-                python -m rbac.cli ^
+                bat """
+                python rbac\\cli.py ^
                     --username "${params.USERNAME}" ^
                     --password "${params.PASSWORD}" ^
                     --permission "${permission}"
-            """
+                """
         }
         /*
         ============================================================
