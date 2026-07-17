@@ -16,6 +16,8 @@ mkdir -p "$TOOLS_DIR"
 
 if [ -f "$TOOLS_DIR/terraform" ]
 then
+    chmod +x "$TOOLS_DIR/terraform"
+
     echo "Terraform already installed"
     "$TOOLS_DIR/terraform" version
     exit 0
