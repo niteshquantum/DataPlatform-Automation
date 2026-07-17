@@ -16,71 +16,97 @@ def executePipeline(
     def loggingInitialized = false
 
     try {
+
         /*
-============================================================
-RBAC AUTHORIZATION
-============================================================
-*/
+        ============================================================
+        RBAC AUTHENTICATION
+        ============================================================
+        */
 
         def permission = "${database}.${action}".toLowerCase()
 
-            echo "RBAC Permission : ${permission}"
+        echo "RBAC Permission : ${permission}"
 
-            def authResult
+        def authResult
 
-            if (isUnix()) {
+        if (isUnix()) {
 
-                authResult = sh(
-                    script: """
-                        python3 rbac/cli.py \
-                            --username "${params.USERNAME}" \
-                            --password "${params.PASSWORD}" \
-                            --permission "${permission}"
-                    """,
-                    returnStdout: true
-                ).trim()
+            authResult = sh(
+                script: """
+                    python3 rbac/auth_cli.py \
+                        --username "${params.USERNAME}" \
+                        --password "${params.PASSWORD}"
+                """,
+                returnStdout: true
+            ).trim()
 
-            } else {
+        } else {
 
-                authResult = bat(
-                    script: """
-                        @echo off
-                        python rbac\\cli.py ^
-                            --username "${params.USERNAME}" ^
-                            --password "${params.PASSWORD}" ^
-                            --permission "${permission}"
-                    """,
-                    returnStdout: true
-                ).trim()
-            }
+            authResult = bat(
+                script: """
+                    @echo off
+                    python rbac\\auth_cli.py ^
+                        --username "${params.USERNAME}" ^
+                        --password "${params.PASSWORD}"
+                """,
+                returnStdout: true
+            ).trim()
+        }
 
-            def role = authResult.readLines().last().replace("AUTHORIZED:", "").trim()
+        def role = authResult.readLines().last().trim()
 
-            echo "Logged in Role : ${role}"
+        echo "Logged in Role : ${role}"
 
-            if (role.equalsIgnoreCase("Viewer")) {
+        if (role.equalsIgnoreCase("Viewer")) {
 
-                echo "=========================================="
-                echo "Viewer role detected."
-                echo "Skipping pipeline execution."
-                echo "Publishing Executive Report..."
-                echo "=========================================="
+            echo "=========================================="
+            echo "Viewer Role Detected"
+            echo "Publishing Executive Report"
+            echo "=========================================="
 
-                publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: "reports/migration/${database}",
-                    reportFiles: "executive_report.html",
-                    reportName: "${database.toUpperCase()} Executive Report"
-                ])
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: "reports/migration/${database}",
+                reportFiles: "executive_report.html",
+                reportName: "${database.toUpperCase()} Executive Report"
+            ])
 
-                return
-            }
+            return
+        }
+
+        /*
+        ============================================================
+        RBAC AUTHORIZATION
+        ============================================================
+        */
+
+        if (isUnix()) {
+
+            sh """
+                python3 rbac/cli.py \
+                    --username "${params.USERNAME}" \
+                    --password "${params.PASSWORD}" \
+                    --permission "${permission}"
+            """
+
+        } else {
+
+            bat """
+                @echo off
+                python rbac\\cli.py ^
+                    --username "${params.USERNAME}" ^
+                    --password "${params.PASSWORD}" ^
+                    --permission "${permission}"
+            """
+        }
+
         /*
         ============================================================
         INITIALIZE LOGGING
         ============================================================
+        
         */
 
         if (isUnix()) {
