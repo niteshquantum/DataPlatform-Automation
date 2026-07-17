@@ -19,8 +19,94 @@ def executePipeline(
 
         /*
         ============================================================
+        RBAC AUTHENTICATION
+        ============================================================
+        */
+
+        def permission = "${database}.${action}".toLowerCase()
+
+        echo "RBAC Permission : ${permission}"
+
+        def authResult
+
+        if (isUnix()) {
+
+            authResult = sh(
+                script: """
+                    python3 rbac/auth_cli.py \
+                        --username "${params.USERNAME}" \
+                        --password "${params.PASSWORD}"
+                """,
+                returnStdout: true
+            ).trim()
+
+        } else {
+
+            authResult = bat(
+                script: """
+                    @echo off
+                    python rbac\\auth_cli.py ^
+                        --username "${params.USERNAME}" ^
+                        --password "${params.PASSWORD}"
+                """,
+                returnStdout: true
+            ).trim()
+        }
+
+        def role = authResult.readLines().last().trim()
+
+        echo "Logged in Role : ${role}"
+
+        if (role.equalsIgnoreCase("Viewer")) {
+
+            echo "=========================================="
+            echo "Viewer Role Detected"
+            echo "Publishing Executive Report"
+            echo "=========================================="
+
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: "reports/migration/${database}",
+                reportFiles: "executive_report.html",
+                reportName: "${database.toUpperCase()} Executive Report"
+            ])
+
+            return
+        }
+
+        /*
+        ============================================================
+        RBAC AUTHORIZATION
+        ============================================================
+        */
+
+        if (isUnix()) {
+
+            sh """
+                python3 rbac/cli.py \
+                    --username "${params.USERNAME}" \
+                    --password "${params.PASSWORD}" \
+                    --permission "${permission}"
+            """
+
+        } else {
+
+            bat """
+                @echo off
+                python rbac\\cli.py ^
+                    --username "${params.USERNAME}" ^
+                    --password "${params.PASSWORD}" ^
+                    --permission "${permission}"
+            """
+        }
+
+        /*
+        ============================================================
         INITIALIZE LOGGING
         ============================================================
+        
         */
 
         if (isUnix()) {
@@ -174,6 +260,14 @@ def executePipeline(
                     fingerprint: true,
                     allowEmptyArchive: true
                 )
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: "reports/migration/${database}",
+                    reportFiles: "executive_report.html",
+                    reportName: "${database.toUpperCase()} Executive Report"
+                ])
 
             } catch (Exception archiveError) {
 
@@ -245,6 +339,18 @@ pipeline {
             ],
             description: 'Used only for Windows CLEANUP action'
         )
+
+        string(
+            name: 'USERNAME',
+            defaultValue: '',
+            description: 'RBAC Username'
+        )
+
+        password(
+            name: 'PASSWORD',
+            defaultValue: '',
+            description: 'RBAC Password'
+)
     }
 
 
