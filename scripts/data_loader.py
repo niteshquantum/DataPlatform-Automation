@@ -111,7 +111,11 @@ def get_database_connection(db_type, config):
     if db_type == 'mssql':
         if pyodbc is None:
             raise ImportError('pyodbc is not installed')
-        driver = config.get('MSSQL_DRIVER', 'ODBC Driver 17 for SQL Server')
+        driver = (
+            config.get("MSSQL_DRIVER")
+            or config.get("MSSQL_ODBC_DRIVER")
+            or "ODBC Driver 18 for SQL Server"
+        )
         return pyodbc.connect(
             f"DRIVER={{{driver}}};"
             f"SERVER={config.get('MSSQL_HOST', 'localhost')},{config.get('MSSQL_PORT', 1433)};"
