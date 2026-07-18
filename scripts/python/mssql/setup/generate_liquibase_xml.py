@@ -44,6 +44,13 @@ next_number = len(existing_files) + 1
 generated_any = False
  
 for table_name, columns in schema_registry.items():
+    
+    table_name = table_name.lower()
+ 
+    clean_columns = [c.replace("\ufeff", "").strip() for c in columns]
+ 
+    already_covered = covered_columns.get(table_name, set())
+    new_columns = [c for c in clean_columns if c.lower() not in already_covered]
     print("=" * 80)
     print("TABLE              :", table_name)
     print("COVERED TABLES     :", list(covered_columns.keys()))
@@ -51,13 +58,6 @@ for table_name, columns in schema_registry.items():
     print("SCHEMA COLUMNS     :", clean_columns)
     print("NEW COLUMNS        :", new_columns)
     print("=" * 80)
-    table_name = table_name.lower()
- 
-    clean_columns = [c.replace("\ufeff", "").strip() for c in columns]
- 
-    already_covered = covered_columns.get(table_name, set())
-    new_columns = [c for c in clean_columns if c.lower() not in already_covered]
- 
     if not new_columns:
         # Nothing new for this table -> don't regenerate anything.
         continue
