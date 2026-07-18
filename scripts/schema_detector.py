@@ -76,7 +76,44 @@ def get_json_keys(file_path):
     except Exception as e:
         logger.error(f"Error reading JSON file {file_path}: {e}")
         return []
+def detect_schema_changes(existing_columns, current_columns):
+    """
+    Compare existing and current schema.
+    Returns NEW, CHANGED, DELETED or UNCHANGED.
+    """
 
+    existing = {c.lower().strip() for c in existing_columns}
+    current = {c.lower().strip() for c in current_columns}
+
+    added = list(current - existing)
+    deleted = list(existing - current)
+
+    if not existing_columns:
+        return {
+            "status": "NEW",
+            "added_columns": current_columns,
+            "deleted_columns": []
+        }
+
+    if added:
+        return {
+            "status": "CHANGED",
+            "added_columns": added,
+            "deleted_columns": deleted
+        }
+
+    if deleted:
+        return {
+            "status": "DELETED",
+            "added_columns": [],
+            "deleted_columns": deleted
+        }
+
+    return {
+        "status": "UNCHANGED",
+        "added_columns": [],
+        "deleted_columns": []
+    }
 def update_schema_registry(table_name, columns, registry_path):
     """
     Update schema_registry.json with new columns.
@@ -117,6 +154,8 @@ def update_schema_registry(table_name, columns, registry_path):
             ]
 
             registry[table_name] = new_columns
+            
+            
 
             logger.info(
                 f"Updated table '{table_name}' "
@@ -167,7 +206,9 @@ def main():
         return
     
     logger.info(f"Scanning incoming directory: {incoming_dir}")
-    
+    cdc_status = {
+    "tables": {}
+    }
     # Process CSV files
     csv_files = list(incoming_dir.glob("*.csv"))
     logger.info(f"Found {len(csv_files)} CSV file(s)")
@@ -182,8 +223,27 @@ def main():
 
         headers = get_csv_headers(csv_file)
 
+        
+
         if headers:
-            update_schema_registry(table_name, headers, registry_path)
+
+            existing_columns = []
+
+            if registry_path.exists():
+                with open(registry_path, "r", encoding="utf-8") as f:
+                    registry = json.load(f)
+
+                existing_columns = registry.get(table_name, [])
+
+                result = detect_schema_changes(existing_columns, headers)
+
+                logger.info(
+                    f"CDC Status [{table_name}] : {result['status']}"
+                )
+
+                cdc_status["tables"][table_name] = result
+
+                update_schema_registry(table_name, headers, registry_path)
     
     # Process JSON files
     json_files = list(incoming_dir.glob("*.json"))
@@ -200,8 +260,33 @@ def main():
         keys = get_json_keys(json_file)
 
         if keys:
-            update_schema_registry(table_name, keys, registry_path)
 
+            existing_columns = []
+
+            if registry_path.exists():
+                with open(registry_path, "r", encoding="utf-8") as f:
+                    registry = json.load(f)
+
+                existing_columns = registry.get(table_name, [])
+
+            result = detect_schema_changes(existing_columns, keys)
+
+            logger.info(
+                f"CDC Status [{table_name}] : {result['status']}"
+            )
+            cdc_status["tables"][table_name] = result
+            update_schema_registry(table_name, keys, registry_path)
+    cdc_path = (
+        project_root
+        / "metadata"
+        / db_type
+        / "cdc_status.json"
+    )
+
+    with open(cdc_path, "w", encoding="utf-8") as f:
+        json.dump(cdc_status, f, indent=4)
+
+    logger.info(f"CDC metadata written to {cdc_path}")
 
 if __name__ == "__main__":
     try:
