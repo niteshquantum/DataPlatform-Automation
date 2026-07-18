@@ -71,5 +71,6 @@ Write-Error "Liquibase installation validation failed."
 exit 1
 }
 
-
+Write-Host "LiquibaseDir = $LiquibaseDir"
+Get-ChildItem $LiquibaseDir
 Write-Host "Liquibase downloaded successfully."

@@ -78,16 +78,10 @@ echo.
 
 call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
 
-echo.
-echo ===== LIQUIBASE OUTPUT =====
-type "%TEMP%\liquibase_version.txt"
-echo ============================
-echo Exit Code = %ERRORLEVEL%
-echo.
-
 if errorlevel 1 (
-    echo ERROR: LIQUIBASE EXECUTION FAILED
-    exit /b 1
+echo ERROR: LIQUIBASE EXECUTION FAILED
+del "%TEMP%\liquibase_version.txt" >nul 2>&1
+exit /b 1
 )
 
 type "%TEMP%\liquibase_version.txt"
