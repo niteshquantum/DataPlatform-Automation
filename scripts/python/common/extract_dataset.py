@@ -18,11 +18,10 @@ def print_header():
     print("DATASET EXTRACTION & MERGE")
     print("=" * 60)
 
-
 def extract_and_merge_zip(archive_file: Path, incoming_path: Path):
     """
     Zip ke andar ke content ko incoming folder me merge karta hai.
-    Agar folder pehle se hai toh overwrite/merge karega, nahi toh naya banayega.
+    Permission error aane par overwrite karne ke liye purani file delete karne ki koshish karta hai.
     """
     print()
     print("Extracting and merging dataset...")
@@ -30,20 +29,28 @@ def extract_and_merge_zip(archive_file: Path, incoming_path: Path):
 
     with zipfile.ZipFile(archive_file, "r") as zip_ref:
         for member in zip_ref.infolist():
-            # Target path configure karein
             target_path = incoming_path / member.filename
             
-            # Agar directory entry hai toh sirf folder create karein
             if member.is_dir():
                 target_path.mkdir(parents=True, exist_ok=True)
                 continue
                 
-            # File ke parent directory ko ensure karein
             target_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # File ko write/overwrite karein
-            with zip_ref.open(member) as source, open(target_path, "wb") as target:
-                shutil.copyfileobj(source, target)
+            # Agar file pehle se maujood hai aur locked/permission issue hai
+            if target_path.exists():
+                try:
+                    target_path.unlink() # Purani file ko pehle delete karne ki koshish karein
+                except PermissionError:
+                    print(f"[WARNING] Cannot delete/overwrite {target_path}. Trying to force write...")
+
+            try:
+                with zip_ref.open(member) as source, open(target_path, "wb") as target:
+                    shutil.copyfileobj(source, target)
+            except PermissionError as e:
+                print(f"[ERROR] Permission Denied for file: {target_path}")
+                print("Tip: Jenkins workspace folders ke permissions `chmod -R 775` se sahi karein.")
+                raise e
                 
     print("[SUCCESS] Dataset extracted and merged successfully.")
 
