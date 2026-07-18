@@ -6,7 +6,10 @@ Change Detector
 Compares current file checksums with previously stored metadata.
 """
 
-from metadata_manager import get_file_metadata
+from metadata_manager import (
+    get_file_metadata,
+    update_file_metadata
+)
 
 
 def detect_changes(current_checksums):
@@ -46,5 +49,11 @@ def detect_changes(current_checksums):
             "status": status,
             "checksum": current_checksum
         }
+        update_file_metadata(
+        file_name,
+        {
+            "checksum": current_checksum
+        }
+    )
 
     return results
