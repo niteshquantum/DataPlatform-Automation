@@ -105,8 +105,13 @@ if [ "$LOAD_REQUIRED" = "true" ]; then
     echo "-------------------------------------"
     echo
 
-    echo "LOAD MODE : ${LOAD_MODE:-skip}"
-    export LOAD_MODE=${LOAD_MODE:-skip}
+    if [ "$SCHEMA_CHANGED" = "true" ]; then
+        export LOAD_MODE=full
+    else
+        export LOAD_MODE=incremental
+    fi
+
+    echo "LOAD MODE : $LOAD_MODE"
 
     python3 scripts/data_loader.py mysql
 
