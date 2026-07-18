@@ -18,7 +18,7 @@ def run(database):
 
     for file_name, details in results.items():
 
-        if details["status"] in ["NEW", "CHANGED"]:
+        if details["status"] in ["NEW", "CHANGED", "DELETED"]:
             changed_files.append(file_name)
         else:
             skipped_files.append(file_name)
