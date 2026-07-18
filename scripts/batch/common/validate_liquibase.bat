@@ -1,6 +1,8 @@
 @echo off
 setlocal EnableDelayedExpansion
+call "%~dp0discover_java.bat"
 
+if errorlevel 1 exit /b 1
 echo.
 echo =====================================
 echo VALIDATING LIQUIBASE
