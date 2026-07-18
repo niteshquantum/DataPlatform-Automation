@@ -44,7 +44,13 @@ next_number = len(existing_files) + 1
 generated_any = False
  
 for table_name, columns in schema_registry.items():
- 
+    print("=" * 80)
+    print("TABLE              :", table_name)
+    print("COVERED TABLES     :", list(covered_columns.keys()))
+    print("ALREADY COVERED    :", sorted(already_covered))
+    print("SCHEMA COLUMNS     :", clean_columns)
+    print("NEW COLUMNS        :", new_columns)
+    print("=" * 80)
     table_name = table_name.lower()
  
     clean_columns = [c.replace("\ufeff", "").strip() for c in columns]
