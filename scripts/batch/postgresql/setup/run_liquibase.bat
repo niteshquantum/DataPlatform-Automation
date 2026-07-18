@@ -1,6 +1,11 @@
 @echo off
 setlocal EnableDelayedExpansion
+call "%~dp0..\..\common\discover_java.bat"
 
+if errorlevel 1 exit /b 1
+
+echo JAVA_HOME=%JAVA_HOME%
+java -version
 echo.
 echo =====================================
 echo RUNNING POSTGRESQL LIQUIBASE
