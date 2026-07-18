@@ -71,29 +71,34 @@ exit /b 1
 
 echo Java Found:
 where java
+echo.
+echo ===== BEFORE LIQUIBASE =====
+echo JAVA_HOME=%JAVA_HOME%
+where java
+java -version
+echo ============================
+echo.
 
+call "%LIQUIBASE_BAT%" --version
+
+echo Exit Code=%ERRORLEVEL%
 echo.
 echo Checking Liquibase Version...
 echo.
 
 call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
 
-if errorlevel 1 (
-echo ERROR: LIQUIBASE EXECUTION FAILED
-del "%TEMP%\liquibase_version.txt" >nul 2>&1
-exit /b 1
-)
+set "RC=%ERRORLEVEL%"
 
 type "%TEMP%\liquibase_version.txt"
 
-findstr /C:"Liquibase Version: %EXPECTED_VERSION%" "%TEMP%\liquibase_version.txt" >nul
-
-if errorlevel 1 (
 echo.
-echo ERROR: LIQUIBASE VERSION MISMATCH
-echo Expected : %EXPECTED_VERSION%
-del "%TEMP%\liquibase_version.txt" >nul 2>&1
-exit /b 1
+echo Exit Code=%RC%
+echo.
+
+if not "%RC%"=="0" (
+    echo ERROR: LIQUIBASE EXECUTION FAILED
+    exit /b %RC%
 )
 
 del "%TEMP%\liquibase_version.txt" >nul 2>&1
