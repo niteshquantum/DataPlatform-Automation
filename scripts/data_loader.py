@@ -578,3 +578,9 @@ def main():
     conn.close()
 
     logger.info("Data loader completed")
+    
+
+
+
+if __name__ == "__main__":
+    main()
