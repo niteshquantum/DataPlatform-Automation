@@ -149,3 +149,17 @@ for table_name, columns in schema_registry.items():
 if not generated_any:
     print("No schema changes detected. Nothing to generate.")
  
+from pathlib import Path
+
+status_file = ROOT / "metadata" / "mssql" / "schema_status.json"
+
+status_file.parent.mkdir(parents=True, exist_ok=True)
+
+with open(status_file, "w", encoding="utf-8") as f:
+    json.dump(
+        {
+            "schema_changed": generated_any
+        },
+        f,
+        indent=4
+    )

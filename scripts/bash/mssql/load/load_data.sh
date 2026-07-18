@@ -30,6 +30,14 @@ echo
 
 python3 scripts/python/mssql/setup/generate_liquibase_xml.py
 
+SCHEMA_STATUS="$PROJECT_ROOT/metadata/mssql/schema_status.json"
+
+SCHEMA_CHANGED=$(python3 -c "
+import json
+with open('$SCHEMA_STATUS','r') as f:
+    print(str(json.load(f)['schema_changed']).lower())
+")
+
 echo
 echo "-------------------------------------"
 echo "UPDATING MASTER XML"
@@ -42,23 +50,80 @@ python3 scripts/python/mssql/setup/update_master_xml.py
 
 echo
 echo "-------------------------------------"
-echo "APPLYING LIQUIBASE CHANGELOG"
+echo "SCHEMA DECISION"
 echo "-------------------------------------"
 echo
 
-bash "$PROJECT_ROOT/scripts/bash/mssql/setup/run_liquibase.sh"
+LOAD_REQUIRED=false
 
-echo
-echo "-------------------------------------"
-echo "LOADING DATA"
-echo "-------------------------------------"
-echo
+if [ "$SCHEMA_CHANGED" = "true" ]; then
 
-echo "LOAD MODE : ${LOAD_MODE:-skip}"
+    echo "Schema changes detected."
+    echo "Running Liquibase..."
 
-export LOAD_MODE=${LOAD_MODE:-skip}
+    bash "$PROJECT_ROOT/scripts/bash/mssql/setup/run_liquibase.sh"
 
-python3 scripts/data_loader.py mssql
+    LOAD_REQUIRED=true
+
+else
+
+    echo "No schema changes detected."
+    echo "Running CDC..."
+
+    # Temporarily disable 'exit on error'
+    set +e
+    python3 scripts/cdc/cdc_engine.py mssql
+    CDC_EXIT=$?
+    set -e
+
+    case $CDC_EXIT in
+
+        0)
+            echo "Data changes detected."
+            LOAD_REQUIRED=true
+            ;;
+
+        100)
+            echo "No data changes detected."
+            LOAD_REQUIRED=false
+            ;;
+
+        *)
+            echo "CDC execution failed."
+            exit $CDC_EXIT
+            ;;
+
+    esac
+
+fi
+
+if [ "$LOAD_REQUIRED" = "true" ]; then
+
+    echo
+    echo "-------------------------------------"
+    echo "LOADING DATA"
+    echo "-------------------------------------"
+    echo
+
+    if [ "$SCHEMA_CHANGED" = "true" ]; then
+        export LOAD_MODE=full
+    else
+        export LOAD_MODE=incremental
+    fi
+
+    echo "LOAD MODE : $LOAD_MODE"
+
+    python3 scripts/data_loader.py mssql
+
+else
+
+    echo
+    echo "-------------------------------------"
+    echo "SKIPPING DATA LOAD"
+    echo "-------------------------------------"
+    echo
+
+fi
 
 echo
 echo "-------------------------------------"
@@ -70,7 +135,7 @@ python3 scripts/python/mssql/load/validate_data.py
 
 echo
 echo "====================================="
-echo "DATA LOAD SUCCESSFUL"
+echo "MSSQL LOAD PIPELINE COMPLETED"
 echo "====================================="
 echo
 
