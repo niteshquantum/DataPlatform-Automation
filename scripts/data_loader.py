@@ -201,16 +201,40 @@ def create_table(conn, db_type, table_name, column_names):
 def add_missing_columns(conn, db_type, table_name, missing_columns):
     if not missing_columns:
         return
+
     quoted_table = quote_name(table_name, db_type)
-    definitions = ', '.join(
-        f"{quote_name(name, db_type)} VARCHAR(255)" for name in missing_columns
-    )
-    sql = f"ALTER TABLE {quoted_table} ADD {definitions}"
+
+    if db_type == "postgresql":
+        sql = (
+            f"ALTER TABLE {quoted_table} "
+            + ", ".join(
+                f"ADD COLUMN {quote_name(col, db_type)} VARCHAR(255)"
+                for col in missing_columns
+            )
+        )
+    else:
+        definitions = ", ".join(
+            f"{quote_name(col, db_type)} VARCHAR(255)"
+            for col in missing_columns
+        )
+
+        sql = f"ALTER TABLE {quoted_table} ADD {definitions}"
+
     cursor = conn.cursor()
+
     try:
-        logger.info(f"Adding {len(missing_columns)} missing column(s) to {table_name}")
+        logger.info(
+            f"Adding {len(missing_columns)} missing column(s) to {table_name}"
+        )
+        logger.info(f"Executing SQL: {sql}")
+
         cursor.execute(sql)
         conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         cursor.close()
 
@@ -365,8 +389,15 @@ def is_file_already_processed(file_path):
 def move_file(source_path, dest_dir):
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
+
     target = dest_dir / source_path.name
+
+    if target.exists():
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        target = dest_dir / f"{source_path.stem}_{timestamp}{source_path.suffix}"
+
     source_path.rename(target)
+
     return target
 def write_error_log(file_name, error, failed_dir, db_type):
 
@@ -549,7 +580,7 @@ def main():
             logger.info(f"Loaded {rows_inserted} rows from {path.name}")
 
         except Exception as exc:
-
+            conn.rollback()
             logger.error(f"Error loading file {path.name}: {exc}")
 
             write_error_log(
