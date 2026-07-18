@@ -64,14 +64,18 @@ def executePipeline(
             echo "Publishing Executive Report"
             echo "=========================================="
 
-            publishHTML([
-                allowMissing: true,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: "reports/migration/${database}",
-                reportFiles: "executive_report.html",
-                reportName: "${database.toUpperCase()} Executive Report"
-            ])
+		if (action == "load") {
+		
+		    publishHTML([
+		        allowMissing: true,
+		        alwaysLinkToLastBuild: true,
+		        keepAll: true,
+		        reportDir: "reports/migration/${database}",
+		        reportFiles: "executive_report.html",
+		        reportName: "${database.toUpperCase()} Executive Report"
+		    ])
+		
+		}
 
             return
         }
