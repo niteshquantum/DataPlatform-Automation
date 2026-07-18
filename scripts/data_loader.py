@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 import platform
 
+from scripts.cdc.metadata_manager import update_file_metadata
 from scripts.python.common.config_loader import load_database_config
 from scripts.python.mysql.setup.db_connection import get_connection
 
@@ -468,37 +469,38 @@ def main():
         / 'data_load_history.jsonl'
     )
 
-    db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
-
     incoming_dir = project_root / "incoming" / db_type
+    archive_dir = project_root / "archive" / db_type
+    failed_dir = project_root / "failed" / db_type
 
-    archive_dir = project_root / 'archive' / db_type
-
-    failed_dir = project_root / 'failed' / db_type
     logger.info(f"Database type: {db_type}")
     logger.info(f"Incoming directory: {incoming_dir}")
+
     if not incoming_dir.exists():
-        logger.error('incoming/ directory does not exist')
+        logger.error("incoming/ directory does not exist")
         return
 
-    db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
     config = get_config_for_db(db_type)
+
     if not config:
-        logger.error(f'No configuration found for database type {db_type}')
+        logger.error(f"No configuration found for database type {db_type}")
         return
 
     try:
         conn = get_database_connection(db_type, config)
     except Exception as exc:
-        logger.error(f'Unable to connect to database: {exc}')
+        logger.error(f"Unable to connect to database: {exc}")
         return
 
-    
-    data_files = [p for p in incoming_dir.glob('*.csv')] + [p for p in incoming_dir.glob('*.json')]
-    logger.info(f'Found {len(data_files)} data file(s) in incoming/')
+    data_files = (
+        list(incoming_dir.glob("*.csv"))
+        + list(incoming_dir.glob("*.json"))
+    )
+
+    logger.info(f"Found {len(data_files)} data file(s) in incoming/")
 
     for path in data_files:
-        # Skip already processed files
+
         if load_mode == "skip":
 
             if is_file_already_processed(path):
@@ -506,71 +508,73 @@ def main():
                 continue
 
         elif load_mode == "force":
-        
+
             logger.info(f"{path.name} will be reloaded (FORCE mode).")
-        
+
         elif load_mode == "reload":
 
             logger.info(f"{path.name} will be reloaded (RELOAD mode).")
+
         timestamp = datetime.now().isoformat()
         file_hash = get_file_hash(path)
-        
+
         rows_inserted = 0
-        status = 'FAILED'
+        status = "FAILED"
+
         try:
-            
+
             rows_inserted = load_and_insert_file(
                 conn,
                 db_type,
                 path,
                 load_mode
             )
-            
-            status = 'SUCCESS'
-            
+
+            status = "SUCCESS"
+
+            update_file_metadata(
+                path.name,
+                {
+                    "checksum": file_hash
+                }
+            )
+
             move_file(path, archive_dir)
-            
-            logger.info(
-                f"Moved {path.name} to archive/"
-            )
-            
-            logger.info(
-                f"Loaded {rows_inserted} rows from {path.name}"
-            )
+
+            logger.info(f"Moved {path.name} to archive/")
+            logger.info(f"Loaded {rows_inserted} rows from {path.name}")
+
         except Exception as exc:
-        
-            logger.error(
-                f'Error loading file {path.name}: {exc}'
-            )
-        
+
+            logger.error(f"Error loading file {path.name}: {exc}")
+
             write_error_log(
                 path.name,
                 exc,
                 failed_dir,
                 db_type
             )
-        
+
             move_file(path, failed_dir)
+
         finally:
+
             record = {
-                'timestamp': timestamp,
-                'file': path.name,
-                'sha256': file_hash,
-                'table': (
+                "timestamp": timestamp,
+                "file": path.name,
+                "sha256": file_hash,
+                "table": (
                     path.stem
                     .strip()
                     .lower()
-                    .replace(' ', '_')
+                    .replace(" ", "_")
                 ),
-                'rows_inserted': rows_inserted,
-                'status': status
+                "rows_inserted": rows_inserted,
+                "status": status
             }
+
             write_history(record)
 
-    if conn:
-        conn.close()
-    logger.info('Data loader completed')
+    conn.close()
 
-
-if __name__ == '__main__':
-    main()
+    logger.info("Data loader completed")
