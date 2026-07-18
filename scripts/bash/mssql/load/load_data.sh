@@ -113,7 +113,14 @@ if [ "$LOAD_REQUIRED" = "true" ]; then
 
     echo "LOAD MODE : $LOAD_MODE"
 
+    echo "=== BEFORE DATA LOADER ==="
+
     python3 scripts/data_loader.py mssql
+
+    STATUS=$?
+
+    echo "=== AFTER DATA LOADER ==="
+    echo "EXIT CODE : $STATUS"
 
 else
 
