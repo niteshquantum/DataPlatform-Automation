@@ -2,7 +2,11 @@ import importlib
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+#sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parent.parent)
+)
 
 from config_loader import get_project_root
 from database_capabilities import get_supported_objects
