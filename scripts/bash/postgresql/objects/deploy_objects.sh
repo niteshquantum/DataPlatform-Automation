@@ -16,6 +16,9 @@ echo
 
 python3 scripts/python/common/objects/deploy_objects.py postgresql
 
+python3 scripts/python/common/objects/generate_master_objects.py postgresql
+
+python3 scripts/python/common/objects/deploy_objects.py postgresql
 echo
 echo "====================================="
 echo "POSTGRESQL OBJECTS DEPLOYMENT SUCCESSFUL"
