@@ -16,7 +16,7 @@
     "extensions",
     "indexes"
   ],
-  "sqlserver": [
+  "mssql": [
     "views",
     "functions",
     "procedures",

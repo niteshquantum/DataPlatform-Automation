@@ -173,7 +173,7 @@ pipeline {
 
                     runTrackedStage('Profile Source Data') {
 
-                        sh './scripts/bash/common/migration/run_data_profiling.sh mysql'
+                        sh './scripts/bash/common/run_data_profiling.sh mysql'
                     }
                 }
             }
@@ -210,146 +210,33 @@ pipeline {
         }
 
 
-        stage('Deploy Views') {
+
+        stage('Deploy & Validate Database Objects') {
 
             steps {
 
-                sh './scripts/bash/mysql/objects/deploy_objects.sh'
+                script {
+
+                    runTrackedStage('Deploy & Validate Database Objects') {
+
+                        sh './scripts/bash/mysql/objects/deploy_objects.sh'
+                    }
+                }
             }
         }
 
 
-        stage('Validate Views') {
+        stage('Database Assessment') {
 
             steps {
 
-                sh './scripts/bash/mysql/objects/validate_objects.sh'
-            }
-        }
+                script {
 
+                    runTrackedStage('Database Assessment') {
 
-        stage('Deploy Functions') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/deploy_objects.sh'
-            }
-        }
-
-
-        stage('Validate Functions') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Deploy Stored Procedures') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/deploy_objects.sh'
-            }
-        }
-
-
-        stage('Validate Stored Procedures') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Deploy Triggers') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/deploy_objects.sh'
-            }
-        }
-
-
-        stage('Validate Triggers') {
-
-            steps {
-
-                sh './scripts/bash/mysql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Database Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh database'
-            }
-        }
-
-
-        stage('Schema Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh schema'
-            }
-        }
-
-
-        stage('Table Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh table'
-            }
-        }
-
-
-        stage('View Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh view'
-            }
-        }
-
-
-        stage('Stored Procedure Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh procedure'
-            }
-        }
-
-
-        stage('Function Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh function'
-            }
-        }
-
-
-        stage('Trigger Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh trigger'
-            }
-        }
-
-
-        stage('Event Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mysql/assessment/run_assessment.sh event'
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh all'
+                    }
+                }
             }
         }
 
@@ -358,9 +245,16 @@ pipeline {
 
             steps {
 
-                sh './scripts/bash/common/generate_assessment_report.sh'
+                script {
+
+                    runTrackedStage('Assessment Report') {
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+                    }
+                }
             }
         }
+
 
 
         stage('Reconcile Source and Target Data') {
@@ -373,7 +267,7 @@ pipeline {
                         'Reconcile Source and Target Data'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_reconciliation.sh mysql'
+                        sh './scripts/bash/common/run_reconciliation.sh mysql'
                     }
                 }
             }
@@ -439,7 +333,7 @@ pipeline {
 
                     runTrackedStage('Assess Migration') {
 
-                        sh './scripts/bash/common/migration/run_assessment.sh mysql'
+                        sh './scripts/bash/common/run_assessment.sh mysql'
                     }
                 }
             }
@@ -456,7 +350,7 @@ pipeline {
                         'Generate Migration Recommendations'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_recommendation.sh mysql'
+                        sh './scripts/bash/common/run_recommendation.sh mysql'
                     }
                 }
             }
@@ -473,7 +367,7 @@ pipeline {
                         'Generate Governance Action Plan'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_action_plan.sh mysql'
+                        sh './scripts/bash/common/run_action_plan.sh mysql'
                     }
                 }
             }
@@ -490,7 +384,7 @@ pipeline {
                         'Generate Technical Migration Report'
                     ) {
 
-                        sh './scripts/bash/common/migration/generate_technical_report.sh mysql'
+                        sh './scripts/bash/common/generate_technical_report.sh mysql'
                     }
                 }
             }
@@ -507,7 +401,7 @@ pipeline {
                         'Generate Executive Migration Report'
                     ) {
 
-                        sh './scripts/bash/common/migration/generate_executive_report.sh mysql'
+                        sh './scripts/bash/common/generate_executive_report.sh mysql'
                     }
                 }
             }

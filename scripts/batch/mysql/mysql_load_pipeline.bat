@@ -70,28 +70,28 @@ if errorlevel 1 (
 )
 
 
-REM =====================================
-REM DOWNLOAD DATASET
-REM =====================================
+@REM REM =====================================
+@REM REM DOWNLOAD DATASET
+@REM REM =====================================
 
-call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
+@REM call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
 
-if errorlevel 1 (
-    echo ERROR: DATASET DOWNLOAD FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: DATASET DOWNLOAD FAILED
+@REM     exit /b 1
+@REM )
 
 
-REM =====================================
-REM LOAD DATA
-REM =====================================
+@REM REM =====================================
+@REM REM LOAD DATA
+@REM REM =====================================
 
-call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data.bat"
+@REM call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data.bat"
 
-if errorlevel 1 (
-    echo ERROR: DATA LOAD FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: DATA LOAD FAILED
+@REM     exit /b 1
+@REM )
 
 
 REM =====================================

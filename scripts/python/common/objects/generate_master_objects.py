@@ -1,3 +1,4 @@
+import importlib
 import sys
 from pathlib import Path
 
@@ -6,16 +7,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config_loader import get_project_root
 from database_capabilities import get_supported_objects
 
-from templates.mysql.liquibase_master_template import (
-    MASTER_HEADER,
-    MASTER_INCLUDE,
-    MASTER_FOOTER
-)
+
+def _load_master_template(database):
+    """Load the Liquibase master template for the given database dynamically."""
+    module = importlib.import_module(
+        f"templates.{database}.liquibase_master_template"
+    )
+    return (
+        module.MASTER_HEADER,
+        module.MASTER_INCLUDE,
+        module.MASTER_FOOTER,
+    )
+
 
 
 def generate_master_objects(database):
 
     root = get_project_root()
+
+    master_header, master_include, master_footer = _load_master_template(database)
 
     liquibase_root = (
         root
@@ -28,7 +38,7 @@ def generate_master_objects(database):
         / "master_objects.xml"
     )
 
-    xml = MASTER_HEADER
+    xml = master_header
 
     sources = [
         "generated",
@@ -71,13 +81,13 @@ def generate_master_objects(database):
                     f"{file.name}"
                 )
 
-                xml += MASTER_INCLUDE.format(
+                xml += master_include.format(
                     file=include
                 )
 
                 include_count += 1
 
-    xml += MASTER_FOOTER
+    xml += master_footer
 
     master_file.parent.mkdir(
         parents=True,

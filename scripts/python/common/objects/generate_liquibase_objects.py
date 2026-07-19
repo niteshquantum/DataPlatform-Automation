@@ -11,6 +11,8 @@ from xml_generators.generate_procedure_xml import generate_procedure_xml
 from xml_generators.generate_trigger_xml import generate_trigger_xml
 from xml_generators.generate_event_xml import generate_event_xml
 from xml_generators.generate_index_xml import generate_index_xml
+from xml_generators.generate_materialized_view_xml import generate_materialized_view_xml
+from xml_generators.generate_extension_xml import generate_extension_xml
 from xml_generators.generate_custom_xml import (
     generate_custom_xml
 )
@@ -40,7 +42,14 @@ def generate_liquibase_objects(database):
     if supports_object(database, "indexes"):
         generate_index_xml(database)
 
-    # CUSTOM OBJECTS
+    # PostgreSQL-specific object types
+    if supports_object(database, "materialized_views"):
+        generate_materialized_view_xml(database)
+
+    if supports_object(database, "extensions"):
+        generate_extension_xml(database)
+
+    # CUSTOM OBJECTS (all relational databases)
     generate_custom_xml(database)
 
     print("----------------------------------------")
@@ -54,4 +63,4 @@ if __name__ == "__main__":
         print("Usage : generate_liquibase_objects.py <database>")
         sys.exit(1)
 
-    generate_liquibase_objects(sys.argv[1])
+    generate_liquibase_objects(sys.argv[1])

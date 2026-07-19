@@ -14,6 +14,7 @@ QUERIES = {
     "procedure": "SELECT s.name AS schema_name, p.name AS procedure_name, p.create_date, p.modify_date FROM sys.procedures p JOIN sys.schemas s ON s.schema_id=p.schema_id ORDER BY s.name,p.name",
     "function": "SELECT s.name AS schema_name, o.name AS function_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('FN','IF','TF','FS','FT') ORDER BY s.name,o.name",
     "trigger": "SELECT s.name AS schema_name, t.name AS trigger_name, OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema, OBJECT_NAME(t.parent_id) AS parent_name, t.is_disabled FROM sys.triggers t JOIN sys.objects o ON o.object_id=t.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE t.parent_class=1 ORDER BY s.name,t.name",
+    "index": "SELECT s.name AS schema_name, tb.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key FROM sys.indexes i JOIN sys.tables tb ON tb.object_id=i.object_id JOIN sys.schemas s ON s.schema_id=tb.schema_id WHERE i.index_id > 0 AND tb.is_ms_shipped=0 ORDER BY s.name, tb.name, i.name",
 }
 
 

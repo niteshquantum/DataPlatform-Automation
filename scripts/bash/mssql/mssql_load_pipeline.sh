@@ -4,9 +4,11 @@ set -e
 
 source "$(dirname "$0")/../common/set_project_root.sh"
 
+cd "$PROJECT_ROOT"
+
 echo
 echo "====================================="
-echo "STARTING LOCAL MSSQL LOAD PIPELINE"
+echo "MSSQL AUTOMATION PIPELINE"
 echo "====================================="
 echo
 
@@ -43,10 +45,22 @@ bash "$PROJECT_ROOT/scripts/bash/mssql/load/load_data.sh"
 # 11. Validate Loaded Data
 bash "$PROJECT_ROOT/scripts/bash/mssql/load/validate_loaded_data.sh"
 
+# 12. Deploy Database Objects (generate + Liquibase deploy)
+bash "$PROJECT_ROOT/scripts/bash/mssql/objects/deploy_objects.sh"
+
+# 13. Validate Database Objects
+bash "$PROJECT_ROOT/scripts/bash/mssql/objects/validate_objects.sh"
+
+# 14. Database Assessment
+bash "$PROJECT_ROOT/scripts/bash/mssql/assessment/run_assessment.sh" all
+
+# 15. Generate Assessment Report
+bash "$PROJECT_ROOT/scripts/bash/common/generate_assessment_report.sh"
+
 echo
 echo "====================================="
-echo "LOCAL MSSQL LOAD PIPELINE COMPLETED"
+echo "MSSQL AUTOMATION PIPELINE COMPLETED"
 echo "====================================="
 echo
 
-exit 0
+exit 0

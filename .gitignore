@@ -12,15 +12,13 @@ databases/mssql/templates/*
 # =====================================================
 # Logs
 # =====================================================
-# =====================================================
-# Logs
-# =====================================================
 
 logs/
 *.log
 
 # =====================================================
-# Reports
+# Reports & Assessment Outputs
+# All files under outputs/assessments/ are generated at runtime.
 # =====================================================
 
 reports/
@@ -51,40 +49,29 @@ Thumbs.db
 
 # =====================================================
 # Metadata
-# Keep folder structure only
+#
+# schema_registry.json  = source input, KEEP (committed)
+# All other JSON files  = generated at runtime, IGNORE
 # =====================================================
 
-metadata/*/*
-!metadata/*/.gitkeep
-metadata/*.jsonl
+metadata/**/object_registry.json
+metadata/**/object_generation_report.json
+metadata/**/object_validation_report.json
+metadata/**/pipeline_log*.json
+metadata/**/*.jsonl
 
 # =====================================================
-# Incoming
+# Incoming / Archive / Failed
 # Keep folder structure only
 # =====================================================
 
 incoming/*/*
-!incoming/*/.gitkeep
-
-# =====================================================
-# Archive
-# Keep folder structure only
-# =====================================================
-
 archive/*/*
-!archive/*/.gitkeep
-
-# =====================================================
-# Failed
-# Keep folder structure only
-# =====================================================
-
 failed/*/*
-!failed/*/.gitkeep
 
 # =====================================================
 # Terraform
-# Keep only Terraform configuration files
+# Keep only Terraform source files
 # =====================================================
 
 terraform/*/*
@@ -93,50 +80,59 @@ terraform/*/*
 
 # =====================================================
 # Tools
-# Keep folder structure only
+# Drivers and binaries are downloaded at runtime.
 # =====================================================
 
 tools/*/*
-!tools/*/.gitkeep
 
 # =====================================================
-# Liquibase
-# Keep only required files
+# Database Objects — Generated SQL
+#
+# objects/<db>/generated/  is fully auto-created by
+# bootstrap_generator.py at runtime.
+# objects/<db>/custom/     contains hand-authored SQL — KEEP.
 # =====================================================
 
-# Ignore everything under Liquibase folders
+objects/**/generated/
+
+# =====================================================
+# Liquibase — Generated XML & runtime artifacts
+#
+# liquibase/<db>/objects/generated/  — auto-created by
+#   bootstrap_generator.py at runtime — IGNORE.
+#
+# liquibase/<db>/objects/custom/     — hand-authored XML
+#   objects — KEEP (committed).
+#
+# liquibase/<db>/master_objects.xml  — generated per-run
+#   entry-point changelog — IGNORE.
+#
+# liquibase/<db>/master.xml          — hand-authored data
+#   load changelog — KEEP (committed).
+#
+# liquibase/<db>/liquibase.properties — DB connection
+#   config — KEEP (committed).
+# =====================================================
+
+# Ignore everything two levels deep by default
 liquibase/*/*
 
-# Keep failed folder structure
-!liquibase/failed/.gitkeep
-
-# Keep required Liquibase configuration files
-!liquibase/*/master.xml
+# Keep root-level config and hand-authored data load changelog
 !liquibase/*/liquibase.properties
-!liquibase/mysql/*.xml
+!liquibase/*/master.xml
+
+# Keep hand-authored custom object XML (all relational databases)
 !liquibase/mysql/objects/
-!liquibase/mysql/objects/**
-!liquibase/postgresql/*.xml
+!liquibase/mysql/objects/custom/
+!liquibase/mysql/objects/custom/**
 !liquibase/postgresql/objects/
-!liquibase/postgresql/objects/**
-!liquibase/mssql/*.xml
+!liquibase/postgresql/objects/custom/
+!liquibase/postgresql/objects/custom/**
 !liquibase/mssql/objects/
-!liquibase/mssql/objects/**
+!liquibase/mssql/objects/custom/
+!liquibase/mssql/objects/custom/**
 
-
-
-metadata/**/object_registry.json
-
-metadata/**/object_generation_report.json
-
-metadata/**/object_validation_report.json
-
-objects/**/generated/*
-
-!objects/**/generated/.gitkeep
-
-liquibase/**/generated/*
-
-!liquibase/**/generated/.gitkeep
-
+# Explicitly ignore generated XML contents and master_objects.xml
+# (objects/generated/ dirs are auto-created, so no .gitkeep needed)
+liquibase/**/objects/generated/
 liquibase/**/master_objects.xml

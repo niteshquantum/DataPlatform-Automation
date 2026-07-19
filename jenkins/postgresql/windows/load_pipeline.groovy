@@ -210,146 +210,36 @@ pipeline {
         }
 
 
-        stage('Deploy Views') {
+        stage('Deploy & Validate Database Objects') {
 
             steps {
 
-                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+                script {
+
+                    runTrackedStage(
+                        'Deploy & Validate Database Objects'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+                    }
+                }
             }
         }
 
 
-        stage('Validate Views') {
+        stage('Database Assessment') {
 
             steps {
 
-                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
-            }
-        }
+                script {
 
+                    runTrackedStage(
+                        'Database Assessment'
+                    ) {
 
-        stage('Deploy Functions') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Functions') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Deploy Stored Procedures') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Stored Procedures') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Deploy Triggers') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Triggers') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Database Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database'
-            }
-        }
-
-
-        stage('Schema Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema'
-            }
-        }
-
-
-        stage('Table Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table'
-            }
-        }
-
-
-        stage('View Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view'
-            }
-        }
-
-
-        stage('Function Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function'
-            }
-        }
-
-
-        stage('Trigger Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger'
-            }
-        }
-
-
-        stage('Extension Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension'
-            }
-        }
-
-
-        stage('Materialized View Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view'
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
+                    }
+                }
             }
         }
 
@@ -358,7 +248,15 @@ pipeline {
 
             steps {
 
-                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                script {
+
+                    runTrackedStage(
+                        'Assessment Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                    }
+                }
             }
         }
 

@@ -8,6 +8,9 @@ OBJECT_TYPE_MAP = {
     "triggers": "trigger",
     "events": "event",
     "indexes": "index",
+    # PostgreSQL-specific
+    "materialized_views": "materialized_view",
+    "extensions": "extension",
 }
 
 

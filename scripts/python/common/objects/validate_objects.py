@@ -207,6 +207,26 @@ def validate_objects(database):
             MySQLObjectValidator()
         )
 
+    elif database == "postgresql":
+
+        from validators.postgresql_validator import (
+            PostgreSQLObjectValidator
+        )
+
+        validator = (
+            PostgreSQLObjectValidator()
+        )
+
+    elif database == "mssql":
+
+        from validators.mssql_validator import (
+            MSSQLObjectValidator
+        )
+
+        validator = (
+            MSSQLObjectValidator()
+        )
+
     else:
 
         raise ValueError(
@@ -242,25 +262,29 @@ def validate_objects(database):
 
         validator.connect()
 
+        # --------------------------------------------------------
+        # Build getter map dynamically.
+        # Each object_type maps to a validator method name.
+        # If the validator does not have that method (e.g., MySQL
+        # has no get_materialized_views), the type is skipped.
+        # This means no branching per database is needed here.
+        # --------------------------------------------------------
+
+        OBJECT_TYPE_GETTER = {
+            "views":              "get_views",
+            "materialized_views": "get_materialized_views",
+            "functions":          "get_functions",
+            "procedures":         "get_procedures",
+            "triggers":           "get_triggers",
+            "events":             "get_events",
+            "indexes":            "get_indexes",
+            "extensions":         "get_extensions",
+        }
+
         getters = {
-
-            "views":
-                validator.get_views,
-
-            "functions":
-                validator.get_functions,
-
-            "procedures":
-                validator.get_procedures,
-
-            "triggers":
-                validator.get_triggers,
-
-            "events":
-                validator.get_events,
-
-            "indexes":
-                validator.get_indexes,
+            object_type: getattr(validator, method_name)
+            for object_type, method_name in OBJECT_TYPE_GETTER.items()
+            if hasattr(validator, method_name)
         }
 
         for object_type, getter in getters.items():

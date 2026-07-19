@@ -161,7 +161,7 @@ pipeline {
 
                     runTrackedStage('Profile Source Data') {
 
-                        sh './scripts/bash/common/migration/run_data_profiling.sh mongodb'
+                        sh './scripts/bash/common/run_data_profiling.sh mongodb'
                     }
                 }
             }
@@ -198,47 +198,18 @@ pipeline {
         }
 
 
-        stage('Validate Collections') {
+
+        stage('Database Assessment') {
 
             steps {
 
-                sh './scripts/bash/mongodb/load/validate_loaded_data.sh'
-            }
-        }
+                script {
 
+                    runTrackedStage('Database Assessment') {
 
-        stage('Validate Indexes') {
-
-            steps {
-
-                sh 'python3 scripts/python/mongodb/setup/create_indexes.py'
-            }
-        }
-
-
-        stage('Database Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mongodb/assessment/run_assessment.sh database'
-            }
-        }
-
-
-        stage('Collection Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mongodb/assessment/run_assessment.sh collection'
-            }
-        }
-
-
-        stage('Index Inventory') {
-
-            steps {
-
-                sh './scripts/bash/mongodb/assessment/run_assessment.sh index'
+                        sh './scripts/bash/mongodb/assessment/run_assessment.sh all'
+                    }
+                }
             }
         }
 
@@ -247,9 +218,16 @@ pipeline {
 
             steps {
 
-                sh './scripts/bash/common/generate_assessment_report.sh'
+                script {
+
+                    runTrackedStage('Assessment Report') {
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+                    }
+                }
             }
         }
+
 
 
         stage('Reconcile Source and Target Data') {
@@ -262,7 +240,7 @@ pipeline {
                         'Reconcile Source and Target Data'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_reconciliation.sh mongodb'
+                        sh './scripts/bash/common/run_reconciliation.sh mongodb'
                     }
                 }
             }
@@ -328,7 +306,7 @@ pipeline {
 
                     runTrackedStage('Assess Migration') {
 
-                        sh './scripts/bash/common/migration/run_assessment.sh mongodb'
+                        sh './scripts/bash/common/run_assessment.sh mongodb'
                     }
                 }
             }
@@ -345,7 +323,7 @@ pipeline {
                         'Generate Migration Recommendations'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_recommendation.sh mongodb'
+                        sh './scripts/bash/common/run_recommendation.sh mongodb'
                     }
                 }
             }
@@ -362,7 +340,7 @@ pipeline {
                         'Generate Governance Action Plan'
                     ) {
 
-                        sh './scripts/bash/common/migration/run_action_plan.sh mongodb'
+                        sh './scripts/bash/common/run_action_plan.sh mongodb'
                     }
                 }
             }
@@ -379,7 +357,7 @@ pipeline {
                         'Generate Technical Migration Report'
                     ) {
 
-                        sh './scripts/bash/common/migration/generate_technical_report.sh mongodb'
+                        sh './scripts/bash/common/generate_technical_report.sh mongodb'
                     }
                 }
             }
@@ -396,7 +374,7 @@ pipeline {
                         'Generate Executive Migration Report'
                     ) {
 
-                        sh './scripts/bash/common/migration/generate_executive_report.sh mongodb'
+                        sh './scripts/bash/common/generate_executive_report.sh mongodb'
                     }
                 }
             }
