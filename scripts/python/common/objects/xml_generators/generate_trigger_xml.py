@@ -18,7 +18,11 @@ def generate_trigger_xml(database):
 
             id=f"trigger-{change_id}",
 
-            sql_path=f"../../../../objects/generated/triggers/{sql_file.name}"
+            sql_path=(
+                        sql_file
+                        .relative_to(generator.project_root)
+                        .as_posix()
+                    )
 
         )
 

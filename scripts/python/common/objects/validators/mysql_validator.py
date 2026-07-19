@@ -1,58 +1,73 @@
-from pathlib import Path
 import mysql.connector
 
-from config_loader import get_project_root, load_properties
+from config_loader import load_database_config
 
 
 class MySQLObjectValidator:
 
     def __init__(self):
 
-        self.root = get_project_root()
-
-        config_file = (
-            self.root
-            / "config"
-            / "windows"
-            / "mysql.conf"
-        )
-
-        self.config = load_properties(config_file)
+        # Automatically loads:
+        #
+        # Windows:
+        # config/windows/mysql.conf
+        #
+        # Ubuntu/Linux:
+        # config/ubuntu/mysql.conf
+        #
+        self.config = load_database_config("mysql")
 
         self.connection = None
 
     def connect(self):
 
         self.connection = mysql.connector.connect(
+
             host=self.config["MYSQL_HOST"],
-            port=int(self.config["MYSQL_PORT"]),
+
+            port=int(
+                self.config["MYSQL_PORT"]
+            ),
+
             database=self.config["MYSQL_DB"],
+
             user=self.config["MYSQL_USER"],
+
             password=self.config.get(
                 "MYSQL_PASSWORD",
                 ""
             )
         )
 
+        print("Connected to MySQL successfully.")
+
     def close(self):
 
         if self.connection:
+
             self.connection.close()
 
-    def _fetch_names(self, query):
+            self.connection = None
+
+    def _fetch_names(
+        self,
+        query
+    ):
 
         cursor = self.connection.cursor()
 
-        cursor.execute(query)
+        try:
 
-        names = {
-            str(row[0]).lower()
-            for row in cursor.fetchall()
-        }
+            cursor.execute(query)
 
-        cursor.close()
+            return {
+                str(row[0]).lower()
+                for row in cursor.fetchall()
+            }
 
-        return names
+        finally:
+
+            cursor.close()
 
     def get_views(self):
 
@@ -71,7 +86,7 @@ class MySQLObjectValidator:
             SELECT ROUTINE_NAME
             FROM information_schema.ROUTINES
             WHERE ROUTINE_SCHEMA = DATABASE()
-            AND ROUTINE_TYPE = 'FUNCTION'
+              AND ROUTINE_TYPE = 'FUNCTION'
             """
         )
 
@@ -82,7 +97,7 @@ class MySQLObjectValidator:
             SELECT ROUTINE_NAME
             FROM information_schema.ROUTINES
             WHERE ROUTINE_SCHEMA = DATABASE()
-            AND ROUTINE_TYPE = 'PROCEDURE'
+              AND ROUTINE_TYPE = 'PROCEDURE'
             """
         )
 
@@ -113,6 +128,6 @@ class MySQLObjectValidator:
             SELECT DISTINCT INDEX_NAME
             FROM information_schema.STATISTICS
             WHERE TABLE_SCHEMA = DATABASE()
-            AND INDEX_NAME <> 'PRIMARY'
+              AND INDEX_NAME <> 'PRIMARY'
             """
         )

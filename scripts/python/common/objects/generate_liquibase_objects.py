@@ -11,6 +11,9 @@ from xml_generators.generate_procedure_xml import generate_procedure_xml
 from xml_generators.generate_trigger_xml import generate_trigger_xml
 from xml_generators.generate_event_xml import generate_event_xml
 from xml_generators.generate_index_xml import generate_index_xml
+from xml_generators.generate_custom_xml import (
+    generate_custom_xml
+)
 
 
 def generate_liquibase_objects(database):
@@ -36,6 +39,9 @@ def generate_liquibase_objects(database):
 
     if supports_object(database, "indexes"):
         generate_index_xml(database)
+
+    # CUSTOM OBJECTS
+    generate_custom_xml(database)
 
     print("----------------------------------------")
     print("Liquibase Object Generation Completed")

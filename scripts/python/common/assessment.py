@@ -156,8 +156,37 @@ def print_inventory_summary(database, inventory, rows, status):
     object_name = SINGULAR_OBJECT_NAMES[inventory]
     database_name = get_database_name(database)
     status_label = "PASS" if status == "complete" else status.upper()
+
+    plural_names = {
+        "index": "indexes",
+        "database": "databases",
+        "schema": "schemas",
+        "table": "tables",
+        "view": "views",
+        "stored procedure": "stored procedures",
+        "function": "functions",
+        "trigger": "triggers",
+        "event": "events",
+        "extension": "extensions",
+        "materialized view": "materialized views",
+        "collection": "collections",
+        "SQL Agent job": "SQL Agent jobs",
+        "validation result": "validation results",
+        "recent execution": "recent executions",
+        "assessment metric": "assessment metrics",
+    }
+
+    display_object_name = (
+        object_name
+        if record_count == 1
+        else plural_names.get(
+            object_name,
+            f"{object_name}s"
+        )
+    )
+
     summary = (
-        f"{record_count} {object_name}{'' if record_count == 1 else 's'} successfully discovered."
+        f"{record_count} {display_object_name} successfully discovered."
         if record_count
         else f"No {list_title.lower()} currently exist."
     )

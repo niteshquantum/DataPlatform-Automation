@@ -11,8 +11,11 @@ LIQUIBASE_TRIGGER_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 
         <sqlFile
             path="{sql_path}"
-            relativeToChangelogFile="true"/>
+            relativeToChangelogFile="false"
+            splitStatements="false"
+            stripComments="false"/>
 
+            
     </changeSet>
 
 </databaseChangeLog>

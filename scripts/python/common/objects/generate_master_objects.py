@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config_loader import get_project_root
 from database_capabilities import get_supported_objects
+
 from templates.mysql.liquibase_master_template import (
     MASTER_HEADER,
     MASTER_INCLUDE,
@@ -16,45 +17,72 @@ def generate_master_objects(database):
 
     root = get_project_root()
 
-    object_root = (
+    liquibase_root = (
         root
         / "liquibase"
         / database
-        / "objects"
-        / "generated"
     )
 
     master_file = (
-        root
-        / "liquibase"
-        / database
+        liquibase_root
         / "master_objects.xml"
     )
 
     xml = MASTER_HEADER
 
-    for object_type in get_supported_objects(database):
+    sources = [
+        "generated",
+        "custom"
+    ]
 
-        folder = object_root / object_type
+    include_count = 0
 
-        if not folder.exists():
+    for source in sources:
+
+        object_root = (
+            liquibase_root
+            / "objects"
+            / source
+        )
+
+        if not object_root.exists():
             continue
 
-        files = sorted(folder.glob("*.xml"))
+        for object_type in get_supported_objects(database):
 
-        for file in files:
-
-            include = (
-                f"objects/generated/"
-                f"{object_type}/"
-                f"{file.name}"
+            folder = (
+                object_root
+                / object_type
             )
 
-            xml += MASTER_INCLUDE.format(
-                file=include
+            if not folder.exists():
+                continue
+
+            files = sorted(
+                folder.glob("*.xml")
             )
+
+            for file in files:
+
+                include = (
+                    f"objects/"
+                    f"{source}/"
+                    f"{object_type}/"
+                    f"{file.name}"
+                )
+
+                xml += MASTER_INCLUDE.format(
+                    file=include
+                )
+
+                include_count += 1
 
     xml += MASTER_FOOTER
+
+    master_file.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     with open(
         master_file,
@@ -66,6 +94,10 @@ def generate_master_objects(database):
 
     print(
         f"Generated : {master_file.name}"
+    )
+
+    print(
+        f"Liquibase includes : {include_count}"
     )
 
 

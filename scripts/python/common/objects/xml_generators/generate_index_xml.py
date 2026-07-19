@@ -18,7 +18,11 @@ def generate_index_xml(database):
 
             id=f"index-{change_id}",
 
-            sql_path=f"../../../../objects/generated/indexes/{sql_file.name}"
+            sql_path=(
+                        sql_file
+                        .relative_to(generator.project_root)
+                        .as_posix()
+                    )
 
         )
 

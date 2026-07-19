@@ -210,155 +210,53 @@ pipeline {
         }
 
 
-        stage('Deploy Views') {
+        stage('Deploy & Validate Database Objects') {
 
             steps {
 
-                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
+                script {
+
+                    runTrackedStage(
+                        'Deploy & Validate Database Objects'
+                    ) {
+
+                        bat '''
+                            python scripts\\python\\common\\objects\\bootstrap_generator.py mysql
+                        '''
+                    }
+                }
             }
         }
 
-
-        stage('Validate Views') {
+        stage('Database Assessment') {
 
             steps {
 
-                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
+                script {
+
+                    runTrackedStage(
+                        'Database Assessment'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat all'
+                    }
+                }
             }
         }
-
-
-        stage('Deploy Functions') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Functions') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Deploy Stored Procedures') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Stored Procedures') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Deploy Triggers') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
-            }
-        }
-
-
-        stage('Validate Triggers') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
-            }
-        }
-
-
-        stage('Database Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat database'
-            }
-        }
-
-
-        stage('Schema Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat schema'
-            }
-        }
-
-
-        stage('Table Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat table'
-            }
-        }
-
-
-        stage('View Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat view'
-            }
-        }
-
-
-        stage('Stored Procedure Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat procedure'
-            }
-        }
-
-
-        stage('Function Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat function'
-            }
-        }
-
-
-        stage('Trigger Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat trigger'
-            }
-        }
-
-
-        stage('Event Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat event'
-            }
-        }
-
 
         stage('Assessment Report') {
 
             steps {
 
-                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                script {
+
+                    runTrackedStage(
+                        'Assessment Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                    }
+                }
             }
         }
 

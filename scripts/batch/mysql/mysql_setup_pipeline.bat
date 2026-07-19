@@ -21,14 +21,18 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\deploy_mysql.bat"
 if errorlevel 1 exit /b 1
 
+@REM call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_mysql_service.bat"
+@REM if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\start_mysql.bat"
 if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\create_database.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\mysql\setup\run_liquibase.bat"
-if errorlevel 1 exit /b 1
+@REM call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_global_mysql.bat"
+@REM if errorlevel 1 exit /b 1
+
 
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1

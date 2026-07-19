@@ -2,14 +2,57 @@ import sys
 import json
 from pathlib import Path
 
+
+# ============================================================
+# PYTHON PATH
+# ============================================================
+
+COMMON_DIR = Path(__file__).resolve().parents[1]
+
 sys.path.insert(
     0,
-    str(Path(__file__).resolve().parent)
+    str(COMMON_DIR)
 )
+
 
 from config_loader import get_project_root
 from database_capabilities import supports_object
 
+
+# ============================================================
+# OBJECT NAME
+# ============================================================
+
+def get_object_name(sql_file):
+
+    """
+    Convert:
+
+    001_v_brands.sql
+        ->
+    v_brands
+
+    001_fn_active_brand_count.sql
+        ->
+    fn_active_brand_count
+    """
+
+    name = sql_file.stem
+
+    parts = name.split("_", 1)
+
+    if (
+        len(parts) == 2
+        and parts[0].isdigit()
+    ):
+        name = parts[1]
+
+    return name.lower()
+
+
+# ============================================================
+# EXPECTED OBJECTS
+# ============================================================
 
 def get_expected_objects(
     root,
@@ -17,37 +60,48 @@ def get_expected_objects(
     object_type
 ):
 
-    folder = (
-        root
-        / "objects"
-        / database
-        / "generated"
-        / object_type
-    )
+    expected = {
+        "generated": set(),
+        "custom": set()
+    }
 
-    if not folder.exists():
-        return set()
+    # Both layers are optional.
+    sources = [
+        "generated",
+        "custom"
+    ]
 
-    names = set()
+    for source in sources:
 
-    for sql_file in folder.glob("*.sql"):
+        folder = (
+            root
+            / "objects"
+            / database
+            / source
+            / object_type
+        )
 
-        name = sql_file.stem
+        if not folder.exists():
+            continue
 
-        # Remove numeric prefix:
-        # 001_v_orders -> v_orders
-        parts = name.split("_", 1)
-
-        if (
-            len(parts) == 2
-            and parts[0].isdigit()
+        for sql_file in sorted(
+            folder.glob("*.sql")
         ):
-            name = parts[1]
 
-        names.add(name.lower())
+            object_name = get_object_name(
+                sql_file
+            )
 
-    return names
+            expected[source].add(
+                object_name
+            )
 
+    return expected
+
+
+# ============================================================
+# VALIDATE OBJECT TYPE
+# ============================================================
 
 def validate_type(
     object_type,
@@ -55,26 +109,83 @@ def validate_type(
     actual
 ):
 
-    missing = expected - actual
+    generated = expected["generated"]
+    custom = expected["custom"]
+
+    all_expected = (
+        generated
+        | custom
+    )
+
+    missing_generated = (
+        generated
+        - actual
+    )
+
+    missing_custom = (
+        custom
+        - actual
+    )
+
+    missing = (
+        all_expected
+        - actual
+    )
 
     print()
+
     print(
-        f"{object_type.upper()}: "
-        f"Expected={len(expected)} "
-        f"Found={len(expected - missing)}"
+        f"{object_type.upper()}:"
+    )
+
+    print(
+        f"  Generated : "
+        f"{len(generated) - len(missing_generated)}"
+        f"/{len(generated)}"
+    )
+
+    print(
+        f"  Custom    : "
+        f"{len(custom) - len(missing_custom)}"
+        f"/{len(custom)}"
+    )
+
+    print(
+        f"  Total     : "
+        f"{len(all_expected) - len(missing)}"
+        f"/{len(all_expected)}"
     )
 
     if missing:
 
+        print("  STATUS    : FAIL")
+
         for name in sorted(missing):
-            print(f"  MISSING : {name}")
+
+            source = (
+                "CUSTOM"
+                if name in custom
+                else "GENERATED"
+            )
+
+            print(
+                f"  MISSING   : "
+                f"{name} "
+                f"[{source}]"
+            )
 
         return False
 
-    print("  STATUS  : PASS")
+    print(
+        "  STATUS    : PASS"
+    )
 
     return True
 
+
+# ============================================================
+# MAIN VALIDATION
+# ============================================================
 
 def validate_objects(database):
 
@@ -82,39 +193,74 @@ def validate_objects(database):
 
     root = get_project_root()
 
+    # --------------------------------------------------------
+    # DATABASE VALIDATOR
+    # --------------------------------------------------------
+
     if database == "mysql":
 
         from validators.mysql_validator import (
             MySQLObjectValidator
         )
 
-        validator = MySQLObjectValidator()
+        validator = (
+            MySQLObjectValidator()
+        )
 
     else:
 
         raise ValueError(
-            f"No validator implemented for: {database}"
+            f"No validator implemented for: "
+            f"{database}"
         )
 
     print()
-    print("=====================================")
-    print("DATABASE OBJECT VALIDATION")
-    print("=====================================")
-    print(f"Database : {database}")
+
+    print(
+        "====================================="
+    )
+
+    print(
+        "DATABASE OBJECT VALIDATION"
+    )
+
+    print(
+        "====================================="
+    )
+
+    print(
+        f"Database : {database}"
+    )
 
     results = {}
+
+    # --------------------------------------------------------
+    # VALIDATE
+    # --------------------------------------------------------
 
     try:
 
         validator.connect()
 
         getters = {
-            "views": validator.get_views,
-            "functions": validator.get_functions,
-            "procedures": validator.get_procedures,
-            "triggers": validator.get_triggers,
-            "events": validator.get_events,
-            "indexes": validator.get_indexes,
+
+            "views":
+                validator.get_views,
+
+            "functions":
+                validator.get_functions,
+
+            "procedures":
+                validator.get_procedures,
+
+            "triggers":
+                validator.get_triggers,
+
+            "events":
+                validator.get_events,
+
+            "indexes":
+                validator.get_indexes,
         }
 
         for object_type, getter in getters.items():
@@ -125,31 +271,92 @@ def validate_objects(database):
             ):
                 continue
 
-            expected = get_expected_objects(
-                root,
-                database,
-                object_type
+            expected = (
+                get_expected_objects(
+                    root,
+                    database,
+                    object_type
+                )
             )
 
             actual = getter()
 
-            missing = sorted(
-                expected - actual
+            generated = (
+                expected["generated"]
             )
 
-            passed = validate_type(
-                object_type,
-                expected,
-                actual
+            custom = (
+                expected["custom"]
+            )
+
+            all_expected = (
+                generated
+                | custom
+            )
+
+            missing = sorted(
+                all_expected
+                - actual
+            )
+
+            passed = (
+                validate_type(
+                    object_type,
+                    expected,
+                    actual
+                )
             )
 
             results[object_type] = {
-                "expected": len(expected),
-                "found": (
-                    len(expected)
-                    - len(missing)
-                ),
-                "missing": missing,
+
+                "generated": {
+                    "expected":
+                        len(generated),
+
+                    "found":
+                        len(
+                            generated
+                            & actual
+                        ),
+
+                    "missing":
+                        sorted(
+                            generated
+                            - actual
+                        )
+                },
+
+                "custom": {
+                    "expected":
+                        len(custom),
+
+                    "found":
+                        len(
+                            custom
+                            & actual
+                        ),
+
+                    "missing":
+                        sorted(
+                            custom
+                            - actual
+                        )
+                },
+
+                "total": {
+                    "expected":
+                        len(all_expected),
+
+                    "found":
+                        len(
+                            all_expected
+                            & actual
+                        ),
+
+                    "missing":
+                        missing
+                },
+
                 "status": (
                     "PASS"
                     if passed
@@ -160,6 +367,10 @@ def validate_objects(database):
     finally:
 
         validator.close()
+
+    # ========================================================
+    # REPORT
+    # ========================================================
 
     report = (
         root
@@ -185,37 +396,72 @@ def validate_objects(database):
             indent=4
         )
 
+    # ========================================================
+    # FINAL STATUS
+    # ========================================================
+
     failed = [
-        name
-        for name, result in results.items()
-        if result["status"] == "FAIL"
+
+        object_type
+
+        for object_type, result
+        in results.items()
+
+        if result["status"]
+        == "FAIL"
     ]
 
     print()
-    print("=====================================")
+
+    print(
+        "====================================="
+    )
 
     if failed:
 
-        print("OBJECT VALIDATION FAILED")
+        print(
+            "OBJECT VALIDATION FAILED"
+        )
+
         print(
             "Failed types: "
             + ", ".join(failed)
         )
 
-        raise RuntimeError(
-            "Database object validation failed."
+        print(
+            f"Report : {report}"
         )
 
-    print("ALL DATABASE OBJECTS VALIDATED")
-    print("=====================================")
+        raise RuntimeError(
+            "Database object "
+            "validation failed."
+        )
 
+    print(
+        "ALL DATABASE OBJECTS VALIDATED"
+    )
+
+    print(
+        f"Report : {report}"
+    )
+
+    print(
+        "====================================="
+    )
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
 
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
 
         print(
-            "Usage: validate_objects.py <database>"
+            "Usage: "
+            "validate_objects.py "
+            "<database>"
         )
 
         sys.exit(1)

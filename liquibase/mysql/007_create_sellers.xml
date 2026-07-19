@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ 
+    <changeSet id="007" author="tanisha">
+ 
+    <preConditions onFail="MARK_RAN">
+        <not>
+            <tableExists tableName="sellers"/>
+        </not>
+    </preConditions>
+ 
+    <createTable tableName="sellers">
+
+        <column name="Seller_ID" type="VARCHAR(255)"/>
+
+        <column name="Product_ID" type="VARCHAR(255)"/>
+
+        <column name="Supplier_ID" type="VARCHAR(255)"/>
+
+        <column name="Seller_Name" type="VARCHAR(255)"/>
+
+        <column name="Seller_Contact_Person" type="VARCHAR(255)"/>
+
+        <column name="Seller_Email" type="VARCHAR(255)"/>
+
+        <column name="Seller_Phone" type="VARCHAR(255)"/>
+
+        <column name="Seller_Country" type="VARCHAR(255)"/>
+
+        <column name="Contract_Start_Date" type="VARCHAR(255)"/>
+
+        <column name="Contract_Expiry_Date" type="VARCHAR(255)"/>
+
+        <column name="Minimum_Order_Quantity" type="VARCHAR(255)"/>
+
+        <column name="Bulk_Cost_Price" type="VARCHAR(255)"/>
+
+        <column name="Currency_Code" type="VARCHAR(255)"/>
+
+        <column name="Supplier_Tier" type="VARCHAR(255)"/>
+
+        <column name="Performance_Score" type="VARCHAR(255)"/>
+
+        <column name="Port_Of_Loading" type="VARCHAR(255)"/>
+
+        <column name="Customs_HS_Code" type="VARCHAR(255)"/>
+
+        <column name="Vendor_Portal_URL" type="VARCHAR(255)"/>
+
+        </createTable>
+ 
+    </changeSet>
+ 
+</databaseChangeLog>

@@ -18,7 +18,11 @@ def generate_procedure_xml(database):
 
             id=f"procedure-{change_id}",
 
-            sql_path=f"../../../../objects/generated/procedures/{sql_file.name}"
+            sql_path=(
+                        sql_file
+                        .relative_to(generator.project_root)
+                        .as_posix()
+                    )
 
         )
 

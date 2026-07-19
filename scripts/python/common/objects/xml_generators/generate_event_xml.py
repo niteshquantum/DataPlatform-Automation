@@ -18,7 +18,11 @@ def generate_event_xml(database):
 
             id=f"event-{change_id}",
 
-            sql_path=f"../../../../objects/generated/events/{sql_file.name}"
+            sql_path=(
+                        sql_file
+                        .relative_to(generator.project_root)
+                        .as_posix()
+                    )
 
         )
 

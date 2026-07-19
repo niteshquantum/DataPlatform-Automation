@@ -50,9 +50,25 @@ def generate_triggers(database):
         "trigger"
     )
 
-    for table_name in registry.keys():
+    for table_name, columns in registry.items():
 
-        trigger_name = f"{prefix}{table_name}_before_insert"
+        normalized_columns = {
+            column.strip().lower()
+            for column in columns
+        }
+
+        if "created_at" not in normalized_columns:
+
+            print(
+                f"Skipped trigger for {table_name}: "
+                "created_at column not found"
+            )
+
+            continue
+
+        trigger_name = (
+            f"{prefix}{table_name}_before_insert"
+        )
 
         sql = trigger_template.format(
 
@@ -62,7 +78,9 @@ def generate_triggers(database):
 
         )
 
-        filename = f"{count:03d}_{trigger_name}.sql"
+        filename = (
+            f"{count:03d}_{trigger_name}.sql"
+        )
 
         with open(
             output_folder / filename,
