@@ -275,7 +275,7 @@ def main():
                 f"CDC Status [{table_name}] : {result['status']}"
             )
             cdc_status["tables"][table_name] = result
-            update_schema_registry(table_name, keys, registry_path)
+        update_schema_registry(table_name, keys, registry_path)
     cdc_path = (
         project_root
         / "metadata"
