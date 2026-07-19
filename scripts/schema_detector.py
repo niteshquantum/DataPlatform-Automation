@@ -243,7 +243,7 @@ def main():
 
                 cdc_status["tables"][table_name] = result
 
-                update_schema_registry(table_name, headers, registry_path)
+            update_schema_registry(table_name, headers, registry_path)
     
     # Process JSON files
     json_files = list(incoming_dir.glob("*.json"))
@@ -275,7 +275,7 @@ def main():
                 f"CDC Status [{table_name}] : {result['status']}"
             )
             cdc_status["tables"][table_name] = result
-            update_schema_registry(table_name, keys, registry_path)
+        update_schema_registry(table_name, keys, registry_path)
     cdc_path = (
         project_root
         / "metadata"
