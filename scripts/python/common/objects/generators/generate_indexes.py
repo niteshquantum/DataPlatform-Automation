@@ -57,16 +57,18 @@ def generate_indexes(database):
 
         first_column = columns[0]
 
+# PostgreSQL ke liye mixed-case columns quote karo
+        if database == "postgresql" and any(ch.isupper() for ch in first_column):
+            sql_column = f'"{first_column}"'
+        else:
+            sql_column = first_column
+
         index_name = f"{prefix}{table_name}_{first_column}"
 
         sql = index_template.format(
-
             index_name=index_name,
-
             table_name=table_name,
-
-            column=first_column
-
+            column=sql_column
         )
 
         filename = f"{count:03d}_{index_name}.sql"
