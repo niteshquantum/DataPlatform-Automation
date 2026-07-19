@@ -152,7 +152,7 @@ liquibase/*/*
 
 # Generated/dataset-specific changelogs
 liquibase/**/[0-9]*.xml
-#liquibase/**/master.xml
+!liquibase/**/master.xml
 liquibase/**/master_objects.xml
 
 # Dataset-specific/runtime object XML
