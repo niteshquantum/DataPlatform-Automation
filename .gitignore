@@ -80,6 +80,13 @@ metadata/**/cdc_summary.json
 !metadata/*/.gitkeep
 !metadata/discovery/*/.gitkeep
 
+
+# Generated metadata outputs
+metadata/profiling/**/profiling.json
+metadata/reconciliation/**/reconciliation.json
+metadata/assessment/**/assessment.json
+metadata/recommendation/**/recommendation.json
+metadata/governance/**/action_plan.json
 # =====================================================
 # Incoming / Archive / Failed
 # Keep folder structures only
