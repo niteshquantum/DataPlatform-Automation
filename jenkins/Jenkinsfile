@@ -1237,6 +1237,8 @@ if (currentBuild.number == 1) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
 
+                        bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+
                         bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
