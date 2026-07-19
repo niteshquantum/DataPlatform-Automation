@@ -67,7 +67,7 @@ metadata/**/object_registry.json
 metadata/**/object_generation_report.json
 metadata/**/object_validation_report.json
 metadata/**/pipeline_log*.json
-metadata/*.jsonl
+metadata/**/*.jsonl
 
 # Ignore discovery output files but keep .gitkeep placeholders
 metadata/discovery/**/*.json
@@ -75,6 +75,10 @@ metadata/discovery/**/*.csv
 
 # metadata DB-level files (generated at runtime)
 metadata/**/[0-9]*.json
+
+# Keep .gitkeep placeholders in metadata dirs
+!metadata/*/.gitkeep
+!metadata/discovery/*/.gitkeep
 
 # =====================================================
 # Incoming / Archive / Failed
@@ -98,6 +102,10 @@ terraform/*/*
 
 tools/*/*
 !tools/*/.gitkeep
+
+# Keep assessment folder .gitkeep placeholders
+!outputs/assessments/.gitkeep
+!outputs/assessments/*/.gitkeep
 
 # =====================================================
 # Database Objects — Custom SQL
