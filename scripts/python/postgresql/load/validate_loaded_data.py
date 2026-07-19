@@ -23,10 +23,20 @@ cursor.execute("""
     SELECT table_name
     FROM information_schema.tables
     WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
     ORDER BY table_name
 """)
 
-tables = [row[0] for row in cursor.fetchall()]
+SYSTEM_OBJECTS = {
+    "pg_stat_statements",
+}
+
+tables = [
+    row[0]
+    for row in cursor.fetchall()
+    if row[0] not in SYSTEM_OBJECTS
+]
+
 
 print()
 print("=" * 50)
