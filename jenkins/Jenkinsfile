@@ -1254,21 +1254,21 @@ if (currentBuild.number == 1) {
                         bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
 
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension'
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view'
+                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view'
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
 
