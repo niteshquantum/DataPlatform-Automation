@@ -1210,7 +1210,7 @@ if (currentBuild.number == 1) {
 
                         bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
 
-                        bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+                        
 					
 						bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
 

@@ -50,7 +50,7 @@ echo RUNNING LIQUIBASE
 echo -------------------------------------
 echo.
 
-call scripts\batch\postgresql\setup\run_liquibase.bat
+REM call scripts\batch\postgresql\setup\run_liquibase.bat
 if errorlevel 1 exit /b 1
 
 echo.
