@@ -68,6 +68,11 @@ def generate_materialized_views(database):
         view_name = f"mv_{table_name}"
 
         column_text = ",\n".join(columns)
+        print("TABLE :", table_name)
+        print("COLUMNS :", columns)
+        print("COLUMN TEXT:")
+        print(column_text)
+        print("----------------")
 
         materialized_view_template = load_template(
             database,
