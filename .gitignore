@@ -124,3 +124,32 @@ liquibase/*/*
 !liquibase/mssql/objects/**
 
 # RBAC Credentials
+
+# =====================================================
+# CDC Generated Metadata
+# =====================================================
+
+metadata/mysql/cdc_status.json
+metadata/postgresql/cdc_status.json
+metadata/mssql/cdc_status.json
+metadata/mongodb/cdc_status.json
+
+# (Agar cdc_summary.json generate karte ho)
+metadata/**/cdc_summary.json
+
+
+# =====================================================
+# CDC Reports
+# =====================================================
+
+reports/**/cdc/
+reports/**/cdc/*.html
+reports/**/cdc/*.json
+
+
+# =====================================================
+# CDC Logs (optional)
+# =====================================================
+
+logs/**/cdc/
+logs/**/cdc/*.log
