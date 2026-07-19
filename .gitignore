@@ -18,11 +18,14 @@ logs/
 
 # =====================================================
 # Reports & Assessment Outputs
-# All files under outputs/assessments/ are generated at runtime.
+# Generated at runtime — never commit.
 # =====================================================
 
 reports/
-outputs/assessments/
+
+# Ignore all assessment output files but preserve .gitkeep
+outputs/assessments/**/*.json
+outputs/assessments/**/*.csv
 
 # =====================================================
 # Python
@@ -48,21 +51,33 @@ Thumbs.db
 .DS_Store
 
 # =====================================================
-# Metadata
+# Metadata — Generated and Runtime Outputs
 #
-# schema_registry.json  = source input, KEEP (committed)
-# All other JSON files  = generated at runtime, IGNORE
+# schema_registry.json   = generated from live DB scan
+#                          dataset-specific — IGNORE
+# object_*.json          = generated validation/registry
+# pipeline_log*.json     = runtime log
+# discovery/**           = runtime discovery outputs
+#
+# config/discovery/*.json = static source configs — TRACK
 # =====================================================
 
+metadata/**/schema_registry.json
 metadata/**/object_registry.json
 metadata/**/object_generation_report.json
 metadata/**/object_validation_report.json
 metadata/**/pipeline_log*.json
-metadata/**/*.jsonl
+metadata/*.jsonl
+
+# Ignore discovery output files but keep .gitkeep placeholders
+metadata/discovery/**/*.json
+metadata/discovery/**/*.csv
+
+# metadata DB-level files (generated at runtime)
+metadata/**/[0-9]*.json
 
 # =====================================================
 # Incoming / Archive / Failed
-# Keep folder structure only
 # =====================================================
 
 incoming/*/*
@@ -71,7 +86,6 @@ failed/*/*
 
 # =====================================================
 # Terraform
-# Keep only Terraform source files
 # =====================================================
 
 terraform/*/*
@@ -80,59 +94,56 @@ terraform/*/*
 
 # =====================================================
 # Tools
-# Drivers and binaries are downloaded at runtime.
 # =====================================================
 
 tools/*/*
+!tools/*/.gitkeep
 
 # =====================================================
-# Database Objects — Generated SQL
+# Database Objects — Custom SQL
 #
-# objects/<db>/generated/  is fully auto-created by
-# bootstrap_generator.py at runtime.
-# objects/<db>/custom/     contains hand-authored SQL — KEEP.
+# objects/<db>/custom/<category>/ holds dataset-specific
+# hand-authored SQL. Not committed — only .gitkeep stays.
+#
+# objects/<db>/generated/ auto-created at runtime — IGNORE.
 # =====================================================
 
+objects/**/custom/**/*.sql
 objects/**/generated/
 
 # =====================================================
-# Liquibase — Generated XML & runtime artifacts
+# Liquibase — Generated and Dataset-Specific Files
 #
-# liquibase/<db>/objects/generated/  — auto-created by
-#   bootstrap_generator.py at runtime — IGNORE.
+# IGNORED (dataset-specific/generated):
+#   liquibase/<db>/[0-9]*.xml    = schema XML
+#   liquibase/<db>/master.xml    = data master changelog
+#   liquibase/master.xml         = top-level data master
+#   liquibase/**/master_objects.xml = generated objects entry-point
+#   liquibase/**/objects/custom/**/*.xml = dataset-specific object XML
+#   liquibase/**/objects/generated/ = auto-created at runtime
 #
-# liquibase/<db>/objects/custom/     — hand-authored XML
-#   objects — KEEP (committed).
-#
-# liquibase/<db>/master_objects.xml  — generated per-run
-#   entry-point changelog — IGNORE.
-#
-# liquibase/<db>/master.xml          — hand-authored data
-#   load changelog — KEEP (committed).
-#
-# liquibase/<db>/liquibase.properties — DB connection
-#   config — KEEP (committed).
+# TRACKED (static source):
+#   liquibase/<db>/liquibase.properties = DB connection config
+#   **/.gitkeep = directory structure placeholders
 # =====================================================
 
 # Ignore everything two levels deep by default
 liquibase/*/*
 
-# Keep root-level config and hand-authored data load changelog
+# Keep static DB connection config
 !liquibase/*/liquibase.properties
-!liquibase/*/master.xml
 
-# Keep hand-authored custom object XML (all relational databases)
-!liquibase/mysql/objects/
-!liquibase/mysql/objects/custom/
-!liquibase/mysql/objects/custom/**
-!liquibase/postgresql/objects/
-!liquibase/postgresql/objects/custom/
-!liquibase/postgresql/objects/custom/**
-!liquibase/mssql/objects/
-!liquibase/mssql/objects/custom/
-!liquibase/mssql/objects/custom/**
-
-# Explicitly ignore generated XML contents and master_objects.xml
-# (objects/generated/ dirs are auto-created, so no .gitkeep needed)
-liquibase/**/objects/generated/
+# Ignore ALL dataset-specific schema changelogs and masters
+liquibase/**/[0-9]*.xml
+liquibase/**/master.xml
 liquibase/**/master_objects.xml
+
+# Ignore dataset-specific and generated object XML
+liquibase/**/objects/custom/**/*.xml
+liquibase/**/objects/generated/
+
+# Allow folder structure through for .gitkeep
+!liquibase/**/objects/
+!liquibase/**/objects/custom/
+!liquibase/**/objects/custom/*/
+!liquibase/**/objects/generated/
