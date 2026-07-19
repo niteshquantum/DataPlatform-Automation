@@ -762,31 +762,8 @@ if (currentBuild.number == 1) {
                         sh 'bash ./scripts/bash/mssql/load/validate_loaded_data.sh'
 
                         sh './scripts/bash/mssql/objects/deploy_objects.sh'
-
-                        sh './scripts/bash/mssql/objects/validate_objects.sh'
-
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh database'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh schema'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh table'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh view'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh procedure'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh function'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh trigger'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_inventory'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_validation'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_history'
-
-                        sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_assessment'
+					
+						sh './scripts/bash/mssql/assessment/run_assessment.sh all'
 
                         sh './scripts/bash/common/generate_assessment_report.sh'
 
@@ -1021,14 +998,7 @@ if (currentBuild.number == 1) {
 
                         bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
 
-
-                        bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
-
-                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database'
-
-                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection'
-
-                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index'
+                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
 
@@ -1240,24 +1210,10 @@ if (currentBuild.number == 1) {
 
                         bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
 
-                        bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
+                        bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
+					
+						bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
 
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat database'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat schema'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat table'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat view'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat function'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat trigger'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat extension'
-
-                        // bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat materialized_view'
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
 

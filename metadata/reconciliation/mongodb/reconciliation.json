@@ -1,0 +1,162 @@
+{
+    "reconciliation_metadata": {
+        "database": "mongodb",
+        "generated_at_utc": "2026-07-13T15:59:32.175332+00:00",
+        "profiling_source": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\profiling\\mongodb\\profiling.json"
+    },
+    "reconciliation_summary": {
+        "expected_datasets": 5,
+        "target_datasets": 5,
+        "reconciled_datasets": 5,
+        "not_reconciled_datasets": 0,
+        "missing_target_datasets": 0,
+        "extra_target_datasets": 0,
+        "total_issues": 0,
+        "high_severity_issues": 0,
+        "medium_severity_issues": 0,
+        "low_severity_issues": 0
+    },
+    "datasets": [
+        {
+            "dataset_name": "cart_events",
+            "source_file": "cart_events.json",
+            "target_name": "cart_events",
+            "row_reconciliation": {
+                "expected_rows": 80000,
+                "actual_rows": 80000,
+                "row_difference": 0,
+                "absolute_difference": 0,
+                "match_percentage": 100.0,
+                "status": "MATCHED"
+            },
+            "column_reconciliation": {
+                "expected_columns": 15,
+                "actual_columns": 15,
+                "column_difference": 0,
+                "absolute_difference": 0,
+                "status": "MATCHED"
+            },
+            "reconciliation_status": "RECONCILED",
+            "reconciliation_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "reconciliation_issues": []
+        },
+        {
+            "dataset_name": "customer_preferences",
+            "source_file": "customer_preferences.csv",
+            "target_name": "customer_preferences",
+            "row_reconciliation": {
+                "expected_rows": 99441,
+                "actual_rows": 99441,
+                "row_difference": 0,
+                "absolute_difference": 0,
+                "match_percentage": 100.0,
+                "status": "MATCHED"
+            },
+            "column_reconciliation": {
+                "expected_columns": 9,
+                "actual_columns": 9,
+                "column_difference": 0,
+                "absolute_difference": 0,
+                "status": "MATCHED"
+            },
+            "reconciliation_status": "RECONCILED",
+            "reconciliation_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "reconciliation_issues": []
+        },
+        {
+            "dataset_name": "customer_segments",
+            "source_file": "customer_segments.csv",
+            "target_name": "customer_segments",
+            "row_reconciliation": {
+                "expected_rows": 99441,
+                "actual_rows": 99441,
+                "row_difference": 0,
+                "absolute_difference": 0,
+                "match_percentage": 100.0,
+                "status": "MATCHED"
+            },
+            "column_reconciliation": {
+                "expected_columns": 9,
+                "actual_columns": 9,
+                "column_difference": 0,
+                "absolute_difference": 0,
+                "status": "MATCHED"
+            },
+            "reconciliation_status": "RECONCILED",
+            "reconciliation_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "reconciliation_issues": []
+        },
+        {
+            "dataset_name": "order_returns",
+            "source_file": "order_returns.json",
+            "target_name": "order_returns",
+            "row_reconciliation": {
+                "expected_rows": 12000,
+                "actual_rows": 12000,
+                "row_difference": 0,
+                "absolute_difference": 0,
+                "match_percentage": 100.0,
+                "status": "MATCHED"
+            },
+            "column_reconciliation": {
+                "expected_columns": 16,
+                "actual_columns": 16,
+                "column_difference": 0,
+                "absolute_difference": 0,
+                "status": "MATCHED"
+            },
+            "reconciliation_status": "RECONCILED",
+            "reconciliation_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "reconciliation_issues": []
+        },
+        {
+            "dataset_name": "product_seo",
+            "source_file": "product_seo.json",
+            "target_name": "product_seo",
+            "row_reconciliation": {
+                "expected_rows": 105000,
+                "actual_rows": 105000,
+                "row_difference": 0,
+                "absolute_difference": 0,
+                "match_percentage": 100.0,
+                "status": "MATCHED"
+            },
+            "column_reconciliation": {
+                "expected_columns": 25,
+                "actual_columns": 25,
+                "column_difference": 0,
+                "absolute_difference": 0,
+                "status": "MATCHED"
+            },
+            "reconciliation_status": "RECONCILED",
+            "reconciliation_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "reconciliation_issues": []
+        }
+    ],
+    "extra_target_datasets": []
+}

@@ -1,0 +1,162 @@
+{
+    "assessment_metadata": {
+        "database": "mysql",
+        "generated_at_utc": "2026-07-14T07:22:03.991967+00:00",
+        "assessment_version": "1.0",
+        "assessment_inputs": {
+            "profiling": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\profiling\\mysql\\profiling.json",
+            "reconciliation": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\reconciliation\\mysql\\reconciliation.json",
+            "discovery": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\discovery\\mysql\\discovery.json",
+            "growth": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\discovery\\mysql\\growth_analysis.json",
+            "requirements": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\metadata\\discovery\\mysql\\requirements_analysis.json"
+        }
+    },
+    "assessment_summary": {
+        "database": "mysql",
+        "assessment_status": "CONDITIONAL_APPROVAL",
+        "risk_score": 10,
+        "risk_level": "MEDIUM",
+        "complexity_score": 25,
+        "complexity_level": "MEDIUM",
+        "readiness_score": 84,
+        "readiness_level": "READY_WITH_CONDITIONS"
+    },
+    "risk_assessment": {
+        "risk_score": 10,
+        "risk_level": "MEDIUM",
+        "risk_score_breakdown": {
+            "profiling_risk_score": 0,
+            "reconciliation_risk_score": 0,
+            "discovery_risk_score": 10,
+            "growth_risk_score": 0,
+            "retention_risk_score": 5,
+            "sla_risk_score": 5
+        },
+        "risk_issue_summary": {
+            "high_severity_issues": 0,
+            "medium_severity_issues": 2,
+            "low_severity_issues": 0
+        },
+        "discovery_risk_assessment": {
+            "growth": {
+                "score": 0,
+                "severity": "LOW",
+                "message": "Database growth is within the configured assessment threshold."
+            },
+            "retention": {
+                "score": 5,
+                "severity": "MEDIUM",
+                "message": "Data retention or archival requirements require migration planning controls."
+            },
+            "sla": {
+                "score": 5,
+                "severity": "MEDIUM",
+                "message": "Migration and downtime SLA requirements require controlled execution planning."
+            }
+        },
+        "risk_factors": [
+            {
+                "source": "DISCOVERY_RETENTION",
+                "severity": "MEDIUM",
+                "issue_count": 1,
+                "message": "Data retention or archival requirements require migration planning controls."
+            },
+            {
+                "source": "DISCOVERY_SLA",
+                "severity": "MEDIUM",
+                "issue_count": 1,
+                "message": "Migration and downtime SLA requirements require controlled execution planning."
+            }
+        ]
+    },
+    "complexity_assessment": {
+        "complexity_score": 25,
+        "complexity_level": "MEDIUM",
+        "complexity_score_breakdown": {
+            "data_volume_score": 5,
+            "dataset_count_score": 5,
+            "schema_width_score": 5,
+            "reconciliation_score": 10,
+            "growth_score": 0
+        },
+        "database_discovery_summary": {
+            "total_datasets": 12,
+            "total_records": 1563355
+        },
+        "complexity_factors": [
+            {
+                "factor": "DATA_VOLUME",
+                "score": 5,
+                "observed_value": 50,
+                "message": "Source datasets contain 50 total records."
+            },
+            {
+                "factor": "DATASET_COUNT",
+                "score": 5,
+                "observed_value": 1,
+                "message": "1 source datasets are included in the migration scope."
+            },
+            {
+                "factor": "SCHEMA_WIDTH",
+                "score": 5,
+                "observed_value": 6,
+                "message": "Source datasets contain 6 total columns."
+            },
+            {
+                "factor": "DATABASE_DISCOVERY",
+                "score": 0,
+                "observed_value": {
+                    "total_datasets": 12,
+                    "total_records": 1563355
+                },
+                "message": "Database discovery identified 12 datasets containing 1563355 total records."
+            },
+            {
+                "factor": "RECONCILIATION_FINDINGS",
+                "score": 10,
+                "observed_value": {
+                    "missing_target_datasets": 0,
+                    "extra_target_datasets": 9,
+                    "not_reconciled_datasets": 0
+                },
+                "message": "Source-to-target reconciliation findings increase migration complexity."
+            }
+        ]
+    },
+    "readiness_assessment": {
+        "readiness_score": 84,
+        "readiness_level": "READY_WITH_CONDITIONS",
+        "base_score": 100,
+        "total_penalty": 16,
+        "readiness_score_breakdown": {
+            "profiling_penalty": 0,
+            "reconciliation_penalty": 0,
+            "risk_penalty": 5,
+            "complexity_penalty": 3,
+            "retention_penalty": 2,
+            "sla_penalty": 6
+        },
+        "readiness_factors": [
+            {
+                "factor": "MIGRATION_RISK",
+                "penalty": 5,
+                "message": "The assessed migration risk level reduces migration readiness."
+            },
+            {
+                "factor": "MIGRATION_COMPLEXITY",
+                "penalty": 3,
+                "message": "The assessed migration complexity reduces migration readiness."
+            },
+            {
+                "factor": "RETENTION_REQUIREMENTS",
+                "penalty": 2,
+                "message": "Data retention and archival requirements reduce migration readiness."
+            },
+            {
+                "factor": "SLA_REQUIREMENTS",
+                "penalty": 6,
+                "message": "Migration duration and downtime requirements reduce migration readiness."
+            }
+        ]
+    }
+}

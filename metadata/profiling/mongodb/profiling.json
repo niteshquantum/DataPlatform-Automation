@@ -1,0 +1,822 @@
+{
+    "profiling_metadata": {
+        "database": "mongodb",
+        "generated_at_utc": "2026-07-13T13:07:40.023365+00:00",
+        "input_directory": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\incoming\\mongodb",
+        "supported_file_types": [
+            ".csv",
+            ".json"
+        ]
+    },
+    "profiling_summary": {
+        "total_files_found": 5,
+        "successful_files": 5,
+        "failed_files": 0,
+        "total_rows": 395882,
+        "total_columns": 74,
+        "total_input_size_bytes": 356165623,
+        "total_null_cells": 0,
+        "total_duplicate_rows": 0,
+        "total_profiling_issues": 7,
+        "high_severity_issues": 0,
+        "medium_severity_issues": 0,
+        "low_severity_issues": 7
+    },
+    "datasets": [
+        {
+            "file_name": "cart_events.json",
+            "file_type": ".json",
+            "file_size_bytes": 112295034,
+            "basic_metrics": {
+                "total_rows": 80000,
+                "total_columns": 15,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 53044708
+            },
+            "column_metrics": {
+                "Session_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 80000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Customer_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 39910,
+                    "uniqueness_percentage": 49.89
+                },
+                "Session_Start_Time": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 79951,
+                    "uniqueness_percentage": 99.94
+                },
+                "Session_End_Time": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 79942,
+                    "uniqueness_percentage": 99.93
+                },
+                "Items_Nested_Array": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 80000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Total_Cart_Weight_KG": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 5959,
+                    "uniqueness_percentage": 7.45
+                },
+                "Cart_Abandoned_Status": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.0
+                },
+                "Device_User_Agent": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 16,
+                    "uniqueness_percentage": 0.02
+                },
+                "IP_Country_Code": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 8,
+                    "uniqueness_percentage": 0.01
+                },
+                "created_at": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 79951,
+                    "uniqueness_percentage": 99.94
+                },
+                "updated_at": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 79951,
+                    "uniqueness_percentage": 99.94
+                },
+                "source_system": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.0
+                },
+                "etl_load_timestamp": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 8905,
+                    "uniqueness_percentage": 11.13
+                },
+                "record_version": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.0
+                },
+                "is_active": {
+                    "detected_data_type": "bool",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 80000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.0
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 1200000,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 3,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 3
+            },
+            "profiling_issues": [
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "source_system",
+                    "affected_records": 80000,
+                    "message": "Column 'source_system' contains only one unique non-null value."
+                },
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "record_version",
+                    "affected_records": 80000,
+                    "message": "Column 'record_version' contains only one unique non-null value."
+                },
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "is_active",
+                    "affected_records": 80000,
+                    "message": "Column 'is_active' contains only one unique non-null value."
+                }
+            ],
+            "status": "SUCCESS"
+        },
+        {
+            "file_name": "customer_preferences.csv",
+            "file_type": ".csv",
+            "file_size_bytes": 5760011,
+            "basic_metrics": {
+                "total_rows": 99441,
+                "total_columns": 9,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 40266023
+            },
+            "column_metrics": {
+                "customer_id": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 99441,
+                    "uniqueness_percentage": 100.0
+                },
+                "preferred_category": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 7,
+                    "uniqueness_percentage": 0.01
+                },
+                "preferred_payment": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 4,
+                    "uniqueness_percentage": 0.0
+                },
+                "preferred_language": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 14,
+                    "uniqueness_percentage": 0.01
+                },
+                "newsletter_opt_in": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.0
+                },
+                "sms_opt_in": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.0
+                },
+                "preferred_device": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 3,
+                    "uniqueness_percentage": 0.0
+                },
+                "price_sensitivity": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 3,
+                    "uniqueness_percentage": 0.0
+                },
+                "brand_loyalty": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 3,
+                    "uniqueness_percentage": 0.0
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 894969,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "profiling_issues": [],
+            "status": "SUCCESS"
+        },
+        {
+            "file_name": "customer_segments.csv",
+            "file_type": ".csv",
+            "file_size_bytes": 7657313,
+            "basic_metrics": {
+                "total_rows": 99441,
+                "total_columns": 9,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 27944245
+            },
+            "column_metrics": {
+                "segment_id": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 99441,
+                    "uniqueness_percentage": 100.0
+                },
+                "customer_id": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 99441,
+                    "uniqueness_percentage": 100.0
+                },
+                "rfm_score": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 8503,
+                    "uniqueness_percentage": 8.55
+                },
+                "recency_days": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 365,
+                    "uniqueness_percentage": 0.37
+                },
+                "frequency_count": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 50,
+                    "uniqueness_percentage": 0.05
+                },
+                "monetary_value": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 98428,
+                    "uniqueness_percentage": 98.98
+                },
+                "churn_risk_score": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 702,
+                    "uniqueness_percentage": 0.71
+                },
+                "segment_label": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 4,
+                    "uniqueness_percentage": 0.0
+                },
+                "computed_at": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 99441,
+                    "unique_value_count": 584,
+                    "uniqueness_percentage": 0.59
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 894969,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "profiling_issues": [],
+            "status": "SUCCESS"
+        },
+        {
+            "file_name": "order_returns.json",
+            "file_type": ".json",
+            "file_size_bytes": 8328661,
+            "basic_metrics": {
+                "total_rows": 12000,
+                "total_columns": 16,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 8824413
+            },
+            "column_metrics": {
+                "Return_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 12000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Order_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 11450,
+                    "uniqueness_percentage": 95.42
+                },
+                "Product_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 11357,
+                    "uniqueness_percentage": 94.64
+                },
+                "Return_Trigger_Timestamp": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 12000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Damage_Reason_Code": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 5,
+                    "uniqueness_percentage": 0.04
+                },
+                "Inspection_Status": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 4,
+                    "uniqueness_percentage": 0.03
+                },
+                "Refund_Fulfillment_Channel": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 4,
+                    "uniqueness_percentage": 0.03
+                },
+                "Restocking_Inventory_Approved": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.02
+                },
+                "Reverse_Carrier_Tracking_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 12000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Financial_Loss_Estimate_USD": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 10661,
+                    "uniqueness_percentage": 88.84
+                },
+                "created_at": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 12000,
+                    "uniqueness_percentage": 100.0
+                },
+                "updated_at": {
+                    "detected_data_type": "datetime64[ns]",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 12000,
+                    "uniqueness_percentage": 100.0
+                },
+                "source_system": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.01
+                },
+                "etl_load_timestamp": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 963,
+                    "uniqueness_percentage": 8.03
+                },
+                "record_version": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.01
+                },
+                "is_active": {
+                    "detected_data_type": "bool",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 12000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.01
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 192000,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 3,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 3
+            },
+            "profiling_issues": [
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "source_system",
+                    "affected_records": 12000,
+                    "message": "Column 'source_system' contains only one unique non-null value."
+                },
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "record_version",
+                    "affected_records": 12000,
+                    "message": "Column 'record_version' contains only one unique non-null value."
+                },
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "is_active",
+                    "affected_records": 12000,
+                    "message": "Column 'is_active' contains only one unique non-null value."
+                }
+            ],
+            "status": "SUCCESS"
+        },
+        {
+            "file_name": "product_seo.json",
+            "file_type": ".json",
+            "file_size_bytes": 222124604,
+            "basic_metrics": {
+                "total_rows": 105000,
+                "total_columns": 25,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 194999549
+            },
+            "column_metrics": {
+                "Product_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 105000,
+                    "uniqueness_percentage": 100.0
+                },
+                "Base_Price": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 75729,
+                    "uniqueness_percentage": 72.12
+                },
+                "Retail_Price": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 77483,
+                    "uniqueness_percentage": 73.79
+                },
+                "Discount_Percentage": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 2501,
+                    "uniqueness_percentage": 2.38
+                },
+                "Currency": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 1,
+                    "uniqueness_percentage": 0.0
+                },
+                "Tax_Class": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 4,
+                    "uniqueness_percentage": 0.0
+                },
+                "Meta_Title": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 4800,
+                    "uniqueness_percentage": 4.57
+                },
+                "Meta_Description": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 79484,
+                    "uniqueness_percentage": 75.7
+                },
+                "URL_Slug": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 4800,
+                    "uniqueness_percentage": 4.57
+                },
+                "Canonical_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 4800,
+                    "uniqueness_percentage": 4.57
+                },
+                "Keywords_Array": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 10500,
+                    "uniqueness_percentage": 10.0
+                },
+                "Index_Status": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.0
+                },
+                "Map_Sitemap_Priority": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 6,
+                    "uniqueness_percentage": 0.01
+                },
+                "Live_Primary_Image_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 40,
+                    "uniqueness_percentage": 0.04
+                },
+                "Live_Thumbnail_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 40,
+                    "uniqueness_percentage": 0.04
+                },
+                "Live_Mobile_Image_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 40,
+                    "uniqueness_percentage": 0.04
+                },
+                "Gallery_URLs_Array": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 144,
+                    "uniqueness_percentage": 0.14
+                },
+                "Video_Embed_URL": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 19,
+                    "uniqueness_percentage": 0.02
+                },
+                "Alt_Text_String": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 600,
+                    "uniqueness_percentage": 0.57
+                },
+                "Product_Badges_Array": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 64,
+                    "uniqueness_percentage": 0.06
+                },
+                "Avg_Rating": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 16,
+                    "uniqueness_percentage": 0.02
+                },
+                "Total_Reviews_Count": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 9990,
+                    "uniqueness_percentage": 9.51
+                },
+                "Return_Rate_Percentage": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 91,
+                    "uniqueness_percentage": 0.09
+                },
+                "Low_Stock_Alert_Triggered": {
+                    "detected_data_type": "bool",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 2,
+                    "uniqueness_percentage": 0.0
+                },
+                "FAQ_JSON_Object": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 105000,
+                    "unique_value_count": 36,
+                    "uniqueness_percentage": 0.03
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 2625000,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 1,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 1
+            },
+            "profiling_issues": [
+                {
+                    "issue_type": "CONSTANT_COLUMN",
+                    "severity": "LOW",
+                    "column": "Currency",
+                    "affected_records": 105000,
+                    "message": "Column 'Currency' contains only one unique non-null value."
+                }
+            ],
+            "status": "SUCCESS"
+        }
+    ],
+    "failures": []
+}

@@ -1,0 +1,106 @@
+{
+    "profiling_metadata": {
+        "database": "mysql",
+        "generated_at_utc": "2026-07-13T19:47:28.491022+00:00",
+        "input_directory": "F:\\Team_D\\Data_profilling\\DataPlatform-Automation-main\\incoming\\mysql",
+        "supported_file_types": [
+            ".csv",
+            ".json"
+        ]
+    },
+    "profiling_summary": {
+        "total_files_found": 1,
+        "successful_files": 1,
+        "failed_files": 0,
+        "total_rows": 50,
+        "total_columns": 6,
+        "total_input_size_bytes": 2571,
+        "total_null_cells": 0,
+        "total_duplicate_rows": 0,
+        "total_profiling_issues": 0,
+        "high_severity_issues": 0,
+        "medium_severity_issues": 0,
+        "low_severity_issues": 0
+    },
+    "datasets": [
+        {
+            "file_name": "demo.csv",
+            "file_type": ".csv",
+            "file_size_bytes": 2571,
+            "basic_metrics": {
+                "total_rows": 50,
+                "total_columns": 6,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "memory_usage_bytes": 12472
+            },
+            "column_metrics": {
+                "Employee_ID": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 50,
+                    "uniqueness_percentage": 100.0
+                },
+                "Full_Name": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 44,
+                    "uniqueness_percentage": 88.0
+                },
+                "Department": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 6,
+                    "uniqueness_percentage": 12.0
+                },
+                "Join_Date": {
+                    "detected_data_type": "object",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 50,
+                    "uniqueness_percentage": 100.0
+                },
+                "Salary_INR": {
+                    "detected_data_type": "int64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 50,
+                    "uniqueness_percentage": 100.0
+                },
+                "Rating": {
+                    "detected_data_type": "float64",
+                    "null_count": 0,
+                    "null_percentage": 0.0,
+                    "non_null_count": 50,
+                    "unique_value_count": 20,
+                    "uniqueness_percentage": 40.0
+                }
+            },
+            "data_quality_summary": {
+                "total_cells": 300,
+                "total_null_cells": 0,
+                "overall_null_percentage": 0.0,
+                "duplicate_rows": 0,
+                "duplicate_percentage": 0.0,
+                "columns_with_nulls": 0
+            },
+            "profiling_issue_summary": {
+                "total_issues": 0,
+                "high_severity_issues": 0,
+                "medium_severity_issues": 0,
+                "low_severity_issues": 0
+            },
+            "profiling_issues": [],
+            "status": "SUCCESS"
+        }
+    ],
+    "failures": []
+}
