@@ -341,7 +341,7 @@ pipeline {
                 'PRESERVE_DATA',
                 'DELETE_DATA'
             ],
-            description: 'Used only for Windows CLEANUP action'
+            description: 'Select CLEANUP mode'
         )
 
         string(
