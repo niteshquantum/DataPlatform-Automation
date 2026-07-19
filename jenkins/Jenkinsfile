@@ -533,28 +533,15 @@ if (currentBuild.number == 1) {
 
                         sh './scripts/bash/mysql/objects/deploy_objects.sh'
 
-                        sh './scripts/bash/mysql/objects/validate_objects.sh'
-
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh database'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh schema'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh table'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh view'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh procedure'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh function'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh trigger'
-
-                        sh './scripts/bash/mysql/assessment/run_assessment.sh event'
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh all'
 
                         sh './scripts/bash/common/generate_assessment_report.sh'
+                         
+                        sh './scripts/bash/common/run_reconciliation.sh mysql'
 
-                        sh './scripts/bash/common/migration/run_reconciliation.sh mysql'
+                        sh 'python3 scripts/discovery/discovery_engine.py --database mysql'
+
+                        sh 'python3 scripts/discovery/growth_analyzer.py --database mysql'
 
                         sh 'python3 scripts/discovery/discovery_engine.py --database mysql'
 
