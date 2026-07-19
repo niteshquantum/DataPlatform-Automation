@@ -159,3 +159,10 @@ liquibase/**/objects/generated/
 !liquibase/**/objects/custom/
 !liquibase/**/objects/custom/*/
 !liquibase/**/objects/generated
+
+# Generated metadata outputs
+metadata/profiling/**/profiling.json
+metadata/reconciliation/**/reconciliation.json
+metadata/assessment/**/assessment.json
+metadata/recommendation/**/recommendation.json
+metadata/governance/**/action_plan.json
