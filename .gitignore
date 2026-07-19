@@ -11,20 +11,25 @@ databases/mssql/templates/*
 
 # =====================================================
 # Logs
-# =====================================================
-# =====================================================
-# Logs
+# Generated at runtime — never commit
 # =====================================================
 
 logs/
 *.log
 
 # =====================================================
-# Reports
+# Reports & Assessment Outputs
+# Generated at runtime — never commit
 # =====================================================
 
 reports/
-outputs/assessments/
+
+outputs/assessments/**/*.json
+outputs/assessments/**/*.csv
+
+# Keep assessment folder structure
+!outputs/assessments/.gitkeep
+!outputs/assessments/*/.gitkeep
 
 # =====================================================
 # Python
@@ -50,34 +55,41 @@ Thumbs.db
 .DS_Store
 
 # =====================================================
-# Metadata
-# Keep folder structure only
+# Metadata — Runtime / Generated
 # =====================================================
 
-metadata/*/*
+metadata/**/schema_registry.json
+metadata/**/object_registry.json
+metadata/**/object_generation_report.json
+metadata/**/object_validation_report.json
+metadata/**/pipeline_log*.json
+metadata/**/*.jsonl
+
+# Discovery runtime outputs
+metadata/discovery/**/*.json
+metadata/discovery/**/*.csv
+
+# DB-level generated numbered JSON
+metadata/**/[0-9]*.json
+
+# CDC runtime metadata
+metadata/**/cdc_status.json
+metadata/**/cdc_summary.json
+
+# Keep required folder placeholders
 !metadata/*/.gitkeep
-metadata/*.jsonl
+!metadata/discovery/*/.gitkeep
 
 # =====================================================
-# Incoming
-# Keep folder structure only
+# Incoming / Archive / Failed
+# Keep folder structures only
 # =====================================================
 
 incoming/*/*
 !incoming/*/.gitkeep
 
-# =====================================================
-# Archive
-# Keep folder structure only
-# =====================================================
-
 archive/*/*
 !archive/*/.gitkeep
-
-# =====================================================
-# Failed
-# Keep folder structure only
-# =====================================================
 
 failed/*/*
 !failed/*/.gitkeep
@@ -100,56 +112,48 @@ tools/*/*
 !tools/*/.gitkeep
 
 # =====================================================
-# Liquibase
-# Keep only required files
+# Database Objects
+#
+# custom SQL    = dataset-specific, do not commit
+# generated SQL = runtime-generated, do not commit
+# .gitkeep      = preserve clean directory structure
 # =====================================================
 
-# Ignore everything under Liquibase folders
+objects/**/custom/**/*.sql
+objects/**/generated/
+
+# =====================================================
+# Liquibase — Generated / Dataset-Specific
+#
+# TRACK:
+#   liquibase.properties
+#   required .gitkeep placeholders
+#
+# IGNORE:
+#   numbered schema changelogs
+#   master.xml
+#   master_objects.xml
+#   custom object XML
+#   generated object XML
+# =====================================================
+
+# Existing architecture defaults to ignoring DB-level contents
 liquibase/*/*
 
-# Keep failed folder structure
-!liquibase/failed/.gitkeep
-
-# Keep required Liquibase configuration files
-!liquibase/*/master.xml
+# Keep static DB connection configuration
 !liquibase/*/liquibase.properties
-!liquibase/mysql/*.xml
-!liquibase/mysql/objects/
-!liquibase/mysql/objects/**
-!liquibase/postgresql/*.xml
-!liquibase/postgresql/objects/
-!liquibase/postgresql/objects/**
-!liquibase/mssql/*.xml
-!liquibase/mssql/objects/
-!liquibase/mssql/objects/**
 
-# RBAC Credentials
+# Generated/dataset-specific changelogs
+liquibase/**/[0-9]*.xml
+liquibase/**/master.xml
+liquibase/**/master_objects.xml
 
-# =====================================================
-# CDC Generated Metadata
-# =====================================================
+# Dataset-specific/runtime object XML
+liquibase/**/objects/custom/**/*.xml
+liquibase/**/objects/generated/
 
-metadata/mysql/cdc_status.json
-metadata/postgresql/cdc_status.json
-metadata/mssql/cdc_status.json
-metadata/mongodb/cdc_status.json
-
-# (Agar cdc_summary.json generate karte ho)
-metadata/**/cdc_summary.json
-
-
-# =====================================================
-# CDC Reports
-# =====================================================
-
-reports/**/cdc/
-reports/**/cdc/*.html
-reports/**/cdc/*.json
-
-
-# =====================================================
-# CDC Logs (optional)
-# =====================================================
-
-logs/**/cdc/
-logs/**/cdc/*.log
+# Re-allow required object directory structure
+!liquibase/**/objects/
+!liquibase/**/objects/custom/
+!liquibase/**/objects/custom/*/
+!liquibase/**/objects/generated/

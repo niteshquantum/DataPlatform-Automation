@@ -143,7 +143,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Profile Source Data') {
-                        sh './scripts/bash/common/migration/run_data_profiling.sh mssql'
+                        sh './scripts/bash/common/run_data_profiling.sh mssql'
                     }
                 }
             }
@@ -172,151 +172,58 @@ pipeline {
         }
 
 
-        stage('Deploy Views') {
+
+        stage('Deploy & Validate Database Objects') {
+
             steps {
-                sh './scripts/bash/mssql/objects/deploy_objects.sh'
+
+                script {
+
+                    runTrackedStage('Deploy & Validate Database Objects') {
+
+                        sh './scripts/bash/mssql/objects/deploy_objects.sh'
+                    }
+                }
             }
         }
 
 
-        stage('Validate Views') {
+        stage('Database Assessment') {
+
             steps {
-                sh './scripts/bash/mssql/objects/validate_objects.sh'
+
+                script {
+
+                    runTrackedStage('Database Assessment') {
+
+                        sh './scripts/bash/mssql/assessment/run_assessment.sh all'
+                    }
+                }
             }
         }
 
 
-        stage('Deploy Functions') {
+        stage('Assessment Report') {
+
             steps {
-                sh './scripts/bash/mssql/objects/deploy_objects.sh'
+
+                script {
+
+                    runTrackedStage('Assessment Report') {
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+                    }
+                }
             }
         }
 
-
-        stage('Validate Functions') {
-            steps {
-                sh './scripts/bash/mssql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Deploy Stored Procedures') {
-            steps {
-                sh './scripts/bash/mssql/objects/deploy_objects.sh'
-            }
-        }
-
-
-        stage('Validate Stored Procedures') {
-            steps {
-                sh './scripts/bash/mssql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Deploy Triggers') {
-            steps {
-                sh './scripts/bash/mssql/objects/deploy_objects.sh'
-            }
-        }
-
-
-        stage('Validate Triggers') {
-            steps {
-                sh './scripts/bash/mssql/objects/validate_objects.sh'
-            }
-        }
-
-
-        stage('Database Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh database'
-            }
-        }
-
-
-        stage('Schema Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh schema'
-            }
-        }
-
-
-        stage('Table Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh table'
-            }
-        }
-
-
-        stage('View Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh view'
-            }
-        }
-
-
-        stage('Stored Procedure Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh procedure'
-            }
-        }
-
-
-        stage('Function Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh function'
-            }
-        }
-
-
-        stage('Trigger Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh trigger'
-            }
-        }
-
-
-        stage('SQL Agent Inventory') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_inventory'
-            }
-        }
-
-
-        stage('SQL Agent Validation') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_validation'
-            }
-        }
-
-
-        stage('SQL Agent History') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_history'
-            }
-        }
-
-
-        stage('SQL Agent Assessment') {
-            steps {
-                sh './scripts/bash/mssql/assessment/run_assessment.sh sql_agent_assessment'
-            }
-        }
-
-
-        stage('Final Assessment Report') {
-            steps {
-                sh './scripts/bash/common/generate_assessment_report.sh'
-            }
-        }
 
 
         stage('Reconcile Source and Target Data') {
             steps {
                 script {
                     runTrackedStage('Reconcile Source and Target Data') {
-                        sh './scripts/bash/common/migration/run_reconciliation.sh mssql'
+                        sh './scripts/bash/common/run_reconciliation.sh mssql'
                     }
                 }
             }
@@ -360,7 +267,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Assess Migration') {
-                        sh './scripts/bash/common/migration/run_assessment.sh mssql'
+                        sh './scripts/bash/common/run_assessment.sh mssql'
                     }
                 }
             }
@@ -371,7 +278,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Generate Migration Recommendations') {
-                        sh './scripts/bash/common/migration/run_recommendation.sh mssql'
+                        sh './scripts/bash/common/run_recommendation.sh mssql'
                     }
                 }
             }
@@ -382,7 +289,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Generate Governance Action Plan') {
-                        sh './scripts/bash/common/migration/run_action_plan.sh mssql'
+                        sh './scripts/bash/common/run_action_plan.sh mssql'
                     }
                 }
             }
@@ -393,7 +300,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Generate Technical Migration Report') {
-                        sh './scripts/bash/common/migration/generate_technical_report.sh mssql'
+                        sh './scripts/bash/common/generate_technical_report.sh mssql'
                     }
                 }
             }
@@ -404,7 +311,7 @@ pipeline {
             steps {
                 script {
                     runTrackedStage('Generate Executive Migration Report') {
-                        sh './scripts/bash/common/migration/generate_executive_report.sh mssql'
+                        sh './scripts/bash/common/generate_executive_report.sh mssql'
                     }
                 }
             }

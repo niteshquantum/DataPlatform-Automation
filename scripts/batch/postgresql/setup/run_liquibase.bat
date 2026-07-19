@@ -1,11 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
-call "%~dp0..\..\common\discover_java.bat"
 
-if errorlevel 1 exit /b 1
-
-echo JAVA_HOME=%JAVA_HOME%
-java -version
 echo.
 echo =====================================
 echo RUNNING POSTGRESQL LIQUIBASE
@@ -18,8 +13,12 @@ REM =====================================
 
 call "%~dp0..\..\common\set_project_root.bat"
 
-set "ROOT=%PROJECT_ROOT%"
+if errorlevel 1 (
+    echo ERROR: PROJECT ROOT INITIALIZATION FAILED
+    exit /b 1
+)
 
+set "ROOT=%PROJECT_ROOT%"
 set "CONFIG_FILE=%ROOT%\config\windows\postgresql.conf"
 
 REM =====================================
@@ -75,12 +74,13 @@ if not defined POSTGRESQL_DRIVER_VERSION (
 )
 
 REM =====================================
-REM VALIDATE LIQUIBASE
+REM VALIDATE LIQUIBASE + JAVA
 REM =====================================
 
 call "%ROOT%\scripts\batch\common\validate_liquibase.bat"
 
 if errorlevel 1 (
+    echo ERROR: LIQUIBASE VALIDATION FAILED
     exit /b 1
 )
 
@@ -91,6 +91,7 @@ REM =====================================
 call "%ROOT%\scripts\batch\postgresql\setup\validate_postgresql_driver.bat"
 
 if errorlevel 1 (
+    echo ERROR: POSTGRESQL JDBC DRIVER VALIDATION FAILED
     exit /b 1
 )
 
@@ -99,8 +100,13 @@ REM PATHS
 REM =====================================
 
 set "LB_BAT=%ROOT%\tools\liquibase\liquibase.bat"
-
 set "DRIVER=%ROOT%\tools\drivers\postgresql-%POSTGRESQL_DRIVER_VERSION%.jar"
+
+if not exist "%LB_BAT%" (
+    echo ERROR: LIQUIBASE EXECUTABLE NOT FOUND
+    echo Expected: %LB_BAT%
+    exit /b 1
+)
 
 if not exist "%DRIVER%" (
     echo ERROR: POSTGRESQL JDBC DRIVER NOT FOUND
@@ -111,7 +117,10 @@ if not exist "%DRIVER%" (
 cd /d "%ROOT%"
 
 set "CHANGELOG=%~1"
-if "%CHANGELOG%"=="" set "CHANGELOG=liquibase\postgresql\master.xml"
+
+if "%CHANGELOG%"=="" (
+    set "CHANGELOG=liquibase\postgresql\master.xml"
+)
 
 if not exist "%CHANGELOG%" (
     echo ERROR: CHANGELOG NOT FOUND
@@ -124,24 +133,12 @@ REM REPORT
 REM =====================================
 
 echo.
-echo Database : %POSTGRESQL_DB%
-echo Host     : %POSTGRESQL_HOST%
-echo Port     : %POSTGRESQL_PORT%
-echo User     : %POSTGRESQL_USER%
-echo Driver   : %DRIVER%
-echo Changelog: %CHANGELOG%
-echo.
-
-echo JAVA_HOME : %JAVA_HOME%
-echo.
-
-java -version
-
-if errorlevel 1 (
-    echo ERROR: JAVA EXECUTION FAILED
-    exit /b 1
-)
-
+echo Database  : %POSTGRESQL_DB%
+echo Host      : %POSTGRESQL_HOST%
+echo Port      : %POSTGRESQL_PORT%
+echo User      : %POSTGRESQL_USER%
+echo Driver    : %DRIVER%
+echo Changelog : %CHANGELOG%
 echo.
 
 REM =====================================
@@ -155,8 +152,48 @@ if defined POSTGRESQL_PASSWORD (
 )
 
 REM =====================================
+REM REFRESH JAVA ENVIRONMENT
+REM
+REM PostgreSQL/Liquibase previously had
+REM Java environment propagation issues.
+REM Refresh immediately before execution.
+REM =====================================
+
+call "%ROOT%\scripts\batch\common\discover_java.bat"
+
+if errorlevel 1 (
+    echo ERROR: JAVA DISCOVERY FAILED
+    exit /b 1
+)
+
+if not defined JAVA_HOME (
+    echo ERROR: JAVA_HOME NOT SET
+    exit /b 1
+)
+
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    echo ERROR: JAVA EXECUTABLE NOT FOUND
+    echo Expected: %JAVA_HOME%\bin\java.exe
+    exit /b 1
+)
+
+echo JAVA_HOME : %JAVA_HOME%
+echo.
+
+"%JAVA_HOME%\bin\java.exe" -version
+
+if errorlevel 1 (
+    echo ERROR: JAVA EXECUTION FAILED
+    exit /b 1
+)
+
+echo.
+
+REM =====================================
 REM RUN LIQUIBASE
 REM =====================================
+
+set "JAVA_PATH=%JAVA_HOME%\bin\java.exe"
 
 call "%LB_BAT%" ^
 --classpath="%DRIVER%" ^
@@ -168,10 +205,13 @@ call "%LB_BAT%" ^
 %PASSWORD_OPTION% ^
 update
 
-if errorlevel 1 (
+set "LIQUIBASE_RC=%ERRORLEVEL%"
+
+if not "%LIQUIBASE_RC%"=="0" (
     echo.
     echo ERROR: POSTGRESQL LIQUIBASE UPDATE FAILED
-    exit /b 1
+    echo Exit Code: %LIQUIBASE_RC%
+    exit /b %LIQUIBASE_RC%
 )
 
 echo.

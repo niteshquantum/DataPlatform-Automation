@@ -210,47 +210,19 @@ pipeline {
         }
 
 
-        stage('Validate Collections') {
+        stage('Database Assessment') {
 
             steps {
 
-                bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
-            }
-        }
+                script {
 
+                    runTrackedStage(
+                        'Database Assessment'
+                    ) {
 
-        stage('Validate Indexes') {
-
-            steps {
-
-                bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
-            }
-        }
-
-
-        stage('Database Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat database'
-            }
-        }
-
-
-        stage('Collection Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat collection'
-            }
-        }
-
-
-        stage('Index Inventory') {
-
-            steps {
-
-                bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat index'
+                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
+                    }
+                }
             }
         }
 
@@ -259,7 +231,15 @@ pipeline {
 
             steps {
 
-                bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                script {
+
+                    runTrackedStage(
+                        'Assessment Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                    }
+                }
             }
         }
 

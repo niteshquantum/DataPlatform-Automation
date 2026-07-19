@@ -15,6 +15,7 @@ QUERIES = {
     "trigger": "SELECT trigger_schema AS schema_name, trigger_name, event_manipulation, event_object_table, action_timing FROM information_schema.triggers WHERE trigger_schema NOT IN ('pg_catalog','information_schema') ORDER BY trigger_schema,trigger_name",
     "extension": "SELECT extname AS extension_name, extversion AS extension_version FROM pg_extension ORDER BY extname",
     "materialized_view": "SELECT schemaname AS schema_name, matviewname AS materialized_view_name, ispopulated FROM pg_matviews WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY schemaname,matviewname",
+    "index": "SELECT schemaname AS schema_name, tablename AS table_name, indexname AS index_name, indexdef FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY schemaname, tablename, indexname",
 }
 
 

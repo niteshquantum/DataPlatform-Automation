@@ -1,6 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+
 echo ========================================
 echo        Discovering Installed JDK
 echo ========================================

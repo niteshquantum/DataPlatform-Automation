@@ -1,8 +1,17 @@
 @echo off
 setlocal EnableDelayedExpansion
+
+REM =====================================
+REM DISCOVER JAVA
+REM =====================================
+
 call "%~dp0discover_java.bat"
 
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+    echo ERROR: JAVA DISCOVERY FAILED
+    exit /b 1
+)
+
 echo.
 echo =====================================
 echo VALIDATING LIQUIBASE
@@ -14,17 +23,17 @@ REM PROJECT ROOT
 REM =====================================
 
 set "ROOT=%CD%"
-if not exist "%ROOT%\config\windows\mysql.conf" (    
-set "ROOT=%~dp0..\..\.."
 
+if not exist "%ROOT%\config\windows\mysql.conf" (
+    set "ROOT=%~dp0..\..\.."
 )
 
 set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
 
 if not exist "%CONFIG_FILE%" (
-echo ERROR: MYSQL CONFIG NOT FOUND
-echo Expected: %CONFIG_FILE%
-exit /b 1
+    echo ERROR: MYSQL CONFIG NOT FOUND
+    echo Expected: %CONFIG_FILE%
+    exit /b 1
 )
 
 REM =====================================
@@ -32,12 +41,12 @@ REM READ CONFIG
 REM =====================================
 
 for /f "tokens=1,2 delims==" %%A in (%CONFIG_FILE%) do (
-if /I "%%A"=="LIQUIBASE_VERSION" set "EXPECTED_VERSION=%%B"
+    if /I "%%A"=="LIQUIBASE_VERSION" set "EXPECTED_VERSION=%%B"
 )
 
 if not defined EXPECTED_VERSION (
-echo ERROR: LIQUIBASE_VERSION NOT FOUND IN mysql.conf
-exit /b 1
+    echo ERROR: LIQUIBASE_VERSION NOT FOUND IN mysql.conf
+    exit /b 1
 )
 
 set "LIQUIBASE_HOME=%ROOT%\tools\liquibase"
@@ -47,52 +56,67 @@ echo Expected Liquibase Version : %EXPECTED_VERSION%
 echo.
 
 REM =====================================
-REM VALIDATE PATHS
+REM VALIDATE LIQUIBASE PATHS
 REM =====================================
 
 if not exist "%LIQUIBASE_HOME%" (
-echo ERROR: LIQUIBASE DIRECTORY NOT FOUND
-exit /b 1
+    echo ERROR: LIQUIBASE DIRECTORY NOT FOUND
+    exit /b 1
 )
 
 if not exist "%LIQUIBASE_BAT%" (
-echo ERROR: LIQUIBASE.BAT NOT FOUND
-exit /b 1
+    echo ERROR: LIQUIBASE.BAT NOT FOUND
+    exit /b 1
 )
 
 REM =====================================
-REM VALIDATE JAVA
+REM VALIDATE DISCOVERED JAVA
 REM =====================================
 
-where java >nul 2>&1
+if not defined JAVA_HOME (
+    echo ERROR: JAVA_HOME NOT SET AFTER JAVA DISCOVERY
+    exit /b 1
+)
 
-if errorlevel 1 (
-echo ERROR: JAVA NOT FOUND
-exit /b 1
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    echo ERROR: JAVA EXECUTABLE NOT FOUND
+    echo Expected: %JAVA_HOME%\bin\java.exe
+    exit /b 1
 )
 
 echo Java Found:
-where java
+echo %JAVA_HOME%\bin\java.exe
 echo.
-echo ===== BEFORE LIQUIBASE =====
+
+echo =====================================
+echo JAVA HOME BEFORE LIQUIBASE
+echo =====================================
 echo JAVA_HOME=%JAVA_HOME%
-where java
-java -version
-echo ============================
 echo.
 
-call "%LIQUIBASE_BAT%" --version
+"%JAVA_HOME%\bin\java.exe" -version
 
-echo Exit Code=%ERRORLEVEL%
+if errorlevel 1 (
+    echo ERROR: JAVA EXECUTION FAILED
+    exit /b 1
+)
+
 echo.
+
+REM =====================================
+REM VALIDATE LIQUIBASE
+REM =====================================
+
 echo Checking Liquibase Version...
 echo.
 
-call "%LIQUIBASE_BAT%" --version > "%TEMP%\liquibase_version.txt" 2>&1
+set "JAVA_PATH=%JAVA_HOME%\bin\java.exe"
+set "LIQUIBASE_VERSION_FILE=%TEMP%\liquibase_version.txt"
 
+call "%LIQUIBASE_BAT%" --version > "%LIQUIBASE_VERSION_FILE%" 2>&1
 set "RC=%ERRORLEVEL%"
 
-type "%TEMP%\liquibase_version.txt"
+type "%LIQUIBASE_VERSION_FILE%"
 
 echo.
 echo Exit Code=%RC%
@@ -100,10 +124,24 @@ echo.
 
 if not "%RC%"=="0" (
     echo ERROR: LIQUIBASE EXECUTION FAILED
+    del "%LIQUIBASE_VERSION_FILE%" >nul 2>&1
     exit /b %RC%
 )
 
-del "%TEMP%\liquibase_version.txt" >nul 2>&1
+REM =====================================
+REM VALIDATE EXPECTED VERSION
+REM =====================================
+
+findstr /C:"Liquibase Version: %EXPECTED_VERSION%" "%LIQUIBASE_VERSION_FILE%" >nul
+
+if errorlevel 1 (
+    echo ERROR: LIQUIBASE VERSION MISMATCH
+    echo Expected : %EXPECTED_VERSION%
+    del "%LIQUIBASE_VERSION_FILE%" >nul 2>&1
+    exit /b 1
+)
+
+del "%LIQUIBASE_VERSION_FILE%" >nul 2>&1
 
 echo.
 echo =====================================
