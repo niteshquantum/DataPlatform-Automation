@@ -80,13 +80,6 @@ metadata/**/cdc_summary.json
 !metadata/*/.gitkeep
 !metadata/discovery/*/.gitkeep
 
-
-# Generated metadata outputs
-metadata/profiling/**/profiling.json
-metadata/reconciliation/**/reconciliation.json
-metadata/assessment/**/assessment.json
-metadata/recommendation/**/recommendation.json
-metadata/governance/**/action_plan.json
 # =====================================================
 # Incoming / Archive / Failed
 # Keep folder structures only
@@ -147,12 +140,14 @@ objects/**/generated/
 # Existing architecture defaults to ignoring DB-level contents
 liquibase/*/*
 
-# Keep static DB connection configuration
+# Keep required static Liquibase entry points
+!liquibase/*/master.xml
 !liquibase/*/liquibase.properties
 
-# Generated/dataset-specific changelogs
+# Ignore generated/dataset-specific numbered changelogs
 liquibase/**/[0-9]*.xml
-!liquibase/**/master.xml
+
+# Generated object master changelogs must not be committed
 liquibase/**/master_objects.xml
 
 # Dataset-specific/runtime object XML
@@ -163,4 +158,4 @@ liquibase/**/objects/generated/
 !liquibase/**/objects/
 !liquibase/**/objects/custom/
 !liquibase/**/objects/custom/*/
-!liquibase/**/objects/generated/
+!liquibase/**/objects/generated
