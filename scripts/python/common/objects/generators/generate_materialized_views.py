@@ -67,12 +67,18 @@ def generate_materialized_views(database):
         # Use mv_ prefix to distinguish from regular views
         view_name = f"mv_{table_name}"
 
-        column_text = ",\n".join(columns)
-        print("TABLE :", table_name)
-        print("COLUMNS :", columns)
-        print("COLUMN TEXT:")
-        print(column_text)
-        print("----------------")
+        if database == "postgresql":
+            formatted_columns = []
+
+            for col in columns:
+                if any(ch.isupper() for ch in col):
+                    formatted_columns.append(f'"{col}"')
+                else:
+                    formatted_columns.append(col)
+
+            column_text = ",\n".join(formatted_columns)
+        else:
+            column_text = ",\n".join(columns)
 
         materialized_view_template = load_template(
             database,
