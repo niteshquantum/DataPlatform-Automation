@@ -50,7 +50,11 @@ def generate_views(database):
 
         view_name = f"v_{table_name}"
 
-        column_text = ",\n".join(columns)
+        #column_text = ",\n".join(columns)
+        if database.lower() == "postgresql":
+            column_text = ",\n".join(f'"{col}"' for col in columns)
+        else:
+            column_text = ",\n".join(columns)
 
         view_template = load_template(
             database,
