@@ -60,7 +60,6 @@ pipeline {
         stage('Initialize Logging') {
 
             steps {
-
                 bat """
                     python scripts\\logging\\logger.py init ^
                     --database mongodb ^
@@ -77,13 +76,8 @@ pipeline {
         stage('Validate Python Runtime') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Validate Python Runtime'
-                    ) {
-
+                    runTrackedStage('Validate Python Runtime') {
                         bat 'scripts\\batch\\common\\validate_python_runtime.bat'
                     }
                 }
@@ -94,13 +88,8 @@ pipeline {
         stage('Validate Python Requirements') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Validate Python Requirements'
-                    ) {
-
+                    runTrackedStage('Validate Python Requirements') {
                         bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
                     }
                 }
@@ -111,13 +100,8 @@ pipeline {
         stage('Start MongoDB Service') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Start MongoDB Service'
-                    ) {
-
+                    runTrackedStage('Start MongoDB Service') {
                         bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
                     }
                 }
@@ -128,13 +112,8 @@ pipeline {
         stage('Validate MongoDB') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Validate MongoDB'
-                    ) {
-
+                    runTrackedStage('Validate MongoDB') {
                         bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
                     }
                 }
@@ -145,13 +124,8 @@ pipeline {
         stage('Download Dataset') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Download Dataset'
-                    ) {
-
+                    runTrackedStage('Download Dataset') {
                         bat 'scripts\\batch\\common\\download_dataset.bat'
                     }
                 }
@@ -162,13 +136,8 @@ pipeline {
         stage('Profile Source Data') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Profile Source Data'
-                    ) {
-
+                    runTrackedStage('Profile Source Data') {
                         bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mongodb'
                     }
                 }
@@ -179,13 +148,8 @@ pipeline {
         stage('Load Data') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Load Data'
-                    ) {
-
+                    runTrackedStage('Load Data') {
                         bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
                     }
                 }
@@ -196,13 +160,8 @@ pipeline {
         stage('Validate Loaded Data') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Validate Loaded Data'
-                    ) {
-
+                    runTrackedStage('Validate Loaded Data') {
                         bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
                     }
                 }
@@ -213,13 +172,8 @@ pipeline {
         stage('Database Assessment') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Database Assessment'
-                    ) {
-
+                    runTrackedStage('Database Assessment') {
                         bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
                     }
                 }
@@ -230,13 +184,8 @@ pipeline {
         stage('Assessment Report') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Assessment Report'
-                    ) {
-
+                    runTrackedStage('Assessment Report') {
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
                     }
                 }
@@ -247,13 +196,8 @@ pipeline {
         stage('Reconcile Source and Target Data') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Reconcile Source and Target Data'
-                    ) {
-
+                    runTrackedStage('Reconcile Source and Target Data') {
                         bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat mongodb'
                     }
                 }
@@ -264,13 +208,8 @@ pipeline {
         stage('Discover Database Environment') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Discover Database Environment'
-                    ) {
-
+                    runTrackedStage('Discover Database Environment') {
                         bat 'python scripts\\discovery\\discovery_engine.py --database mongodb'
                     }
                 }
@@ -281,13 +220,8 @@ pipeline {
         stage('Analyze Database Growth') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Analyze Database Growth'
-                    ) {
-
+                    runTrackedStage('Analyze Database Growth') {
                         bat 'python scripts\\discovery\\growth_analyzer.py --database mongodb'
                     }
                 }
@@ -298,13 +232,8 @@ pipeline {
         stage('Analyze Migration Requirements') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Analyze Migration Requirements'
-                    ) {
-
+                    runTrackedStage('Analyze Migration Requirements') {
                         bat 'python scripts\\discovery\\requirement_analyzer.py --database mongodb'
                     }
                 }
@@ -315,13 +244,8 @@ pipeline {
         stage('Assess Migration') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Assess Migration'
-                    ) {
-
+                    runTrackedStage('Assess Migration') {
                         bat 'scripts\\batch\\common\\migration\\run_assessment.bat mongodb'
                     }
                 }
@@ -332,13 +256,8 @@ pipeline {
         stage('Generate Migration Recommendations') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Generate Migration Recommendations'
-                    ) {
-
+                    runTrackedStage('Generate Migration Recommendations') {
                         bat 'scripts\\batch\\common\\migration\\run_recommendation.bat mongodb'
                     }
                 }
@@ -349,13 +268,8 @@ pipeline {
         stage('Generate Governance Action Plan') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Generate Governance Action Plan'
-                    ) {
-
+                    runTrackedStage('Generate Governance Action Plan') {
                         bat 'scripts\\batch\\common\\migration\\run_action_plan.bat mongodb'
                     }
                 }
@@ -366,13 +280,8 @@ pipeline {
         stage('Generate Technical Migration Report') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Generate Technical Migration Report'
-                    ) {
-
+                    runTrackedStage('Generate Technical Migration Report') {
                         bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat mongodb'
                     }
                 }
@@ -383,13 +292,8 @@ pipeline {
         stage('Generate Executive Migration Report') {
 
             steps {
-
                 script {
-
-                    runTrackedStage(
-                        'Generate Executive Migration Report'
-                    ) {
-
+                    runTrackedStage('Generate Executive Migration Report') {
                         bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat mongodb'
                     }
                 }
@@ -401,23 +305,19 @@ pipeline {
     post {
 
         success {
-
             echo 'MONGODB LOAD SUCCESSFUL'
         }
 
 
         failure {
-
             echo 'MONGODB LOAD FAILED'
         }
 
 
         always {
-
             echo 'FINALIZING MONGODB LOAD LOGGING AND REPORTING'
 
             script {
-
                 def finalStatus = currentBuild.currentResult
 
                 bat """
