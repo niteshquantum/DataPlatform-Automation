@@ -226,6 +226,19 @@ def calculate_requirement_penalty(
         )
     )
 
+    has_duration_sla = migration_duration > 0
+    has_downtime_sla = maximum_downtime > 0
+
+    if not has_duration_sla and not has_downtime_sla:
+
+        retention_penalty = 0
+        sla_penalty = 0
+
+        return {
+            "retention_penalty": 0,
+            "sla_penalty": 0,
+        }
+
     retention_penalty = 0
     sla_penalty = 0
 
@@ -238,17 +251,21 @@ def calculate_requirement_penalty(
     if archive_required:
         retention_penalty += 2
 
-    if migration_duration <= 30:
-        sla_penalty += 5
+    if has_duration_sla:
 
-    elif migration_duration <= 120:
-        sla_penalty += 3
+        if migration_duration <= 30:
+            sla_penalty += 5
 
-    if maximum_downtime <= 5:
-        sla_penalty += 5
+        elif migration_duration <= 120:
+            sla_penalty += 3
 
-    elif maximum_downtime <= 30:
-        sla_penalty += 3
+    if has_downtime_sla:
+
+        if maximum_downtime <= 5:
+            sla_penalty += 5
+
+        elif maximum_downtime <= 30:
+            sla_penalty += 3
 
     return {
         "retention_penalty": min(

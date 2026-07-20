@@ -240,40 +240,76 @@ def calculate_sla_risk(
         )
     )
 
-    if (
-        maximum_migration_duration <= 30
-        or maximum_downtime <= 5
-    ):
+    has_duration_sla = maximum_migration_duration > 0
+    has_downtime_sla = maximum_downtime > 0
+
+    if not has_duration_sla and not has_downtime_sla:
 
         return {
-            "score": 10,
-            "severity": "HIGH",
+            "score": 0,
+            "severity": "LOW",
+            "sla_status": "NOT_APPLICABLE",
             "message": (
-                "Strict migration or downtime SLA "
+                "No SLA requirements are configured. "
+                "SLA risk is not applicable."
+            ),
+        }
+
+    score = 0
+    severity = "LOW"
+    messages = []
+
+    if has_duration_sla:
+
+        if maximum_migration_duration <= 30:
+
+            score = 10
+            severity = "HIGH"
+            messages.append(
+                "Strict migration duration SLA "
                 "increases migration execution risk."
-            ),
-        }
+            )
 
-    if (
-        maximum_migration_duration <= 120
-        or maximum_downtime <= 30
-    ):
+        elif maximum_migration_duration <= 120:
 
-        return {
-            "score": 5,
-            "severity": "MEDIUM",
-            "message": (
-                "Migration and downtime SLA requirements "
+            score = 5
+            severity = "MEDIUM"
+            messages.append(
+                "Migration duration SLA requirements "
                 "require controlled execution planning."
-            ),
-        }
+            )
+
+    if has_downtime_sla:
+
+        if maximum_downtime <= 5:
+
+            score = max(score, 10)
+            severity = "HIGH"
+            messages.append(
+                "Strict downtime SLA "
+                "increases migration execution risk."
+            )
+
+        elif maximum_downtime <= 30:
+
+            score = max(score, 5)
+            severity = "MEDIUM"
+            messages.append(
+                "Downtime SLA requirements "
+                "require controlled execution planning."
+            )
 
     return {
-        "score": 0,
-        "severity": "LOW",
+        "score": score,
+        "severity": severity,
+        "sla_status": "CONFIGURED",
         "message": (
-            "Configured SLA requirements introduce "
-            "limited migration risk."
+            " ".join(messages)
+            if messages
+            else (
+                "Configured SLA requirements introduce "
+                "limited migration risk."
+            )
         ),
     }
 
@@ -290,8 +326,11 @@ def assess_risk(
 ) -> Dict[str, Any]:
 
     # --------------------------------------------------------
-    # PROFILING FINDINGS
+    # PROFILING RISK SCORE (INFORMATIONAL ONLY)
     # --------------------------------------------------------
+    # Profiling findings contribute to readiness penalty
+    # through assess_readiness(), not to risk score.
+    # Retained here for transparency and reporting only.
 
     profiling_high = int(
         profiling_summary.get(
@@ -313,6 +352,8 @@ def assess_risk(
             0,
         )
     )
+
+    profiling_risk_score = 0
 
     # --------------------------------------------------------
     # RECONCILIATION FINDINGS
@@ -382,8 +423,7 @@ def assess_risk(
     # --------------------------------------------------------
 
     total_risk_score = (
-        profiling_risk_score
-        + reconciliation_risk_score
+        reconciliation_risk_score
         + discovery_risk_score
     )
 

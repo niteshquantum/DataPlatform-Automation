@@ -172,10 +172,25 @@ def detect_reconciliation_issues(
 
     if column_reconciliation["status"] == "MISMATCHED":
 
+        absolute_difference = column_reconciliation.get(
+            "absolute_difference",
+            0,
+        )
+
+        if absolute_difference <= 2:
+
+            severity = "MEDIUM"
+            issue_type = "COLUMN_COUNT_MISMATCH_MINOR"
+
+        else:
+
+            severity = "HIGH"
+            issue_type = "COLUMN_COUNT_MISMATCH"
+
         issues.append(
             {
-                "issue_type": "COLUMN_COUNT_MISMATCH",
-                "severity": "HIGH",
+                "issue_type": issue_type,
+                "severity": severity,
                 "dataset": dataset_name,
                 "expected_columns": column_reconciliation[
                     "expected_columns"
