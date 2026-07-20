@@ -1,4 +1,3 @@
-
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
 $configFile = "$ROOT\config\windows\mysql.conf"
@@ -17,6 +16,7 @@ $baseDir = "$ROOT\databases\mysql\server"
 $dataDir = "$ROOT\databases\mysql\data"
 $mysqld  = "$baseDir\bin\mysqld.exe"
 $mysqladmin = "$baseDir\bin\mysqladmin.exe"
+$mysqlHost = "127.0.0.1"
 
 Write-Host ""
 Write-Host "====================================="
@@ -26,10 +26,6 @@ Write-Host "BaseDir : $baseDir"
 Write-Host "DataDir : $dataDir"
 Write-Host "Port    : $port"
 Write-Host ""
-
-# =====================================
-# VALIDATE FILES
-# =====================================
 
 if (!(Test-Path $mysqld)) {
     throw "mysqld.exe not found: $mysqld"
@@ -43,42 +39,25 @@ if (!(Test-Path $dataDir)) {
     throw "Data directory not found: $dataDir"
 }
 
-# =====================================
-# STOP OLD MYSQL PROCESS
-# =====================================
+$portListener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
-Get-Process mysqld -ErrorAction SilentlyContinue |
-ForEach-Object {
-    $processPath = $null
+if ($portListener) {
+    Write-Host "MySQL is already listening on port $port. Reusing the existing instance."
 
     try {
-        $processPath = $_.Path
+        & $mysqladmin --host=$mysqlHost --port=$port -u root ping 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Existing MySQL instance is responsive."
+            exit 0
+        }
     }
     catch {
-        Write-Host "Skipping mysqld process with unreadable path (PID: $($_.Id))"
-        return
     }
 
-    if ($processPath -ne $mysqld) {
-        Write-Host "Skipping non-project mysqld process (PID: $($_.Id))"
-        return
-    }
-
-    Write-Host "Stopping existing project mysqld process (PID: $($_.Id))"
-
-    try {
-        Stop-Process -Id $_.Id -Force -ErrorAction Stop
-    }
-    catch {
-        Write-Host "WARNING: Could not stop project mysqld process (PID: $($_.Id)): $($_.Exception.Message)"
-    }
+    Write-Host "The existing instance is present but not yet responsive. Leaving it in place and continuing."
+    exit 0
 }
 
-Start-Sleep -Seconds 3
-
-# =====================================
-# START MYSQL
-# =====================================
 $env:JENKINS_NODE_COOKIE = "MySQLAutomationProcess"
 Start-Process `
     -FilePath $mysqld `
@@ -89,27 +68,17 @@ Start-Process `
     ) `
     -WindowStyle Hidden
 
-# =====================================
-# WAIT FOR MYSQL TO ACCEPT CONNECTIONS
-# =====================================
-
 $started = $false
 
 for ($i = 1; $i -le 60; $i++) {
 
     try {
-
-        & $mysqladmin `
-            --host=127.0.0.1 `
-            --port=$port `
-            -u root `
-            ping 2>$null | Out-Null
+        & $mysqladmin --host=$mysqlHost --port=$port -u root ping 2>$null | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
             $started = $true
             break
         }
-
     }
     catch {
     }
@@ -118,7 +87,6 @@ for ($i = 1; $i -le 60; $i++) {
 }
 
 if (-not $started) {
-
     Write-Host ""
     Write-Host "MySQL error log:"
     Write-Host "-------------------------------------"

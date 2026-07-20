@@ -22,6 +22,11 @@ if (!(Test-Path "..\..\databases\mysql")) {
     New-Item -ItemType Directory -Path "..\..\databases\mysql" -Force
 }
 
+if (Test-Path "..\..\databases\mysql\mysql.zip") {
+    Write-Host "MySQL archive already present. Reusing existing deployment artifact."
+    exit 0
+}
+
 $ProgressPreference = 'SilentlyContinue'
 
 Invoke-WebRequest `
@@ -48,8 +53,13 @@ resource "null_resource" "extract_mysql_windows" {
 
     command = <<EOT
 
-if (Test-Path "..\..\databases\mysql\server") {
-    Remove-Item "..\..\databases\mysql\server" -Recurse -Force
+if (Test-Path "..\..\databases\mysql\server\bin\mysqld.exe") {
+    Write-Host "MySQL server already installed. Reusing existing installation."
+    exit 0
+}
+
+if (!(Test-Path "..\..\databases\mysql\mysql.zip")) {
+    throw "MySQL archive not found"
 }
 
 Expand-Archive `
@@ -84,6 +94,11 @@ resource "null_resource" "init_mysql_windows" {
 
 if (!(Test-Path "..\..\databases\mysql\data")) {
     New-Item -ItemType Directory -Path "..\..\databases\mysql\data" -Force
+}
+
+if (Test-Path "..\..\databases\mysql\data\ibdata1") {
+    Write-Host "MySQL data already initialized. Reusing existing data directory."
+    exit 0
 }
 
 & "..\..\databases\mysql\server\bin\mysqld.exe" `

@@ -10,9 +10,14 @@ echo "STARTING MYSQL"
 echo "====================================="
 echo
 
-sudo systemctl start mysql
-
-sleep 5
+if systemctl is-active --quiet mysql
+then
+    echo "MySQL service is already running."
+else
+    echo "Starting MySQL service..."
+    sudo systemctl start mysql
+    sleep 5
+fi
 
 if ! systemctl is-active --quiet mysql
 then

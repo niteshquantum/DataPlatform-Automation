@@ -32,19 +32,34 @@ $user     = $config["MYSQL_USER"]
 $password = $config["MYSQL_PASSWORD"]
 
 $mysqlExe = "$ROOT\databases\mysql\server\bin\mysql.exe"
-
 $globalDirectory = "C:\ProgramData\DatabaseAutomation\mysql"
 $globalCommand   = "$globalDirectory\mysql.cmd"
+
+function New-MySqlWrapper {
+    param(
+        [string]$Path,
+        [string]$DatabaseName
+    )
+
+    $commandContent = @"
+@echo off
+
+"$mysqlExe" ^
+--host="$hostName" ^
+--port="$port" ^
+--user="$user" ^
+--password="$password" ^
+"$DatabaseName" %*
+"@
+
+    Set-Content -Path $Path -Value $commandContent -Encoding ASCII
+}
 
 Write-Host ""
 Write-Host "====================================="
 Write-Host "CONFIGURING GLOBAL MYSQL COMMAND"
 Write-Host "====================================="
 Write-Host ""
-
-# =====================================
-# VALIDATE MYSQL CLIENT
-# =====================================
 
 if (!(Test-Path $mysqlExe)) {
     throw "mysql.exe not found: $mysqlExe"
@@ -56,48 +71,21 @@ Write-Host "Port         : $port"
 Write-Host "Database     : $database"
 Write-Host "User         : $user"
 
-# =====================================
-# CREATE GLOBAL DIRECTORY
-# =====================================
-
 if (!(Test-Path $globalDirectory)) {
-
-    New-Item `
-        -ItemType Directory `
-        -Path $globalDirectory `
-        -Force | Out-Null
+    New-Item -ItemType Directory -Path $globalDirectory -Force | Out-Null
 }
 
-# =====================================
-# CREATE MYSQL COMMAND
-# =====================================
+$safeDatabaseName = ($database -replace '[^A-Za-z0-9]', '_')
+$instanceWrapperName = "mysql_${safeDatabaseName}_${port}.cmd"
+$instanceWrapperPath = Join-Path $globalDirectory $instanceWrapperName
 
-$commandContent = @"
-@echo off
+Write-Host "Creating instance-aware wrapper: $instanceWrapperName"
+New-MySqlWrapper -Path $instanceWrapperPath -DatabaseName $database
 
-"$mysqlExe" ^
---host="$hostName" ^
---port="$port" ^
---user="$user" ^
---password="$password" ^
-"$database" %*
-"@
+Write-Host "Updating default mysql wrapper for current configuration"
+New-MySqlWrapper -Path $globalCommand -DatabaseName $database
 
-Set-Content `
-    -Path $globalCommand `
-    -Value $commandContent `
-    -Encoding ASCII
-
-# =====================================
-# ADD GLOBAL DIRECTORY TO BEGINNING
-# OF SYSTEM PATH
-# =====================================
-
-$machinePath = [Environment]::GetEnvironmentVariable(
-    "Path",
-    "Machine"
-)
-
+$machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 $pathEntries = $machinePath -split ";" |
     Where-Object {
         $_ -and
@@ -105,19 +93,10 @@ $pathEntries = $machinePath -split ";" |
     }
 
 $newPath = $globalDirectory + ";" + ($pathEntries -join ";")
-
-[Environment]::SetEnvironmentVariable(
-    "Path",
-    $newPath,
-    "Machine"
-)
+[Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
 
 Write-Host ""
 Write-Host "MySQL global command directory moved to beginning of System PATH"
-
-# =====================================
-# VALIDATE GLOBAL COMMAND FILE
-# =====================================
 
 if (!(Test-Path $globalCommand)) {
     throw "Global MySQL command creation failed"
@@ -130,6 +109,8 @@ Write-Host "====================================="
 Write-Host ""
 Write-Host "Command:"
 Write-Host "mysql"
+Write-Host "Instance wrapper:"
+Write-Host $instanceWrapperName
 Write-Host ""
 Write-Host "Open a NEW CMD window before testing."
 Write-Host ""

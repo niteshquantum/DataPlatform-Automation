@@ -138,13 +138,13 @@ if ($PortConnection) {
         $MySQLProcess.ProcessName -eq "mysqld"
     ) {
 
-        Write-Host "Stopping MySQL process PID: $MySQLProcessId"
-
-        Stop-Process `
-            -Id $MySQLProcessId `
-            -Force
-
-        Start-Sleep -Seconds 3
+        Write-Host "Reusing the existing MySQL instance on port $MySQLPort."
+        $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($ExistingService -and $ExistingService.Status -ne "Running") {
+            Write-Host "Starting existing MySQL service..."
+            Start-Service -Name $ServiceName
+        }
+        exit 0
     }
     else {
 
