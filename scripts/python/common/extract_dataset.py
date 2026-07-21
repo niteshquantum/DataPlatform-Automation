@@ -41,6 +41,13 @@ def zip_top_folders(zip_path: Path):
         return sorted({Path(p).parts[0] for p in zf.namelist() if "/" in p or "\\" in p})
 
 
+def _folder_has_supported_files(folder_path: Path) -> bool:
+    return any(
+        p.is_file() and p.suffix.lower() in (".csv", ".json")
+        for p in folder_path.iterdir()
+    )
+
+
 def extract_and_merge_zip(archive_file: Path, incoming_path: Path):
     print()
     print("Extracting and merging dataset...")
@@ -113,6 +120,7 @@ def extract_dataset():
             missing = [
                 f for f in expected_folders
                 if not (incoming_path / f).exists()
+                or not _folder_has_supported_files(incoming_path / f)
             ]
             if not missing:
                 print()
@@ -121,7 +129,7 @@ def extract_dataset():
                 return
             else:
                 print()
-                print(f"[WARNING] Missing extracted folders: {missing}")
+                print(f"[WARNING] Missing or empty extracted folders: {missing}")
                 print("[INFO] Re-extracting...")
         else:
             print()
