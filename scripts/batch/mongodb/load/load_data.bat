@@ -27,6 +27,24 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo -------------------------------------
+echo CREATING COLLECTIONS
+echo -------------------------------------
+echo.
+
+python "%PROJECT_ROOT%\scripts\python\mongodb\setup\create_collections.py"
+if errorlevel 1 exit /b 1
+
+echo.
+echo -------------------------------------
+echo VALIDATING INDEXES
+echo -------------------------------------
+echo.
+
+python "%PROJECT_ROOT%\scripts\python\mongodb\setup\create_indexes.py"
+if errorlevel 1 exit /b 1
+
+echo.
+echo -------------------------------------
 echo LOADING DATA
 echo -------------------------------------
 echo.

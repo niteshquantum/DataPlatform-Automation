@@ -25,9 +25,8 @@ print("Running schema_detector.py")
 subprocess.run(
     [
         sys.executable,
-        str(BASE_DIR.parents[2] / "scripts" / "schema_detector.py mongodb"),
+        str(BASE_DIR.parents[2] / "scripts" / "schema_detector.py"),
         "mongodb"
-        
     ],
     check=True
 )
