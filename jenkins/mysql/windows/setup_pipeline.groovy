@@ -48,9 +48,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -76,17 +74,281 @@ pipeline {
         }
 
 
-        stage('MySQL Setup') {
+        stage('Check Administrator Privileges') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'MySQL Setup'
+                        'Check Administrator Privileges'
                     ) {
 
-                        bat 'scripts\\batch\\mysql\\mysql_setup_pipeline.bat'
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'true'
+                            )
+
+                            echo 'Administrator privileges available.'
+                            echo 'MySQL Service and Global MySQL configuration will be enabled.'
+
+                        } else {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'false'
+                            )
+
+                            echo 'Administrator privileges not available.'
+                            echo 'MySQL Service and Global MySQL configuration will be skipped.'
+                            echo 'MySQL will run using project-local mode.'
+                        }
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        echo "ADMIN STATUS = ${adminResult}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mysql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --administrator-privileges "${adminResult}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy MySQL') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy MySQL'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure MySQL Service') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure MySQL Service'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring MySQL Windows Service...'
+
+                        bat 'scripts\\batch\\mysql\\setup\\configure_mysql_service.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start MySQL') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() != 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start MySQL'
+                    ) {
+
+                        echo 'Administrator privileges unavailable.'
+                        echo 'Starting MySQL in project-local mode...'
+
+                        bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Create Database'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
+                    }
+                }
+            }
+        }
+
+        stage('Configure Global MySQL') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure Global MySQL'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring Global MySQL command...'
+
+                        bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
                     }
                 }
             }
@@ -102,13 +364,8 @@ pipeline {
 
             script {
 
-                def adminResult = bat(
-                    script: 'python scripts\\logging\\logger.py get-environment ^
-                        --database mysql ^
-                        --action setup ^
-                        --build-number "${env.BUILD_NUMBER}" ^
-                        --administrator-privileges',
-                    returnStdout: true
+                def adminResult = readFile(
+                    'admin_status.txt'
                 ).trim()
 
                 if (adminResult == 'true') {
@@ -163,11 +420,11 @@ pipeline {
             }
 
 
-            archiveArtifacts(
-                artifacts: "logs/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
-                fingerprint: true,
-                allowEmptyArchive: true
-            )
+                archiveArtifacts(
+                    artifacts: "logs/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/mysql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                    fingerprint: true,
+                    allowEmptyArchive: true
+                )
 
             echo 'MYSQL SETUP PIPELINE COMPLETED'
         }
