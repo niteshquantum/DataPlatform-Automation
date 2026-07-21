@@ -1,19 +1,27 @@
 $ErrorActionPreference = "Stop"
 
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$Url,
-
-    [Parameter(Mandatory = $true)]
-    [string]$OutputPath
-)
-
 # =====================================
 # CONFIGURATION
 # =====================================
 
 $MaxAttempts = 3
 $RetryDelaySeconds = 2
+
+# =====================================
+# READ PARAMETERS FROM ENVIRONMENT
+# =====================================
+
+$Url = $env:DOWNLOAD_URL
+
+if ([string]::IsNullOrWhiteSpace($Url)) {
+    throw "DOWNLOAD_URL environment variable is required."
+}
+
+$OutputPath = $env:DOWNLOAD_OUTPUT_PATH
+
+if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+    throw "DOWNLOAD_OUTPUT_PATH environment variable is required."
+}
 
 # =====================================
 # VALIDATE OUTPUT DIRECTORY

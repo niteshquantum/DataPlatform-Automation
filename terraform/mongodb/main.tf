@@ -25,7 +25,12 @@ resource "null_resource" "download_mongodb_windows" {
 
     interpreter = ["PowerShell", "-ExecutionPolicy", "Bypass", "-File"]
 
-    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1 -Url \"https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip\" -OutputPath \"../../databases/mongodb/mongodb.zip\""
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1"
+
+    environment = {
+      DOWNLOAD_URL       = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip"
+      DOWNLOAD_OUTPUT_PATH = "${path.module}/../../databases/mongodb/mongodb.zip"
+    }
   }
 }
 
@@ -97,7 +102,12 @@ resource "null_resource" "download_mongosh_windows" {
 
     interpreter = ["PowerShell", "-ExecutionPolicy", "Bypass", "-File"]
 
-    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1 -Url \"https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip\" -OutputPath \"../../databases/mongodb/mongosh.zip\""
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1"
+
+    environment = {
+      DOWNLOAD_URL       = "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip"
+      DOWNLOAD_OUTPUT_PATH = "${path.module}/../../databases/mongodb/mongosh.zip"
+    }
   }
 }
 
