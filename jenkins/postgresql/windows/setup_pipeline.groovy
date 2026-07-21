@@ -73,14 +73,14 @@ pipeline {
         }
 
 
-        stage('PostgreSQL Setup') {
+        stage('Mongodb Setup') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'PostgreSQL Setup'
+                        'Mongodb Setup'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\postgresql_setup_pipeline.bat'
@@ -123,7 +123,7 @@ pipeline {
 
         failure {
 
-            echo 'POSTGRESQL SETUP FAILED'
+            echo 'Mongodb SETUP FAILED'
         }
 
 
@@ -159,12 +159,12 @@ pipeline {
             }
 
             archiveArtifacts(
-                artifacts: "logs/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/Postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/Postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
 
-            echo 'POSTGRESQL SETUP PIPELINE COMPLETED'
+            echo 'Postgresql SETUP PIPELINE COMPLETED'
         }
     }
 }
