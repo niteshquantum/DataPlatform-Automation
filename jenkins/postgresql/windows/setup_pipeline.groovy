@@ -76,10 +76,9 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-
     stages {
 
-        stage('Initialize Logging') {
+       stage('Initialize Logging') {
 
             steps {
 
@@ -382,7 +381,11 @@ pipeline {
                 }
             }
         }
-    }
+        }
+
+
+      
+
 
 
     post {
@@ -447,7 +450,6 @@ pipeline {
                     --build-number "${env.BUILD_NUMBER}"
                 """
             }
-
 
             archiveArtifacts(
                 artifacts: "logs/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
