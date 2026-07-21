@@ -251,6 +251,50 @@ def build_expected_datasets(
 
 
 # ============================================================
+# RECONCILIATION OUTPUT WRITER
+# ============================================================
+
+def write_reconciliation_output(
+    reconciliation_output: Dict[str, Any],
+    database: str,
+) -> Path:
+    """
+    Write reconciliation output to the canonical artifact path.
+    """
+
+    output_directory = (
+        PROJECT_ROOT
+        / "metadata"
+        / "reconciliation"
+        / database
+    )
+
+    output_file = (
+        output_directory
+        / "reconciliation.json"
+    )
+
+    output_directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with output_file.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            reconciliation_output,
+            file,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    return output_file
+
+
+# ============================================================
 # MYSQL TARGET METRICS
 # ============================================================
 
@@ -1055,11 +1099,35 @@ def run_reconciliation(
         )
         print()
 
-        return build_not_executed_output(
+        reconciliation_output = build_not_executed_output(
             database,
             expected_datasets,
             str(error),
         )
+
+        output_file = write_reconciliation_output(
+            reconciliation_output,
+            database,
+        )
+
+        print("=====================================")
+        print("DATA RECONCILIATION COMPLETED")
+        print("=====================================")
+        print(
+            f"Database              : {database}"
+        )
+        print(
+            f"Status                : SKIPPED"
+        )
+        print(
+            f"Reason                : {error}"
+        )
+        print(
+            f"Output                : {output_file}"
+        )
+        print()
+
+        return reconciliation_output
 
     reconciliation_results = []
 
@@ -1234,18 +1302,6 @@ def run_reconciliation(
     # OUTPUT
     # --------------------------------------------------------
 
-    output_directory = (
-        PROJECT_ROOT
-        / "metadata"
-        / "reconciliation"
-        / database
-    )
-
-    output_file = (
-        output_directory
-        / "reconciliation.json"
-    )
-
     reconciliation_metadata = {
         "database": database,
         "generated_at_utc": datetime.now(
@@ -1310,22 +1366,10 @@ def run_reconciliation(
         ),
     }
 
-    output_directory.mkdir(
-        parents=True,
-        exist_ok=True,
+    output_file = write_reconciliation_output(
+        reconciliation_output,
+        database,
     )
-
-    with output_file.open(
-        "w",
-        encoding="utf-8",
-    ) as file:
-
-        json.dump(
-            reconciliation_output,
-            file,
-            indent=4,
-            ensure_ascii=False,
-        )
 
     print("=====================================")
     print("DATA RECONCILIATION COMPLETED")
