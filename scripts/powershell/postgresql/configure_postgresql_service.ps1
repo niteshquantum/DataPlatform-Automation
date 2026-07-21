@@ -55,6 +55,20 @@ function Get-ServiceImagePath {
     return $null
 }
 
+function Test-ServiceImageMatchesDeployment {
+    param(
+        [string]$ServiceImagePath,
+        [string]$CurrentPgCtl,
+        [string]$CurrentDataDir
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ServiceImagePath)) {
+        return $false
+    }
+
+    return ($ServiceImagePath -match [regex]::Escape($CurrentPgCtl)) -and ($ServiceImagePath -match [regex]::Escape($CurrentDataDir))
+}
+
 function Register-PostgreSQLService {
     param(
         [string]$PgCtl,
@@ -63,9 +77,11 @@ function Register-PostgreSQLService {
         [string]$ServiceName
     )
 
-    Write-Log "Registering PostgreSQL Windows service..."
+    Write-Log "Registering PostgreSQL Windows service for the current deployment..."
 
-    if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
+    $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if ($ExistingService) {
+        Write-Log "Stopping existing service before re-registration..."
         Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
     }
@@ -84,6 +100,11 @@ function Register-PostgreSQLService {
     & $PgCtl register -N $ServiceName -D $PgData -S auto -o "-p $PgPort" *> $null
     if ($LASTEXITCODE -ne 0) {
         throw "PostgreSQL service registration failed with exit code $LASTEXITCODE"
+    }
+
+    $RegisteredService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if (-not $RegisteredService) {
+        throw "Service registration did not produce a Windows service entry."
     }
 
     Write-Log "Service registered successfully."
@@ -238,11 +259,11 @@ elseif (-not (Test-Path -LiteralPath (Join-Path $PgData "PG_VERSION"))) {
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $PgData "postgresql.conf"))) {
-    $ValidationErrors.Add("postgresql.conf not found: $($PgData)\\postgresql.conf")
+    $ValidationErrors.Add("postgresql.conf not found: $($PgData)\postgresql.conf")
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $PgData "pg_hba.conf"))) {
-    $ValidationErrors.Add("pg_hba.conf not found: $($PgData)\\pg_hba.conf")
+    $ValidationErrors.Add("pg_hba.conf not found: $($PgData)\pg_hba.conf")
 }
 
 if ($ValidationErrors.Count -gt 0) {
@@ -259,35 +280,30 @@ $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($ExistingService) {
     Write-Log "Existing PostgreSQL service detected. Current state: $($ExistingService.Status)."
 
-    if ($ExistingService.Status -eq "Running") {
-        $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
-        $CurrentPgCtl = (Resolve-Path -LiteralPath $PgCtl).Path
-        $CurrentDataDir = (Resolve-Path -LiteralPath $PgData).Path
-        $ImagePathIsValid = $false
+    $CurrentPgCtl = (Resolve-Path -LiteralPath $PgCtl).Path
+    $CurrentDataDir = (Resolve-Path -LiteralPath $PgData).Path
+    $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
+    $ImagePathMatchesDeployment = Test-ServiceImageMatchesDeployment -ServiceImagePath $ServiceImagePath -CurrentPgCtl $CurrentPgCtl -CurrentDataDir $CurrentDataDir
 
-        if ($ServiceImagePath) {
-            $ImagePathIsValid = ($ServiceImagePath -match [regex]::Escape($CurrentPgCtl)) -and ($ServiceImagePath -match [regex]::Escape($CurrentDataDir))
-        }
-
-        if (-not $ImagePathIsValid) {
-            Write-Log "Existing service image path is invalid for the current deployment. Re-registering service..."
-            Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
-        }
-        else {
-            Write-Log "Existing PostgreSQL service is already running."
-            Write-Host ""
-            Write-Host "====================================="
-            Write-Host "POSTGRESQL WINDOWS SERVICE CONFIGURED"
-            Write-Host "====================================="
-            Write-Host ""
-            Write-Host "Service : $ServiceName"
-            Write-Host "Status  : Running"
-            Write-Host "Startup : Automatic"
-            Write-Host "Host    : $PgHost"
-            Write-Host "Port    : $PgPort"
-            Write-Host ""
-            exit 0
-        }
+    if (-not $ImagePathMatchesDeployment) {
+        Write-Log "Service ImagePath does not match the current deployment. Re-registering the service..."
+        Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+        $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    }
+    elseif ($ExistingService.Status -eq "Running") {
+        Write-Log "Service ImagePath matches the current deployment and the service is already running."
+        Write-Host ""
+        Write-Host "====================================="
+        Write-Host "POSTGRESQL WINDOWS SERVICE CONFIGURED"
+        Write-Host "====================================="
+        Write-Host ""
+        Write-Host "Service : $ServiceName"
+        Write-Host "Status  : Running"
+        Write-Host "Startup : Automatic"
+        Write-Host "Host    : $PgHost"
+        Write-Host "Port    : $PgPort"
+        Write-Host ""
+        exit 0
     }
 
     if ($ExistingService.Status -eq "StartPending") {
@@ -314,6 +330,7 @@ if ($ExistingService) {
     if ($ExistingService -and $ExistingService.Status -eq "Failed") {
         Write-Log "Service previously failed. Re-registering the service before retrying."
         Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+        $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
     elseif ($ExistingService -and $ExistingService.Status -eq "Stopped") {
         Write-Log "Service is stopped. Determining whether it can be started safely..."
@@ -330,17 +347,15 @@ if ($ExistingService) {
 else {
     Write-Log "No existing PostgreSQL service was found. Registering a new service."
     Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+    $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 }
 
 Write-Log "Starting PostgreSQL Windows service..."
-$ServiceStartAttempted = $false
 
 try {
-    $ServiceStartAttempted = $true
     Start-Service -Name $ServiceName -ErrorAction Stop
 }
 catch {
-    $ServiceStartAttempted = $true
     Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $PgPort -Reason $_.Exception.Message
     throw "PostgreSQL Windows service could not be started: $($_.Exception.Message)"
 }
