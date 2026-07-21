@@ -203,7 +203,7 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult
+                def finalStatus = currentBuild.currentResult ?: "FAILURE"
 
                 bat """
                     python scripts\\logging\\logger.py finalize ^
