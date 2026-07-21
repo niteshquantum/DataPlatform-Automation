@@ -20,11 +20,13 @@ bash "$PROJECT_ROOT/scripts/bash/common/validate_tools.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/start_mysql.sh"
 
-bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_mysql.sh"
-
 bash "$PROJECT_ROOT/scripts/bash/common/download_dataset.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/load/validate_csv.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/create_database.sh"
+
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_mysql.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/load/load_data.sh"
 

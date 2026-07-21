@@ -93,15 +93,361 @@ pipeline {
         }
 
 
-        stage('MySQL Load') {
+        stage('Validate Python Runtime') {
 
             steps {
 
                 script {
 
-                    runTrackedStage('MySQL Load') {
+                    runTrackedStage('Validate Python Runtime') {
 
-                        sh 'bash scripts/bash/mysql/mysql_load_pipeline.sh'
+                        sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate Python Requirements') {
+
+                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start MySQL') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Start MySQL') {
+
+                        sh './scripts/bash/mysql/setup/start_mysql.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MySQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate MySQL Instance') {
+
+                        sh './scripts/bash/mysql/setup/validate_mysql_instance.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Download Dataset') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Download Dataset') {
+
+                        sh './scripts/bash/common/download_dataset.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Profile Source Data') {
+
+                        sh './scripts/bash/common/run_data_profiling.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Create Database') {
+
+                        sh './scripts/bash/mysql/setup/create_database.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MySQL') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate MySQL') {
+
+                        sh './scripts/bash/mysql/setup/validate_mysql.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Load Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Load Data') {
+
+                        sh './scripts/bash/mysql/load/load_data.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Loaded Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate Loaded Data') {
+
+                        sh './scripts/bash/mysql/load/validate_loaded_data.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Deploy Database Objects') {
+
+                        sh './scripts/bash/mysql/objects/deploy_objects.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate Database Objects') {
+
+                        sh './scripts/bash/mysql/objects/validate_objects.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Database Assessment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Database Assessment') {
+
+                        sh './scripts/bash/mysql/assessment/run_assessment.sh all'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assessment Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Assessment Report') {
+
+                        sh './scripts/bash/common/generate_assessment_report.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Reconcile Source and Target Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Reconcile Source and Target Data'
+                    ) {
+
+                        sh './scripts/bash/common/run_reconciliation.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Discover Database Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Discover Database Environment'
+                    ) {
+
+                        sh 'python3 scripts/discovery/discovery_engine.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Database Growth') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Database Growth'
+                    ) {
+
+                        sh 'python3 scripts/discovery/growth_analyzer.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Migration Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Migration Requirements'
+                    ) {
+
+                        sh 'python3 scripts/discovery/requirement_analyzer.py --database mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assess Migration') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Assess Migration') {
+
+                        sh './scripts/bash/common/run_assessment.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Migration Recommendations') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Migration Recommendations'
+                    ) {
+
+                        sh './scripts/bash/common/run_recommendation.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Governance Action Plan') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Governance Action Plan'
+                    ) {
+
+                        sh './scripts/bash/common/run_action_plan.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Technical Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Technical Migration Report'
+                    ) {
+
+                        sh './scripts/bash/common/generate_technical_report.sh mysql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Executive Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Executive Migration Report'
+                    ) {
+
+                        sh './scripts/bash/common/generate_executive_report.sh mysql'
                     }
                 }
             }
@@ -133,24 +479,24 @@ pipeline {
 
                 sh """
                     python3 scripts/logging/logger.py finalize \
-                    --database mysql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --status "${finalStatus}"
+                        --database mysql \
+                        --action load \
+                        --build-number "${env.BUILD_NUMBER}" \
+                        --status "${finalStatus}"
                 """
 
                 sh """
                     python3 scripts/reporting/generate_report.py \
-                    --database mysql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}"
+                        --database mysql \
+                        --action load \
+                        --build-number "${env.BUILD_NUMBER}"
                 """
 
                 sh """
                     python3 scripts/reporting/generate_history.py \
-                    --database mysql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}"
+                        --database mysql \
+                        --action load \
+                        --build-number "${env.BUILD_NUMBER}"
                 """
             }
 
