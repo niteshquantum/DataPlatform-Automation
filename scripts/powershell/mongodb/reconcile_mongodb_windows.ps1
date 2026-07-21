@@ -40,10 +40,15 @@ function Copy-PreservedDirectory([string]$source,[string]$destination,[string]$l
 }
 function Test-ListenerOwnedByDeployment([object]$listener,[object]$service,[object]$deployment){
     if(-not $listener){return $false}
-    if($service -and $service.ProcessId -and $listener.OwningProcess -eq $service.ProcessId){return $true}
-    $owner=Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
-    if(-not $owner -or $owner.ProcessName -ne 'mongod'){return $false}
-    return $deployment -and $deployment.Executable -and $owner.Path -and (Same-Path $owner.Path $deployment.Executable)
+    # A PID only maps the listener to its service. Ownership is accepted only
+    # after all deployment-defining paths match the service being reconciled.
+    $ownerService=Mongo-Services|Where-Object{$_.ProcessId -eq $listener.OwningProcess}|Select-Object -First 1
+    if(-not $ownerService -or -not $service -or -not $deployment){return $false}
+    $ownerDeployment=Parse-Service $ownerService
+    if(-not $ownerDeployment.Executable -or -not $ownerDeployment.ConfigFile -or -not $ownerDeployment.DataPath){return $false}
+    $ownerInstall=Split-Path -Parent (Split-Path -Parent $ownerDeployment.Executable)
+    $deploymentInstall=Split-Path -Parent (Split-Path -Parent $deployment.Executable)
+    return ($ownerService.Name -eq $service.Name) -and (Same-Path $ownerDeployment.Executable $deployment.Executable) -and (Same-Path $ownerInstall $deploymentInstall) -and (Same-Path $ownerDeployment.ConfigFile $deployment.ConfigFile) -and (Same-Path $ownerDeployment.DataPath $deployment.DataPath)
 }
 
 $root=(Resolve-Path "$PSScriptRoot\..\..\..").Path;$sourceConfig=Join-Path $root 'config\windows\mongodb.conf';if(-not(Test-Path -LiteralPath $sourceConfig)){throw "Config file not found: $sourceConfig"};$s=Read-Settings $sourceConfig
