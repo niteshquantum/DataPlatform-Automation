@@ -2,7 +2,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
     bat """
         python scripts\\logging\\logger.py stage-start ^
-        --database Mongodb ^
+        --database mongodb ^
         --action setup ^
         --build-number "${env.BUILD_NUMBER}" ^
         --stage-name "${stageName}"
@@ -14,7 +14,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
         bat """
             python scripts\\logging\\logger.py stage-end ^
-            --database Mongodb ^
+            --database mongodb ^
             --action setup ^
             --build-number "${env.BUILD_NUMBER}" ^
             --stage-name "${stageName}" ^
@@ -25,7 +25,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
         bat """
             python scripts\\logging\\logger.py stage-end ^
-            --database Mongodb ^
+            --database mongodb ^
             --action setup ^
             --build-number "${env.BUILD_NUMBER}" ^
             --stage-name "${stageName}" ^
@@ -34,7 +34,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
         bat """
             python scripts\\logging\\logger.py set-error ^
-            --database Mongodb ^
+            --database mongodb ^
             --action setup ^
             --build-number "${env.BUILD_NUMBER}" ^
             --failed-stage "${stageName}" ^
@@ -44,7 +44,6 @@ def runTrackedStage(String stageName, Closure stageBody) {
         throw error
     }
 }
-
 
 pipeline {
 
@@ -56,13 +55,13 @@ pipeline {
 
     stages {
 
-       stage('Initialize Logging') {
+        stage('Initialize Logging') {
 
             steps {
 
                 bat """
                     python scripts\\logging\\logger.py init ^
-                    --database Mongodb ^
+                    --database mongodb ^
                     --action setup ^
                     --os windows ^
                     --build-number "${env.BUILD_NUMBER}" ^
@@ -72,64 +71,53 @@ pipeline {
             }
         }
 
-
-        stage('Mongodb Setup') {
+        stage('MongoDB Setup') {
 
             steps {
 
                 script {
 
-                    runTrackedStage(
-                        'Mongodb Setup'
-                    ) {
+                    runTrackedStage('MongoDB Setup') {
 
-                        bat 'ObjectsTanisha\scripts\batch\mongodb\mongodb_setup_pipeline.bat'
+                        bat 'scripts\\batch\\mongodb\\mongodb_setup_pipeline.bat'
+
                     }
                 }
             }
         }
-        }
-
-
-      
-
-
+    }
 
     post {
 
         success {
 
-            echo 'mongodb SETUP SUCCESSFUL'
+            echo 'MONGODB SETUP SUCCESSFUL'
 
             script {
 
-                def adminResult = readFile(
-                    'admin_status.txt'
-                ).trim()
+                def adminResult = readFile('admin_status.txt').trim()
 
-                if (adminResult == 'true') {
+                if (adminResult.equalsIgnoreCase("true")) {
 
-                    echo 'Mongodb Windows Service configured successfully.'
+                    echo 'MongoDB Windows Service configured successfully.'
                     echo 'Global mongosh configuration completed successfully.'
 
                 } else {
 
-                    echo 'Mongodb configured successfully in project-local mode.'
+                    echo 'MongoDB configured successfully in project-local mode.'
                     echo 'Windows Service and Global mongosh configuration were skipped because Administrator privileges were unavailable.'
                 }
             }
         }
 
-
         failure {
 
-            echo 'Mongodb SETUP FAILED'
+            echo 'MONGODB SETUP FAILED'
         }
-
 
         always {
 
-            echo 'FINALIZING Mongodb SETUP LOGGING AND REPORTING'
+            echo 'FINALIZING MONGODB SETUP LOGGING AND REPORTING'
 
             script {
 
@@ -137,7 +125,7 @@ pipeline {
 
                 bat """
                     python scripts\\logging\\logger.py finalize ^
-                    --database Mongodb ^
+                    --database mongodb ^
                     --action setup ^
                     --build-number "${env.BUILD_NUMBER}" ^
                     --status "${finalStatus}"
@@ -145,26 +133,26 @@ pipeline {
 
                 bat """
                     python scripts\\reporting\\generate_report.py ^
-                    --database Mongodb ^
+                    --database mongodb ^
                     --action setup ^
                     --build-number "${env.BUILD_NUMBER}"
                 """
 
                 bat """
                     python scripts\\reporting\\generate_history.py ^
-                    --database Mongodb ^
+                    --database mongodb ^
                     --action setup ^
                     --build-number "${env.BUILD_NUMBER}"
                 """
             }
 
             archiveArtifacts(
-                artifacts: "logs/Mongodb/setup/build_${env.BUILD_NUMBER}/**, reports/Mongodb/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/setup/build_${env.BUILD_NUMBER}/**,reports/mongodb/setup/build_${env.BUILD_NUMBER}/**,reports/history/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
 
-            echo 'Mongodb SETUP PIPELINE COMPLETED'
+            echo 'MONGODB SETUP PIPELINE COMPLETED'
         }
     }
 }
