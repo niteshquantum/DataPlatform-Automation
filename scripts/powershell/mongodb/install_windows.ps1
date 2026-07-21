@@ -1,11 +1,3 @@
-Write-Host "==================================="
-Write-Host "MongoDB Installation Started"
-Write-Host "==================================="
-
-$port = $env:MONGODB_PORT
-
-Write-Host "MongoDB Port : $port"
-
-Write-Host "Using existing MongoDB installation..."
-
-Write-Host "MongoDB Installation Completed"
+# Compatibility entry point for direct and legacy setup invocations.
+& "$PSScriptRoot\reconcile_mongodb_windows.ps1"
+exit $LASTEXITCODE

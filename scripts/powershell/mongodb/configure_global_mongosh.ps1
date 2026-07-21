@@ -46,18 +46,11 @@ if (-not $MongoPort) {
 
 # FIND MONGOSH.EXE
 
-$MongoshExe = Get-ChildItem `
-    -Path "$PROJECT_ROOT\databases\mongodb\mongosh" `
-    -Filter "mongosh.exe" `
-    -Recurse `
-    -File |
-    Select-Object -First 1
+$MongoshPath = $Config["MONGOSH_EXECUTABLE"]
 
-if ($null -eq $MongoshExe) {
-    throw "mongosh.exe not found"
+if ([string]::IsNullOrWhiteSpace($MongoshPath) -or !(Test-Path $MongoshPath)) {
+    throw "MONGOSH_EXECUTABLE is missing or does not exist in mongodb.conf"
 }
-
-$MongoshPath = $MongoshExe.FullName
 
 Write-Host "mongosh.exe : $MongoshPath"
 Write-Host "Host        : $MongoHost"
@@ -65,7 +58,11 @@ Write-Host "Port        : $MongoPort"
 
 # CREATE GLOBAL COMMAND
 
-$GlobalDirectory = "C:\ProgramData\DatabaseAutomation\mongodb"
+$GlobalDirectory = $Config["MONGOSH_COMMAND_DIR"]
+
+if ([string]::IsNullOrWhiteSpace($GlobalDirectory)) {
+    throw "MONGOSH_COMMAND_DIR is required in mongodb.conf"
+}
 $GlobalCommand = "$GlobalDirectory\mongosh.cmd"
 
 if (!(Test-Path $GlobalDirectory)) {
