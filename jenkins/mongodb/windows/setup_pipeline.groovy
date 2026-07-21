@@ -46,6 +46,33 @@ def runTrackedStage(String stageName, Closure stageBody) {
 }
 
 
+def getInstanceState() {
+
+    def output = bat(
+        script: 'scripts\\batch\\mongodb\\setup\\check_instance.bat',
+        returnStdout: true
+    ).trim()
+
+    def state = 'UNKNOWN'
+
+    def lines = output.split('\n')
+
+    for (int i = 0; i < lines.size(); i++) {
+
+        def line = lines[i]
+
+        if (line.startsWith('INSTANCE_STATE=')) {
+
+            state = line.split('=', 2)[1]
+
+            break
+        }
+    }
+
+    return state
+}
+
+
 pipeline {
 
     agent any
@@ -232,7 +259,34 @@ pipeline {
         }
 
 
+        stage('Check MongoDB Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Check MongoDB Instance'
+                    ) {
+
+                        def instanceState = getInstanceState()
+
+                        echo "Instance State: ${instanceState}"
+                    }
+                }
+            }
+        }
+
+
         stage('Deploy MongoDB') {
+
+            when {
+
+                expression {
+
+                    return getInstanceState() == 'NO_INSTANCE'
+                }
+            }
 
             steps {
 
@@ -255,9 +309,12 @@ pipeline {
 
                 expression {
 
-                    return readFile(
-                        'admin_status.txt'
-                    ).trim() == 'true'
+                    def instanceState = getInstanceState()
+
+                    return (
+                        readFile('admin_status.txt').trim() == 'true' &&
+                        instanceState == 'NO_INSTANCE'
+                    )
                 }
             }
 
@@ -285,9 +342,12 @@ pipeline {
 
                 expression {
 
-                    return readFile(
-                        'admin_status.txt'
-                    ).trim() == 'true'
+                    def instanceState = getInstanceState()
+
+                    return (
+                        readFile('admin_status.txt').trim() == 'true' &&
+                        instanceState == 'NO_INSTANCE'
+                    )
                 }
             }
 
@@ -310,6 +370,19 @@ pipeline {
 
 
         stage('Start MongoDB') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return (
+                        instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
+                        instanceState == 'NO_INSTANCE'
+                    )
+                }
+            }
 
             steps {
 
