@@ -15,26 +15,17 @@ terraform {
 
 resource "null_resource" "download_mongodb_windows" {
 
+  triggers = {
+    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
+    mongodb_url            = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip"
+    mongodb_port           = var.mongodb_port
+  }
+
   provisioner "local-exec" {
 
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = ["PowerShell", "-ExecutionPolicy", "Bypass", "-File"]
 
-    command = <<EOT
-
-if (!(Test-Path "..\..\databases\mongodb")) {
-    New-Item -ItemType Directory -Path "..\..\databases\mongodb" -Force
-}
-
-$ProgressPreference = 'SilentlyContinue'
-
-Invoke-WebRequest `
-    -Uri "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip" `
-    -OutFile "..\..\databases\mongodb\mongodb.zip"
-
-Write-Host "MongoDB ZIP Download Complete"
-
-EOT
-
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1 -Url \"https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip\" -OutputPath \"../../databases/mongodb/mongodb.zip\""
   }
 }
 
@@ -49,6 +40,20 @@ resource "null_resource" "extract_mongodb_windows" {
     interpreter = ["PowerShell", "-Command"]
 
     command = <<EOT
+
+$ErrorActionPreference = 'Stop'
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+
+$ZipPath = "..\..\databases\mongodb\mongodb.zip"
+
+try {
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+    $zip.Dispose()
+}
+catch {
+    throw "Invalid/corrupt MongoDB archive detected: $ZipPath"
+}
 
 if (Test-Path "..\..\databases\mongodb\server") {
     Remove-Item "..\..\databases\mongodb\server" -Recurse -Force
@@ -82,22 +87,17 @@ resource "null_resource" "download_mongosh_windows" {
     null_resource.extract_mongodb_windows
   ]
 
+  triggers = {
+    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
+    mongosh_url            = "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip"
+    mongodb_port           = var.mongodb_port
+  }
+
   provisioner "local-exec" {
 
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = ["PowerShell", "-ExecutionPolicy", "Bypass", "-File"]
 
-    command = <<EOT
-
-$ProgressPreference = 'SilentlyContinue'
-
-Invoke-WebRequest `
-    -Uri "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip" `
-    -OutFile "..\..\databases\mongodb\mongosh.zip"
-
-Write-Host "mongosh ZIP Download Complete"
-
-EOT
-
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1 -Url \"https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip\" -OutputPath \"../../databases/mongodb/mongosh.zip\""
   }
 }
 
@@ -112,6 +112,20 @@ resource "null_resource" "extract_mongosh_windows" {
     interpreter = ["PowerShell", "-Command"]
 
     command = <<EOT
+
+$ErrorActionPreference = 'Stop'
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+
+$ZipPath = "..\..\databases\mongodb\mongosh.zip"
+
+try {
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+    $zip.Dispose()
+}
+catch {
+    throw "Invalid/corrupt mongosh archive detected: $ZipPath"
+}
 
 if (Test-Path "..\..\databases\mongodb\mongosh") {
     Remove-Item "..\..\databases\mongodb\mongosh" -Recurse -Force
