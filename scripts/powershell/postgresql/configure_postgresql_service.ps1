@@ -177,7 +177,10 @@ function Set-PostgreSQLConfiguredPort {
 }
 
 function Get-ActivePostgreSQLServicePort {
-    param([string]$ServiceName)
+    param(
+        [string]$ServiceName,
+        [string]$PgData
+    )
 
     $ServiceInfo = Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
     if (-not $ServiceInfo -or $ServiceInfo.State -ne "Running" -or -not $ServiceInfo.ProcessId) {
@@ -192,19 +195,17 @@ function Get-ActivePostgreSQLServicePort {
         return [int]$Listener.LocalPort
     }
 
-    return $null
-}
-
-function Get-PostgreSQLServicePortOverride {
-    param([string]$ServiceImagePath)
-
-    if ([string]::IsNullOrWhiteSpace($ServiceImagePath)) {
-        return $null
-    }
-
-    $PortMatch = [regex]::Match($ServiceImagePath, '(?i)-o\s+"[^"]*?-p\s+(?<port>\d+)')
-    if ($PortMatch.Success) {
-        return [int]$PortMatch.Groups['port'].Value
+    # postmaster.pid is written by the running PostgreSQL instance. Its fourth
+    # line contains the effective port, including a port supplied at startup.
+    $PostmasterPidFile = Join-Path $PgData "postmaster.pid"
+    if (Test-Path -LiteralPath $PostmasterPidFile -PathType Leaf) {
+        $PostmasterPid = Get-Content -LiteralPath $PostmasterPidFile
+        if ($PostmasterPid.Count -ge 4 -and $PostmasterPid[0] -match '^\d+$' -and $PostmasterPid[3] -match '^\d+$') {
+            $RunningProcess = Get-Process -Id ([int]$PostmasterPid[0]) -ErrorAction SilentlyContinue
+            if ($RunningProcess) {
+                return [int]$PostmasterPid[3]
+            }
+        }
     }
 
     return $null
@@ -353,7 +354,7 @@ Get-Content -LiteralPath $ConfigFile | ForEach-Object {
 }
 
 $PgHost = $Config["POSTGRESQL_HOST"]
-$PgPort = $Config["POSTGRESQL_PORT"]
+$DesiredPgPort = $Config["POSTGRESQL_PORT"]
 $PgDatabase = $Config["POSTGRESQL_DB"]
 $PgUser = $Config["POSTGRESQL_USER"]
 
@@ -361,7 +362,7 @@ if ([string]::IsNullOrWhiteSpace($PgHost)) {
     throw "POSTGRESQL_HOST not found in postgresql.conf"
 }
 
-if ([string]::IsNullOrWhiteSpace($PgPort)) {
+if ([string]::IsNullOrWhiteSpace($DesiredPgPort)) {
     throw "POSTGRESQL_PORT not found in postgresql.conf"
 }
 
@@ -369,14 +370,14 @@ if ([string]::IsNullOrWhiteSpace($PgUser)) {
     throw "POSTGRESQL_USER not found in postgresql.conf"
 }
 
-$PgPort = [int]$PgPort
+$DesiredPgPort = [int]$DesiredPgPort
 
 Write-Log "Project Root : $PROJECT_ROOT"
 Write-Log "PostgreSQL   : $PgCtl"
 Write-Log "Data Path    : $PgData"
 Write-Log "Log Path     : $PgLog"
 Write-Log "Host         : $PgHost"
-Write-Log "Port         : $PgPort"
+Write-Log "Port         : $DesiredPgPort"
 Write-Log "Database     : $PgDatabase"
 Write-Log "User         : $PgUser"
 Write-Log "Service      : $ServiceName"
@@ -434,34 +435,30 @@ if ($ValidationErrors.Count -gt 0) {
     throw "PostgreSQL service prerequisites validation failed: $($ValidationErrors -join '; ')"
 }
 
-$PortListener = Get-NetTCPConnection -LocalPort $PgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$PortListener = Get-NetTCPConnection -LocalPort $DesiredPgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($PortListener) {
-    Write-Log "Port $PgPort is currently listening by PID $($PortListener.OwningProcess)."
+    Write-Log "Port $DesiredPgPort is currently listening by PID $($PortListener.OwningProcess)."
 }
 
 if ($ExistingService) {
     Write-Log "Existing PostgreSQL service detected. Current state: $($ExistingService.Status)."
 
     $ConfiguredRuntimePort = Get-PostgreSQLConfiguredPort -PgData $RuntimePgData
-    $ActiveServicePort = Get-ActivePostgreSQLServicePort -ServiceName $ServiceName
-    $ServicePortOverride = Get-PostgreSQLServicePortOverride -ServiceImagePath $ServiceImagePath
+    $ActiveServicePort = Get-ActivePostgreSQLServicePort -ServiceName $ServiceName -PgData $RuntimePgData
 
     if ($ActiveServicePort) {
         Write-Log "Active PostgreSQL service port: $ActiveServicePort"
     }
-    elseif ($ServicePortOverride) {
-        Write-Log "PostgreSQL service port override: $ServicePortOverride"
-    }
-    elseif ($ConfiguredRuntimePort) {
+    if ($ConfiguredRuntimePort) {
         Write-Log "Configured PostgreSQL port: $ConfiguredRuntimePort"
     }
 
-    $PortMismatch = ($ConfiguredRuntimePort -ne $PgPort) -or ($ActiveServicePort -and $ActiveServicePort -ne $PgPort) -or ($ServicePortOverride -and $ServicePortOverride -ne $PgPort)
+    $PortMismatch = ($ConfiguredRuntimePort -ne $DesiredPgPort) -or ($ActiveServicePort -and $ActiveServicePort -ne $DesiredPgPort)
     if ($PortMismatch) {
-        Write-Log "PostgreSQL port mismatch detected. Desired: $PgPort; Configured: $ConfiguredRuntimePort; Active: $ActiveServicePort; Service override: $ServicePortOverride"
+        Write-Log "PostgreSQL port mismatch detected. Desired: $DesiredPgPort; Configured: $ConfiguredRuntimePort; Active: $ActiveServicePort"
         Write-Log "Updating the existing PostgreSQL instance configuration and service registration..."
-        Set-PostgreSQLConfiguredPort -PgData $RuntimePgData -Port $PgPort
-        Register-PostgreSQLService -PgCtl $RuntimePgCtl -PgData $RuntimePgData -PgPort $PgPort -ServiceName $ServiceName
+        Set-PostgreSQLConfiguredPort -PgData $RuntimePgData -Port $DesiredPgPort
+        Register-PostgreSQLService -PgCtl $RuntimePgCtl -PgData $RuntimePgData -PgPort $DesiredPgPort -ServiceName $ServiceName
         $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
 
@@ -476,7 +473,7 @@ if ($ExistingService) {
 
     if (-not $PortMismatch -and $CurrentDeploymentExists -and -not $ImagePathMatchesDeployment) {
         Write-Log "Service ImagePath does not match the current deployment. Re-registering the service..."
-        Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+        Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $DesiredPgPort -ServiceName $ServiceName
         $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
     elseif (-not $PortMismatch -and $ExistingService.Status -eq "Running") {
@@ -518,24 +515,24 @@ if ($ExistingService) {
 
     if ($ExistingService -and $ExistingService.Status -eq "Failed") {
         Write-Log "Service previously failed. Re-registering the service before retrying."
-        Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+        Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $DesiredPgPort -ServiceName $ServiceName
         $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
     elseif ($ExistingService -and $ExistingService.Status -eq "Stopped") {
         Write-Log "Service is stopped. Determining whether it can be started safely..."
         if ($PortListener) {
-            throw "Configured port $PgPort is already in use by another process; service start is blocked."
+            throw "Configured port $DesiredPgPort is already in use by another process; service start is blocked."
         }
     }
     else {
         if ($PortListener) {
-            throw "Configured port $PgPort is already in use by another process; service start is blocked."
+            throw "Configured port $DesiredPgPort is already in use by another process; service start is blocked."
         }
     }
 }
 else {
     Write-Log "No existing PostgreSQL service was found. Registering a new service."
-    Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
+    Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $DesiredPgPort -ServiceName $ServiceName
     $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 }
 
@@ -545,24 +542,24 @@ try {
     Start-Service -Name $ServiceName -ErrorAction Stop
 }
 catch {
-    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $PgPort -Reason $_.Exception.Message
+    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $DesiredPgPort -Reason $_.Exception.Message
     throw "PostgreSQL Windows service could not be started: $($_.Exception.Message)"
 }
 
 $Service = Wait-ForServiceState -Name $ServiceName -ExpectedStates @("Running", "Stopped", "Failed") -TimeoutSeconds 60
 if (-not $Service) {
-    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $PgPort -Reason "Service did not report a terminal state within the timeout."
+    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $DesiredPgPort -Reason "Service did not report a terminal state within the timeout."
     throw "PostgreSQL Windows service did not reach a usable state."
 }
 
 if ($Service.Status -ne "Running") {
-    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $PgPort -Reason "Service ended in state $($Service.Status)."
+    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $DesiredPgPort -Reason "Service ended in state $($Service.Status)."
     throw "PostgreSQL Windows service ended in state $($Service.Status)."
 }
 
 $PortStarted = $false
 for ($i = 1; $i -le 60; $i++) {
-    $PortConnection = Get-NetTCPConnection -LocalPort $PgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    $PortConnection = Get-NetTCPConnection -LocalPort $DesiredPgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
     if ($PortConnection) {
         $PortStarted = $true
@@ -573,8 +570,8 @@ for ($i = 1; $i -le 60; $i++) {
 }
 
 if (-not $PortStarted) {
-    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $PgPort -Reason "PostgreSQL is not listening on port $PgPort after the service started."
-    throw "PostgreSQL is not listening on port $PgPort"
+    Write-ServiceFailureDetails -ServiceName $ServiceName -PgCtl $PgCtl -PgData $PgData -PgLog $PgLog -PgPort $DesiredPgPort -Reason "PostgreSQL is not listening on port $DesiredPgPort after the service started."
+    throw "PostgreSQL is not listening on port $DesiredPgPort"
 }
 
 Write-Host ""
@@ -586,7 +583,7 @@ Write-Host "Service : $ServiceName"
 Write-Host "Status  : Running"
 Write-Host "Startup : Automatic"
 Write-Host "Host    : $PgHost"
-Write-Host "Port    : $PgPort"
+Write-Host "Port    : $DesiredPgPort"
 Write-Host ""
 
 exit 0
