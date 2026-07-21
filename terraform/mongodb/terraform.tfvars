@@ -2,6 +2,10 @@
 # MongoDB Configuration
 #################################################
 
+# SOURCE OF TRUTH: config/windows/mongodb.conf
+# run_terraform.bat syncs mongodb_port from config/windows/mongodb.conf
+# Do NOT maintain a different effective port here without updating config/windows/mongodb.conf
+
 # MongoDB Port
 # Default MongoDB port is 27017
 # Examples:

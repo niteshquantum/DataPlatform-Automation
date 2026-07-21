@@ -68,7 +68,13 @@ if defined INST_ERROR echo %INST_ERROR%
 exit /b 1
 
 :validate_mongodb
+call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_port.bat"
+if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_mongodb.bat"
+if errorlevel 1 exit /b 1
+
+call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 
 echo.

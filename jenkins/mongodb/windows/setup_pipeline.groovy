@@ -259,6 +259,23 @@ pipeline {
         }
 
 
+        stage('Validate MongoDB Port') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MongoDB Port'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_port.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Check MongoDB Instance') {
 
             steps {
@@ -410,6 +427,23 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_environment.bat'
                     }
                 }
             }

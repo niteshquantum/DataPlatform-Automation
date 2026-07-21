@@ -28,7 +28,9 @@ echo TERRAFORM APPLY
 echo =====================================
 echo.
 
-"%TF%" apply -auto-approve
+for /f "tokens=1* delims==" %%A in ('findstr /R "^MONGODB_PORT=" "%ROOT%\config\windows\mongodb.conf"') do set "MONGO_PORT=%%B"
+
+"%TF%" apply -auto-approve -var="mongodb_port=%MONGO_PORT%"
 if errorlevel 1 exit /b 1
 
 echo.
