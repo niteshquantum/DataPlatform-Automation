@@ -10,12 +10,6 @@ echo "ENVIRONMENT VALIDATION STARTED"
 echo "====================================="
 echo
 
-bash "$PROJECT_ROOT/scripts/bash/common/validate_python_runtime.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/common/validate_java_runtime.sh"
-
-bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_tools.sh"
-
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_port.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_mysql_instance.sh"
