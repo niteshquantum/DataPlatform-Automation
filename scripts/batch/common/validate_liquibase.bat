@@ -22,11 +22,12 @@ REM =====================================
 REM PROJECT ROOT
 REM =====================================
 
-set "ROOT=%CD%"
 
-if not exist "%ROOT%\config\windows\mysql.conf" (
-    set "ROOT=%~dp0..\..\.."
+if not defined PROJECT_ROOT (
+    call "%~dp0set_project_root.bat"
 )
+
+set "ROOT=%PROJECT_ROOT%"
 
 set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
 
