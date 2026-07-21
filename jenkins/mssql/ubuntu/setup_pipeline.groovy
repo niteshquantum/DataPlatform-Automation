@@ -63,15 +63,9 @@ pipeline {
 
             steps {
 
-                script {
-
-                    runTrackedStage('Set Permissions') {
-
-                        sh '''
-                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
-                    }
-                }
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
             }
         }
 
@@ -80,15 +74,20 @@ pipeline {
 
             steps {
 
-                sh """
-                    python3 scripts/logging/logger.py init \
-                    --database mssql \
-                    --action setup \
-                    --os ubuntu \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --job-name "${env.JOB_NAME}" \
-                    --build-url "${env.BUILD_URL}"
-                """
+                script {
+
+                    sh """
+                        python3 scripts/logging/logger.py init \
+                        --database mssql \
+                        --action setup \
+                        --os ubuntu \
+                        --build-number "${env.BUILD_NUMBER}" \
+                        --job-name "${env.JOB_NAME}" \
+                        --build-url "${env.BUILD_URL}"
+                    """
+
+                    env.MSSQL_SETUP_LOGGING_INITIALIZED = 'true'
+                }
             }
         }
 
@@ -338,27 +337,33 @@ pipeline {
 
                 def finalStatus = currentBuild.currentResult
 
-                sh """
-                    python3 scripts/logging/logger.py finalize \
-                        --database mssql \
-                        --action setup \
-                        --build-number "${env.BUILD_NUMBER}" \
-                        --status "${finalStatus}"
-                """
+                if (env.MSSQL_SETUP_LOGGING_INITIALIZED == 'true') {
 
-                sh """
-                    python3 scripts/reporting/generate_report.py \
-                        --database mssql \
-                        --action setup \
-                        --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/logging/logger.py finalize \
+                            --database mssql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}" \
+                            --status "${finalStatus}"
+                    """
 
-                sh """
-                    python3 scripts/reporting/generate_history.py \
-                        --database mssql \
-                        --action setup \
-                        --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/reporting/generate_report.py \
+                            --database mssql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    sh """
+                        python3 scripts/reporting/generate_history.py \
+                            --database mssql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
             archiveArtifacts(
