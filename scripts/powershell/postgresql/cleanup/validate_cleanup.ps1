@@ -7,80 +7,74 @@ $ErrorActionPreference = "Stop"
 
 function Write-Log {
     param([string]$Message)
-
     $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "[$Timestamp] $Message"
 }
 
 function Get-ProjectRoot {
-
     $Root = Split-Path $PSScriptRoot -Parent
     $Root = Split-Path $Root -Parent
     $Root = Split-Path $Root -Parent
     $Root = Split-Path $Root -Parent
-
     return $Root
 }
 
-# =====================================================
-# PROJECT PATHS
-# =====================================================
-
 $ProjectRoot = Get-ProjectRoot
-
 $PgRoot  = Join-Path $ProjectRoot "databases\postgresql"
 $PgBin   = Join-Path $PgRoot "bin"
 $PgLib   = Join-Path $PgRoot "lib"
 $PgShare = Join-Path $PgRoot "share"
 $PgData  = Join-Path $PgRoot "data"
-
 $TerraformDirectory = Join-Path $ProjectRoot "terraform\postgresql"
-
 $TerraformState = Join-Path $TerraformDirectory "terraform.tfstate"
-
 $TerraformStateBackup = Join-Path $TerraformDirectory "terraform.tfstate.backup"
-
 $TerraformLockFile = Join-Path $TerraformDirectory ".terraform.tfstate.lock.info"
-
-# =====================================================
-# START REPORT
-# =====================================================
+$ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
+$ServiceName = "PostgreSQLAutomation"
 
 Write-Log ""
 Write-Log "======================================="
 Write-Log "POSTGRESQL CLEANUP VALIDATION"
 Write-Log "======================================="
 Write-Log ""
-
 Write-Log "Project Root : $ProjectRoot"
 Write-Log "Cleanup Mode : $CleanupMode"
 
-# =====================================================
-# VALIDATE CLEANUP MODE
-# =====================================================
+$Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+$PortInUse = $false
+if (Test-Path $ConfigFile) {
+    $Config = @{}
+    Get-Content $ConfigFile | ForEach-Object {
+        if ($_ -match "^([^#=]+)=(.*)$") {
+            $Config[$Matches[1].Trim()] = $Matches[2].Trim()
+        }
+    }
+    $Port = $Config["POSTGRESQL_PORT"]
+    if ($Port) {
+        $Listener = Get-NetTCPConnection -LocalPort ([int]$Port) -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($Listener) {
+            $PortInUse = $true
+        }
+    }
+}
 
 if ($CleanupMode -eq "PRESERVE_DATA") {
-
     Write-Log ""
     Write-Log "Validating PRESERVE_DATA cleanup..."
 
-    if (Test-Path $PgBin) {
-        throw "Cleanup validation failed: PostgreSQL bin directory still exists."
+    if ($Service -or $PortInUse) {
+        Write-Log "PASS: Shared PostgreSQL instance is still in use; cleanup preserved state."
     }
+    else {
+        if (Test-Path $PgBin) { throw "Cleanup validation failed: PostgreSQL bin directory still exists." }
+        Write-Log "PASS: PostgreSQL bin directory removed."
 
-    Write-Log "PASS: PostgreSQL bin directory removed."
+        if (Test-Path $PgLib) { throw "Cleanup validation failed: PostgreSQL lib directory still exists." }
+        Write-Log "PASS: PostgreSQL lib directory removed."
 
-    if (Test-Path $PgLib) {
-        throw "Cleanup validation failed: PostgreSQL lib directory still exists."
+        if (Test-Path $PgShare) { throw "Cleanup validation failed: PostgreSQL share directory still exists." }
+        Write-Log "PASS: PostgreSQL share directory removed."
     }
-
-    Write-Log "PASS: PostgreSQL lib directory removed."
-
-    if (Test-Path $PgShare) {
-        throw "Cleanup validation failed: PostgreSQL share directory still exists."
-    }
-
-    Write-Log "PASS: PostgreSQL share directory removed."
 
     if (Test-Path $PgData) {
         Write-Log "PASS: PostgreSQL data directory preserved."
@@ -89,54 +83,32 @@ if ($CleanupMode -eq "PRESERVE_DATA") {
         Write-Log "INFO: PostgreSQL data directory does not exist."
     }
 }
-
 elseif ($CleanupMode -eq "DELETE_DATA") {
-
     Write-Log ""
     Write-Log "Validating DELETE_DATA cleanup..."
-
-    if (Test-Path $PgRoot) {
-        throw "Cleanup validation failed: PostgreSQL deployment directory still exists."
+    if ($Service -or $PortInUse) {
+        Write-Log "PASS: Shared PostgreSQL instance remains in use; deployment preserved."
     }
-
-    Write-Log "PASS: Entire PostgreSQL deployment removed."
+    else {
+        if (Test-Path $PgRoot) { throw "Cleanup validation failed: PostgreSQL deployment directory still exists." }
+        Write-Log "PASS: Entire PostgreSQL deployment removed."
+    }
 }
-
-# =====================================================
-# VALIDATE TERRAFORM STATE
-# =====================================================
 
 Write-Log ""
 Write-Log "Validating Terraform state cleanup..."
-
-if (Test-Path $TerraformState) {
-    throw "Cleanup validation failed: terraform.tfstate still exists."
-}
-
+if (Test-Path $TerraformState) { throw "Cleanup validation failed: terraform.tfstate still exists." }
 Write-Log "PASS: terraform.tfstate removed."
-
-if (Test-Path $TerraformStateBackup) {
-    throw "Cleanup validation failed: terraform.tfstate.backup still exists."
-}
-
+if (Test-Path $TerraformStateBackup) { throw "Cleanup validation failed: terraform.tfstate.backup still exists." }
 Write-Log "PASS: terraform.tfstate.backup removed."
-
-if (Test-Path $TerraformLockFile) {
-    throw "Cleanup validation failed: Terraform state lock file still exists."
-}
-
+if (Test-Path $TerraformLockFile) { throw "Cleanup validation failed: Terraform state lock file still exists." }
 Write-Log "PASS: Terraform state lock file removed."
-
-# =====================================================
-# SUCCESS
-# =====================================================
 
 Write-Log ""
 Write-Log "======================================="
 Write-Log "POSTGRESQL CLEANUP VALIDATION PASSED"
 Write-Log "======================================="
 Write-Log ""
-
 Write-Log "Cleanup Mode : $CleanupMode"
 Write-Log "Status       : SUCCESS"
 

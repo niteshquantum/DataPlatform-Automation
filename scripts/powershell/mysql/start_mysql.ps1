@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
 $configFile = "$ROOT\config\windows\mysql.conf"
@@ -9,7 +11,7 @@ if (!(Test-Path $configFile)) {
 $port = (
     Get-Content $configFile |
     Where-Object { $_ -match "^MYSQL_PORT=" } |
-    ForEach-Object { ($_ -split "=")[1].Trim() }
+    ForEach-Object { ($_ -split "=", 2)[1].Trim() }
 )
 
 $baseDir = "$ROOT\databases\mysql\server"
@@ -42,7 +44,10 @@ if (!(Test-Path $dataDir)) {
 $portListener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($portListener) {
-    Write-Host "MySQL is already listening on port $port. Reusing the existing instance."
+    Write-Host "Existing MySQL instance detected."
+    Write-Host "Reusing existing instance."
+    Write-Host "Skipping MySQL deployment."
+    Write-Host "Skipping MySQL installation."
 
     try {
         & $mysqladmin --host=$mysqlHost --port=$port -u root ping 2>$null | Out-Null
@@ -54,7 +59,8 @@ if ($portListener) {
     catch {
     }
 
-    Write-Host "The existing instance is present but not yet responsive. Leaving it in place and continuing."
+    Write-Host "Existing MySQL instance is present but not yet responsive."
+    Write-Host "Leaving it in place and continuing."
     exit 0
 }
 

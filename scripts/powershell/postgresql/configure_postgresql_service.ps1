@@ -1,4 +1,3 @@
-
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
@@ -7,24 +6,13 @@ Write-Host "CONFIGURING POSTGRESQL WINDOWS SERVICE"
 Write-Host "====================================="
 Write-Host ""
 
-# =====================================
-# PROJECT ROOT
-# =====================================
-
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
-
 $PgBin  = "$PROJECT_ROOT\databases\postgresql\bin"
 $PgData = "$PROJECT_ROOT\databases\postgresql\data"
 $PgLogDir = "$PROJECT_ROOT\outputs\logs"
 $PgLog  = "$PgLogDir\postgresql_service.log"
-
 $PgCtl = "$PgBin\pg_ctl.exe"
-
 $ServiceName = "PostgreSQLAutomation"
-
-# =====================================
-# READ CONFIG
-# =====================================
 
 $ConfigFile = "$PROJECT_ROOT\config\windows\postgresql.conf"
 
@@ -33,16 +21,10 @@ if (!(Test-Path $ConfigFile)) {
 }
 
 $Config = @{}
-
 Get-Content $ConfigFile | ForEach-Object {
-
     $Line = $_.Trim()
 
-    if (
-        $Line -and
-        -not $Line.StartsWith("#") -and
-        $Line.Contains("=")
-    ) {
+    if ($Line -and -not $Line.StartsWith("#") -and $Line.Contains("=")) {
         $Key, $Value = $Line.Split("=", 2)
         $Config[$Key.Trim()] = $Value.Trim()
     }
@@ -76,10 +58,6 @@ Write-Host "User         : $PgUser"
 Write-Host "Service      : $ServiceName"
 Write-Host ""
 
-# =====================================
-# VALIDATE FILES
-# =====================================
-
 if (!(Test-Path $PgCtl)) {
     throw "pg_ctl.exe not found: $PgCtl"
 }
@@ -89,112 +67,47 @@ if (!(Test-Path "$PgData\PG_VERSION")) {
 }
 
 if (!(Test-Path $PgLogDir)) {
-    New-Item `
-        -ItemType Directory `
-        -Path $PgLogDir `
-        -Force | Out-Null
+    New-Item -ItemType Directory -Path $PgLogDir -Force | Out-Null
 }
 
-# =====================================
-# CHECK EXISTING SERVICE
-# =====================================
-
-$ExistingService = Get-Service `
-    -Name $ServiceName `
-    -ErrorAction SilentlyContinue
+$ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
 if ($ExistingService) {
-
-    Write-Host "Existing PostgreSQL service found."
+    Write-Host "Existing PostgreSQL service detected."
 
     if ($ExistingService.Status -eq "Running") {
-
-        Write-Host "Stopping existing PostgreSQL service..."
-
-        Stop-Service `
-            -Name $ServiceName `
-            -Force
-
-        Start-Sleep -Seconds 3
+        Write-Host "Windows Service already running."
     }
-}
-
-# =====================================
-# STOP CURRENT PROJECT INSTANCE
-# =====================================
-
-Write-Host "Checking current project PostgreSQL instance..."
-
-& $PgCtl status -D $PgData *> $null
-
-if ($LASTEXITCODE -eq 0) {
-
-    Write-Host "Stopping standalone PostgreSQL instance..."
-
-    & $PgCtl stop -D $PgData -m fast -w
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to stop standalone PostgreSQL instance"
+    else {
+        Write-Host "Starting existing PostgreSQL service..."
+        Start-Service -Name $ServiceName
     }
-
-    Start-Sleep -Seconds 3
 }
 else {
-    Write-Host "Standalone PostgreSQL instance is not running."
+    $PortListener = Get-NetTCPConnection -LocalPort $PgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+
+    if ($PortListener) {
+        Write-Host "Existing PostgreSQL instance detected on port $PgPort."
+        Write-Host "Reusing existing PostgreSQL instance."
+    }
+    else {
+        Write-Host "Registering PostgreSQL Windows Service..."
+        & $PgCtl register -N $ServiceName -D $PgData -S auto -o "-p $PgPort"
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "PostgreSQL service registration failed"
+        }
+    }
+
+    Write-Host "Starting PostgreSQL Windows Service..."
+    Start-Service -Name $ServiceName -ErrorAction SilentlyContinue
 }
-
-# =====================================
-# REMOVE OLD SERVICE
-# =====================================
-
-if ($ExistingService) {
-
-    Write-Host "Removing existing PostgreSQL service..."
-
-    & $PgCtl unregister -N $ServiceName
-
-    Start-Sleep -Seconds 3
-}
-
-# =====================================
-# REGISTER WINDOWS SERVICE
-# =====================================
-
-Write-Host ""
-Write-Host "Registering PostgreSQL Windows Service..."
-
-& $PgCtl register `
-    -N $ServiceName `
-    -D $PgData `
-    -S auto `
-    -o "-p $PgPort"
-
-if ($LASTEXITCODE -ne 0) {
-    throw "PostgreSQL service registration failed"
-}
-
-# =====================================
-# START WINDOWS SERVICE
-# =====================================
-
-Write-Host "Starting PostgreSQL Windows Service..."
-
-Start-Service -Name $ServiceName
-
-# =====================================
-# WAIT FOR SERVICE
-# =====================================
 
 $ServiceStarted = $false
-
-for ($i = 1; $i -le 30; $i++) {
-
-    $Service = Get-Service `
-        -Name $ServiceName `
-        -ErrorAction SilentlyContinue
+for ($i = 1; $i -le 60; $i++) {
+    $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
     if ($Service -and $Service.Status -eq "Running") {
-
         $ServiceStarted = $true
         break
     }
@@ -206,22 +119,11 @@ if (-not $ServiceStarted) {
     throw "PostgreSQL Windows Service failed to start"
 }
 
-# =====================================
-# WAIT FOR PORT
-# =====================================
-
 $PortStarted = $false
-
-for ($i = 1; $i -le 30; $i++) {
-
-    $PortConnection = Get-NetTCPConnection `
-        -LocalPort $PgPort `
-        -State Listen `
-        -ErrorAction SilentlyContinue |
-        Select-Object -First 1
+for ($i = 1; $i -le 60; $i++) {
+    $PortConnection = Get-NetTCPConnection -LocalPort $PgPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
     if ($PortConnection) {
-
         $PortStarted = $true
         break
     }
