@@ -45,7 +45,6 @@ def runTrackedStage(String stageName, Closure stageBody) {
     }
 }
 
-
 pipeline {
 
     agent {
@@ -55,7 +54,6 @@ pipeline {
     options {
         disableConcurrentBuilds()
     }
-
 
     stages {
 
@@ -75,24 +73,21 @@ pipeline {
             }
         }
 
-
         stage('PostgreSQL Setup') {
 
             steps {
 
                 script {
 
-                    runTrackedStage(
-                        'PostgreSQL Setup'
-                    ) {
+                    runTrackedStage('PostgreSQL Setup') {
 
                         bat 'scripts\\batch\\postgresql\\postgresql_setup_pipeline.bat'
+
                     }
                 }
             }
         }
     }
-
 
     post {
 
@@ -103,15 +98,20 @@ pipeline {
             script {
 
                 def adminResult = bat(
-                    script: 'python scripts\\logging\\logger.py get-environment ^
-                        --database postgresql ^
-                        --action setup ^
-                        --build-number "${env.BUILD_NUMBER}" ^
-                        --administrator-privileges',
+                    script: """
+@echo off
+python scripts\\logging\\logger.py get-environment ^
+    --database postgresql ^
+    --action setup ^
+    --build-number "${env.BUILD_NUMBER}" ^
+    --administrator-privileges
+""",
                     returnStdout: true
                 ).trim()
 
-                if (adminResult == 'true') {
+                echo "Administrator Privileges: ${adminResult}"
+
+                if (adminResult.equalsIgnoreCase("true")) {
 
                     echo 'PostgreSQL Windows Service configured successfully.'
                     echo 'Global PSQL configuration completed successfully.'
@@ -120,16 +120,16 @@ pipeline {
 
                     echo 'PostgreSQL configured successfully in project-local mode.'
                     echo 'Windows Service and Global PSQL configuration were skipped because Administrator privileges were unavailable.'
+
                 }
             }
         }
 
-
         failure {
 
             echo 'POSTGRESQL SETUP FAILED'
-        }
 
+        }
 
         always {
 
@@ -162,9 +162,8 @@ pipeline {
                 """
             }
 
-
             archiveArtifacts(
-                artifacts: "logs/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/postgresql/setup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/postgresql/setup/build_${env.BUILD_NUMBER}/**,reports/postgresql/setup/build_${env.BUILD_NUMBER}/**,reports/history/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
