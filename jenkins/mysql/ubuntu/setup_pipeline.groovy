@@ -48,11 +48,14 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent any
+    agent {
+        label 'ubuntu-node'
+    }
 
     options {
         disableConcurrentBuilds()
     }
+
 
     stages {
 
@@ -84,192 +87,17 @@ pipeline {
         }
 
 
-        stage('Validate Python Runtime') {
+        stage('MySQL Setup') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Validate Python Runtime'
+                        'MySQL Setup'
                     ) {
 
-                        sh './scripts/bash/common/validate_python_runtime.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Install Python Requirements') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Install Python Requirements'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/install_python_requirements.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Python Requirements') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Python Requirements'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Java Runtime') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Java Runtime'
-                    ) {
-
-                        sh './scripts/bash/common/validate_java_runtime.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Install Tools') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Install Tools'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/install_tools.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Install MySQL') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Install MySQL'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/install_mysql.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Deploy MySQL') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Deploy MySQL'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/deploy_mysql.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Start MySQL') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Start MySQL'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/start_mysql.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Create Database') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Create Database'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/create_database.sh'
-                    }
-                }
-            }
-        }
-
-        stage('Run Liquibase') {
-            steps {
-                sh './scripts/bash/mysql/setup/run_liquibase.sh'
-            }
-        }
-
-        stage('Configure Global MySQL') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Configure Global MySQL'
-                    ) {
-
-                        sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Environment') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Environment'
-                    ) {
-
-                        sh './scripts/bash/mysql/setup/validate_environment.sh'
+                        sh 'bash scripts/bash/mysql/mysql_setup_pipeline.sh'
                     }
                 }
             }

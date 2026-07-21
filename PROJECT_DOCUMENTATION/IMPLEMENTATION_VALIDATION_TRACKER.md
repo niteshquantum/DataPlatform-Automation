@@ -2130,3 +2130,215 @@ YES
 1. Inspect `git diff` and `git status` on `windows-pipeline-integration-v1`
 2. If approved, push branch and run Windows Jenkins runtime tests (J1/J2/J3)
 3. Ubuntu alignment remains separate next phase
+
+---
+
+## WINDOWS-PUSH-001
+
+**Scope:** Push Windows checkpoint branch to remote after verified clean state.
+
+**ORIGINAL BRANCH:**
+`rbac-objects-integration-v1`
+
+**CHECKPOINT BRANCH:**
+`windows-pipeline-integration-v1`
+
+**PRE-PUSH STATE:**
+- branch = `windows-pipeline-integration-v1`
+- working tree = clean
+- HEAD = `3f81da6` (amended to include tracker update)
+
+**PUSH RESULT:**
+PASS
+
+**REMOTE:**
+`https://github.com/niteshquantum/DataPlatform-Automation/tree/windows-pipeline-integration-v1`
+
+**TRACKER UPDATED:**
+YES
+
+---
+
+## UBUNTU-MYSQL-MSSQL-ALIGNMENT-001
+
+**Scope:** Align Ubuntu MySQL and MSSQL Jenkins/Groovy execution with the frozen Windows Direct Local architecture. Replace duplicate Groovy orchestration with proven high-level Bash orchestrators.
+
+**MYSQL UBUNTU:**
+
+SETUP:
+- `scripts/bash/mysql/mysql_setup_pipeline.sh` — UPDATED
+  - Added instance-aware reuse/deploy/start via `scripts/bash/mysql/setup/check_instance.sh`
+  - Removed `create_database.sh` from SETUP (moved to LOAD responsibility)
+  - Removed `run_liquibase.sh` from SETUP (moved to LOAD responsibility)
+  - SETUP now owns: runtime/tool checks → instance detection → reuse/start/deploy → instance validation
+- `scripts/bash/mysql/setup/check_instance.sh` — CREATED (Linux-native instance detection)
+  - Checks: installed, service active, port listening
+  - Outputs: `INSTANCE_RUNNING_AND_USABLE`, `INSTANCE_INSTALLED_BUT_STOPPED`, `NO_INSTANCE`
+
+INSTANCE REUSE:
+- Scenario A (running): skips deploy/start, reuses directly
+- Scenario B (stopped): calls `start_mysql.sh`
+- Scenario C (absent): calls `deploy_mysql.sh` then `start_mysql.sh`
+
+LOAD:
+- `scripts/bash/mysql/mysql_load_pipeline.sh` — UPDATED
+  - Added `download_dataset.sh` (was missing)
+  - Keeps `validate_csv.sh` (source validation)
+  - Keeps `load_data.sh` (schema detection → Liquibase → CDC → strict load → validation)
+  - Keeps `deploy_objects.sh` + `validate_objects.sh`
+  - Removed inline assessment/reporting stages (optional post-processing)
+
+SCHEMA/LIQUIBASE:
+- Owned by `load_data.sh` → `schema_detector.py` → `generate_liquibase_xml.py` → `update_master_xml.py` → conditional `run_liquibase.sh`
+- STRICT_SCHEMA behavior preserved inside `load_data.sh`
+
+DATA:
+- Dataset download via `download_dataset.sh`
+- CSV validation via `validate_csv.sh`
+- Strict load via `load_data.sh` with `LOAD_MODE=full` or `incremental`
+- Loaded data validation via `validate_loaded_data.sh`
+
+OBJECTS:
+- `deploy_objects.sh` → `generate_liquibase_objects.py` → `generate_master_objects.py` → `deploy_objects.py`
+- `validate_objects.sh` → `validate_objects.py`
+- Trigger skip behavior preserved (schema-dependent)
+
+CDC:
+- File-level change detection via `cdc_engine.py mysql` wired inside `load_data.sh`
+- Exit code 100 = skip data load
+- CHANGED file triggers full reload with INSERT semantics (known limitation)
+
+JENKINS:
+- `jenkins/mysql/ubuntu/setup_pipeline.groovy` — UPDATED
+  - Replaced ~12 individual stages with single `bash scripts/bash/mysql/mysql_setup_pipeline.sh` call
+  - Changed `agent any` → `agent { label 'ubuntu-node' }`
+  - Preserved logging/reporting/archiving
+- `jenkins/mysql/ubuntu/load_pipeline.groovy` — UPDATED
+  - Replaced ~15 individual stages with single `bash scripts/bash/mysql/mysql_load_pipeline.sh` call
+  - Changed `agent any` → `agent { label 'ubuntu-node' }`
+  - Removed optional assessment/reporting/reconciliation/discovery/growth/recommendation/action-plan/technical-report/executive-report stages
+  - Preserved logging/reporting/archiving
+
+**MSSQL UBUNTU:**
+
+SETUP:
+- `scripts/bash/mssql/mssql_setup_pipeline.sh` — UPDATED
+  - Added instance-aware reuse/deploy/start via `scripts/bash/mssql/setup/check_instance.sh`
+  - Removed `create_database.sh` from SETUP (moved to LOAD responsibility)
+  - SETUP now owns: runtime/tool checks → instance detection → reuse/start/deploy → instance validation
+- `scripts/bash/mssql/setup/check_instance.sh` — CREATED (Linux-native instance detection)
+  - Checks: installed (`/opt/mssql/bin/sqlservr`), service active (`mssql-server`), port listening
+  - Outputs: same states as MySQL
+
+INSTANCE REUSE:
+- Scenario A (running): skips deploy/start, reuses directly
+- Scenario B (stopped): calls `start_mssql.sh`
+- Scenario C (absent): calls `deploy_mssql.sh` (Terraform-based Linux install)
+
+LOAD:
+- `scripts/bash/mssql/mssql_load_pipeline.sh` — UPDATED
+  - Keeps `download_dataset.sh`
+  - Keeps `load_data.sh` (schema detection → Liquibase → CDC → strict load → validation)
+  - Keeps `deploy_objects.sh` + `validate_objects.sh`
+  - Removed inline assessment/reporting stages (optional post-processing)
+
+SCHEMA/LIQUIBASE:
+- Owned by `load_data.sh` → `schema_detector.py` → `generate_liquibase_xml.py` → `update_master_xml.py` → conditional `run_liquibase.sh`
+- STRICT_SCHEMA behavior preserved inside `load_data.sh`
+
+DATA:
+- Dataset download via `download_dataset.sh`
+- Strict load via `load_data.sh` with `LOAD_MODE=full` or `incremental`
+- Loaded data validation via `validate_loaded_data.sh`
+
+OBJECTS:
+- `deploy_objects.sh` → `generate_liquibase_objects.py` → `generate_master_objects.py` → `deploy_objects.py`
+- `validate_objects.sh` → `validate_objects.py`
+
+CDC:
+- File-level change detection via `cdc_engine.py mssql` wired inside `load_data.sh`
+- Exit code 100 = skip data load
+- CHANGED file triggers full reload with INSERT semantics (known limitation)
+
+JENKINS:
+- `jenkins/mssql/ubuntu/setup_pipeline.groovy` — UPDATED
+  - Replaced ~10 individual stages with single `bash scripts/bash/mssql/mssql_setup_pipeline.sh` call
+  - Changed `agent any` → `agent { label 'ubuntu-node' }`
+  - Preserved logging/reporting/archiving
+- `jenkins/mssql/ubuntu/load_pipeline.groovy` — UPDATED
+  - Replaced ~15 individual stages with single `bash scripts/bash/mssql/mssql_load_pipeline.sh` call
+  - Changed `agent any` → `agent { label 'ubuntu-node' }`
+  - Removed optional assessment/reporting/reconciliation/discovery/growth/recommendation/action-plan/technical-report/executive-report stages
+  - Preserved logging/reporting/archiving
+
+**FILES CHANGED:**
+
+1. `scripts/bash/mysql/setup/check_instance.sh` — CREATED
+2. `scripts/bash/mysql/mysql_setup_pipeline.sh` — MODIFIED
+3. `scripts/bash/mysql/mysql_load_pipeline.sh` — MODIFIED
+4. `scripts/bash/mssql/setup/check_instance.sh` — CREATED
+5. `scripts/bash/mssql/mssql_setup_pipeline.sh` — MODIFIED
+6. `scripts/bash/mssql/mssql_load_pipeline.sh` — MODIFIED
+7. `jenkins/mysql/ubuntu/setup_pipeline.groovy` — MODIFIED
+8. `jenkins/mysql/ubuntu/load_pipeline.groovy` — MODIFIED
+9. `jenkins/mssql/ubuntu/setup_pipeline.groovy` — MODIFIED
+10. `jenkins/mssql/ubuntu/load_pipeline.groovy` — MODIFIED
+
+**TESTS ACTUALLY RUN:**
+1. Bash syntax check (`bash -n`) for all 6 modified/created `.sh` files — PASS
+2. Groovy syntax balance check for all modified Ubuntu Groovy files — PASS
+3. No hardcoded `F:\Quantumatrix\...` paths in Ubuntu Groovy — PASS
+4. All modified Ubuntu standalone pipelines use `agent { label 'ubuntu-node' }` — PASS
+5. No Ubuntu Groovy duplicates DB creation/Liquibase/object deployment when high-level `.sh` already owns it — PASS
+6. Optional assessment/reporting not mandatory CORE LOAD in Ubuntu — PASS
+
+**REPEATED TESTS AVOIDED:**
+- No full MySQL/MSSQL pipeline reruns
+- No dataset redownload
+- No database reinstall
+- No repeated object deployment tests
+- No repeated assessment tests
+
+**KNOWN LIMITATIONS:**
+- Ubuntu PostgreSQL and MongoDB alignment deferred to next phase
+- Fresh-install paths for Ubuntu MySQL/MSSQL are code-verified only (correctly gated behind instance check)
+- Ubuntu cleanup Groovy pipelines still use `agent any` (out of scope for this target)
+- CDC remains file-level change detection; CHANGED files trigger full INSERT-style reload (known architecture limitation)
+- `data_load_history.jsonl` does not track target database name (pre-existing)
+- `validate_data.py` skips missing tables rather than failing strict (pre-existing)
+
+**READY FOR UBUNTU REMOTE RUNTIME TEST:**
+YES — pending remote Ubuntu machine access. Exact commands:
+
+MySQL Ubuntu SETUP reuse test:
+```bash
+cd /path/to/ObjectsV4
+bash scripts/bash/mysql/mysql_setup_pipeline.sh
+```
+
+MySQL Ubuntu LOAD test:
+```bash
+cd /path/to/ObjectsV4
+bash scripts/bash/mysql/mysql_load_pipeline.sh
+```
+
+MSSQL Ubuntu SETUP reuse test:
+```bash
+cd /path/to/ObjectsV4
+bash scripts/bash/mssql/mssql_setup_pipeline.sh
+```
+
+MSSQL Ubuntu LOAD test:
+```bash
+cd /path/to/ObjectsV4
+bash scripts/bash/mssql/mssql_load_pipeline.sh
+```
+
+**TRACKER UPDATED:**
+YES
+
+**NEXT:**
+1. Stage/commit Ubuntu MySQL/MSSQL alignment changes
+2. Push to remote
+3. Run Ubuntu runtime tests on remote machine
+4. Ubuntu PostgreSQL/MongoDB alignment decision
