@@ -17,11 +17,6 @@ existing_files = sorted(
     if f.name != "master.xml"
 )
 
-for old_file in existing_files:
-    if old_file.name[0].isdigit():
-        old_file.unlink()
-
-existing_files = []
 covered_columns = {}
  
 column_pattern = re.compile(r'<column name="([^"]+)"')
@@ -42,7 +37,7 @@ for file in existing_files:
 next_number = len(existing_files) + 1
 generated_any = False
  
-for table_name, columns in schema_registry.items():
+for table_name, columns in sorted(schema_registry.items()):
  
     table_name = table_name.lower()
  
