@@ -59,14 +59,26 @@ def getInstanceState() {
 
     for (int i = 0; i < lines.size(); i++) {
 
-        def line = lines[i]
+        def line = lines[i].replace('\r', '')
 
         if (line.startsWith('INSTANCE_STATE=')) {
 
-            state = line.split('=', 2)[1]
+            state = line.split('=', 2)[1].trim()
 
             break
         }
+    }
+
+    def allowedStates = [
+        'INSTANCE_RUNNING_AND_USABLE',
+        'INSTANCE_INSTALLED_BUT_STOPPED',
+        'NO_INSTANCE',
+        'PORT_OCCUPIED_BY_NON_MONGODB'
+    ]
+
+    if (!allowedStates.contains(state)) {
+
+        error "Invalid MongoDB instance state detected: >${state}<"
     }
 
     return state
@@ -273,7 +285,9 @@ pipeline {
 
                         env.MONGODB_INITIAL_INSTANCE_STATE = instanceState
 
-                        echo "Initial Instance State: ${instanceState}"
+                        echo "Initial Instance State: >${instanceState}<"
+                        echo "State length: ${instanceState.length()}"
+                        echo "Deploy condition (NO_INSTANCE): ${instanceState == 'NO_INSTANCE'}"
                     }
                 }
             }
