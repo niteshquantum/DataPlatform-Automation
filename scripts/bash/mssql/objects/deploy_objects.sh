@@ -12,12 +12,14 @@ echo "MSSQL OBJECTS DEPLOYMENT"
 echo "====================================="
 
 echo "----------------------------------------"
-echo "Generating Liquibase Objects : mssql"
+echo "Generating Database Objects : mssql"
 echo "----------------------------------------"
 
-python3 scripts/python/common/objects/generate_liquibase_objects.py mssql
+python3 scripts/python/common/objects/bootstrap_generator.py mssql
 
-python3 scripts/python/common/objects/generate_master_objects.py mssql
+echo "----------------------------------------"
+echo "Deploying Database Objects : mssql"
+echo "----------------------------------------"
 
 python3 scripts/python/common/objects/deploy_objects.py mssql
 

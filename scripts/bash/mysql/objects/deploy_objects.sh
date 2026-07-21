@@ -14,13 +14,8 @@ echo "MYSQL OBJECTS DEPLOYMENT"
 echo "====================================="
 echo
 
-# Generate Liquibase object XMLs
-python3 scripts/python/common/objects/generate_liquibase_objects.py mysql
+python3 scripts/python/common/objects/bootstrap_generator.py mysql
 
-# Generate master_objects.xml
-python3 scripts/python/common/objects/generate_master_objects.py mysql
-
-# Deploy objects
 python3 scripts/python/common/objects/deploy_objects.py mysql
 
 echo
