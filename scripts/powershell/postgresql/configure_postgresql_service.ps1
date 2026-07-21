@@ -125,6 +125,91 @@ function Test-ServiceImageMatchesDeployment {
     return ($ServiceImagePath -match [regex]::Escape($CurrentPgCtl)) -and ($ServiceImagePath -match [regex]::Escape($CurrentDataDir))
 }
 
+function Get-PostgreSQLConfiguredPort {
+    param([string]$PgData)
+
+    $PgConfFile = Join-Path $PgData "postgresql.conf"
+    if (-not (Test-Path -LiteralPath $PgConfFile -PathType Leaf)) {
+        return $null
+    }
+
+    $PortSetting = Get-Content -LiteralPath $PgConfFile |
+        Where-Object { $_ -match '^\s*port\s*=\s*(?<port>\d+)\s*(?:#.*)?$' } |
+        Select-Object -Last 1
+
+    if ($PortSetting -and $PortSetting -match '^\s*port\s*=\s*(?<port>\d+)') {
+        return [int]$Matches['port']
+    }
+
+    return $null
+}
+
+function Set-PostgreSQLConfiguredPort {
+    param(
+        [string]$PgData,
+        [int]$Port
+    )
+
+    $PgConfFile = Join-Path $PgData "postgresql.conf"
+    $ConfigLines = Get-Content -LiteralPath $PgConfFile
+    $PortSettingFound = $false
+
+    $UpdatedConfigLines = foreach ($Line in $ConfigLines) {
+        if ($Line -match '^\s*#?\s*port\s*=') {
+            if (-not $PortSettingFound) {
+                $PortSettingFound = $true
+                "port = $Port"
+            }
+            else {
+                $Line
+            }
+            continue
+        }
+
+        $Line
+    }
+
+    if (-not $PortSettingFound) {
+        $UpdatedConfigLines += "port = $Port"
+    }
+
+    Set-Content -LiteralPath $PgConfFile -Value $UpdatedConfigLines -Encoding ASCII
+}
+
+function Get-ActivePostgreSQLServicePort {
+    param([string]$ServiceName)
+
+    $ServiceInfo = Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
+    if (-not $ServiceInfo -or $ServiceInfo.State -ne "Running" -or -not $ServiceInfo.ProcessId) {
+        return $null
+    }
+
+    $Listener = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+        Where-Object { $_.OwningProcess -eq $ServiceInfo.ProcessId } |
+        Select-Object -First 1
+
+    if ($Listener) {
+        return [int]$Listener.LocalPort
+    }
+
+    return $null
+}
+
+function Get-PostgreSQLServicePortOverride {
+    param([string]$ServiceImagePath)
+
+    if ([string]::IsNullOrWhiteSpace($ServiceImagePath)) {
+        return $null
+    }
+
+    $PortMatch = [regex]::Match($ServiceImagePath, '(?i)-o\s+"[^"]*?-p\s+(?<port>\d+)')
+    if ($PortMatch.Success) {
+        return [int]$PortMatch.Groups['port'].Value
+    }
+
+    return $null
+}
+
 function Register-PostgreSQLService {
     param(
         [string]$PgCtl,
@@ -357,6 +442,29 @@ if ($PortListener) {
 if ($ExistingService) {
     Write-Log "Existing PostgreSQL service detected. Current state: $($ExistingService.Status)."
 
+    $ConfiguredRuntimePort = Get-PostgreSQLConfiguredPort -PgData $RuntimePgData
+    $ActiveServicePort = Get-ActivePostgreSQLServicePort -ServiceName $ServiceName
+    $ServicePortOverride = Get-PostgreSQLServicePortOverride -ServiceImagePath $ServiceImagePath
+
+    if ($ActiveServicePort) {
+        Write-Log "Active PostgreSQL service port: $ActiveServicePort"
+    }
+    elseif ($ServicePortOverride) {
+        Write-Log "PostgreSQL service port override: $ServicePortOverride"
+    }
+    elseif ($ConfiguredRuntimePort) {
+        Write-Log "Configured PostgreSQL port: $ConfiguredRuntimePort"
+    }
+
+    $PortMismatch = ($ConfiguredRuntimePort -ne $PgPort) -or ($ActiveServicePort -and $ActiveServicePort -ne $PgPort) -or ($ServicePortOverride -and $ServicePortOverride -ne $PgPort)
+    if ($PortMismatch) {
+        Write-Log "PostgreSQL port mismatch detected. Desired: $PgPort; Configured: $ConfiguredRuntimePort; Active: $ActiveServicePort; Service override: $ServicePortOverride"
+        Write-Log "Updating the existing PostgreSQL instance configuration and service registration..."
+        Set-PostgreSQLConfiguredPort -PgData $RuntimePgData -Port $PgPort
+        Register-PostgreSQLService -PgCtl $RuntimePgCtl -PgData $RuntimePgData -PgPort $PgPort -ServiceName $ServiceName
+        $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    }
+
     $CurrentPgCtl = Resolve-ExistingPath -Path $PgCtl
     $CurrentDataDir = Resolve-ExistingPath -Path $PgData
     $CurrentDeploymentExists = $CurrentPgCtl -and $CurrentDataDir -and (Test-Path -LiteralPath (Join-Path $CurrentDataDir "postgresql.conf")) -and (Test-Path -LiteralPath (Join-Path $CurrentDataDir "pg_hba.conf"))
@@ -366,12 +474,12 @@ if ($ExistingService) {
         $ImagePathMatchesDeployment = Test-ServiceImageMatchesDeployment -ServiceImagePath $ServiceImagePath -CurrentPgCtl $CurrentPgCtl -CurrentDataDir $CurrentDataDir
     }
 
-    if ($CurrentDeploymentExists -and -not $ImagePathMatchesDeployment) {
+    if (-not $PortMismatch -and $CurrentDeploymentExists -and -not $ImagePathMatchesDeployment) {
         Write-Log "Service ImagePath does not match the current deployment. Re-registering the service..."
         Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
         $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     }
-    elseif ($ExistingService.Status -eq "Running") {
+    elseif (-not $PortMismatch -and $ExistingService.Status -eq "Running") {
         Write-Log "Service ImagePath matches the current deployment and the service is already running."
         Write-Host ""
         Write-Host "====================================="
