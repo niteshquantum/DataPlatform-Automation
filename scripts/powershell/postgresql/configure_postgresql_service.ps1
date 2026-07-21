@@ -49,10 +49,66 @@ function Get-ServiceImagePath {
 
     $ServiceInfo = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue
     if ($ServiceInfo -and $ServiceInfo.PathName) {
-        return $ServiceInfo.PathName.Trim('"')
+        return $ServiceInfo.PathName.Trim()
     }
 
     return $null
+}
+
+function Resolve-ServiceRuntimePaths {
+    param(
+        [string]$ServiceImagePath,
+        [string]$FallbackPgCtl,
+        [string]$FallbackPgData
+    )
+
+    $Resolved = [ordered]@{
+        PgCtl = $null
+        PgData = $null
+        PgBin = $null
+        PostgresExecutable = $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ServiceImagePath)) {
+        return $null
+    }
+
+    $ImagePath = $ServiceImagePath.Trim()
+
+    $PgCtlMatch = [regex]::Match($ImagePath, '"?(?<path>[A-Za-z]:\\[^"\s]+pg_ctl\.exe)"?')
+    if ($PgCtlMatch.Success) {
+        $RecoveredPgCtl = $PgCtlMatch.Groups['path'].Value.Trim('"')
+        if (Test-Path -LiteralPath $RecoveredPgCtl) {
+            $Resolved.PgCtl = (Resolve-Path -LiteralPath $RecoveredPgCtl).Path
+        }
+    }
+
+    if (-not $Resolved.PgCtl -and $FallbackPgCtl) {
+        $Resolved.PgCtl = $FallbackPgCtl
+    }
+
+    if ($Resolved.PgCtl) {
+        $Resolved.PgBin = Split-Path -Parent $Resolved.PgCtl
+        $Resolved.PostgresExecutable = Join-Path $Resolved.PgBin "postgres.exe"
+    }
+
+    $DataDirMatch = [regex]::Match($ImagePath, '(?i)-D\s+"(?<data>[^"]+)"')
+    if (-not $DataDirMatch.Success) {
+        $DataDirMatch = [regex]::Match($ImagePath, '(?i)-D\s+(?<data>\S+)')
+    }
+
+    if ($DataDirMatch.Success) {
+        $RecoveredPgData = $DataDirMatch.Groups['data'].Value.Trim('"')
+        if ($RecoveredPgData) {
+            $Resolved.PgData = $RecoveredPgData
+        }
+    }
+
+    if (-not $Resolved.PgData -and $FallbackPgData) {
+        $Resolved.PgData = $FallbackPgData
+    }
+
+    return $Resolved
 }
 
 function Test-ServiceImageMatchesDeployment {
@@ -242,28 +298,51 @@ Write-Log "Service      : $ServiceName"
 Write-Log ""
 
 $ValidationErrors = New-Object System.Collections.Generic.List[string]
+$RuntimePgCtl = $PgCtl
+$RuntimePgData = $PgData
+$RuntimePostgresExecutable = $PostgresExecutable
+$RuntimePgBin = $PgBin
 
-if (-not (Resolve-ExistingPath -Path $PgCtl)) {
-    $ValidationErrors.Add("pg_ctl.exe not found: $PgCtl")
+$ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+$ServiceImagePath = $null
+$ResolvedServiceRuntime = $null
+
+if ($ExistingService) {
+    $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
+    $ResolvedServiceRuntime = Resolve-ServiceRuntimePaths -ServiceImagePath $ServiceImagePath -FallbackPgCtl $PgCtl -FallbackPgData $PgData
+
+    if ($ResolvedServiceRuntime -and $ResolvedServiceRuntime.PgCtl) {
+        $RuntimePgCtl = $ResolvedServiceRuntime.PgCtl
+        $RuntimePgData = $ResolvedServiceRuntime.PgData
+        $RuntimePostgresExecutable = $ResolvedServiceRuntime.PostgresExecutable
+        $RuntimePgBin = $ResolvedServiceRuntime.PgBin
+
+        Write-Log "Resolved PostgreSQL runtime from existing service: $RuntimePgCtl"
+        Write-Log "Resolved PostgreSQL data directory from existing service: $RuntimePgData"
+    }
 }
 
-if (-not (Resolve-ExistingPath -Path $PostgresExecutable)) {
-    $ValidationErrors.Add("postgres.exe not found: $PostgresExecutable")
+if (-not (Resolve-ExistingPath -Path $RuntimePgCtl)) {
+    $ValidationErrors.Add("pg_ctl.exe not found: $RuntimePgCtl")
 }
 
-if (-not (Resolve-ExistingPath -Path $PgData)) {
-    $ValidationErrors.Add("Data directory not found: $PgData")
-}
-elseif (-not (Test-Path -LiteralPath (Join-Path $PgData "PG_VERSION"))) {
-    $ValidationErrors.Add("PostgreSQL data directory is not initialized: $PgData")
+if (-not (Resolve-ExistingPath -Path $RuntimePostgresExecutable)) {
+    $ValidationErrors.Add("postgres.exe not found: $RuntimePostgresExecutable")
 }
 
-if (-not (Test-Path -LiteralPath (Join-Path $PgData "postgresql.conf"))) {
-    $ValidationErrors.Add("postgresql.conf not found: $($PgData)\postgresql.conf")
+if (-not (Resolve-ExistingPath -Path $RuntimePgData)) {
+    $ValidationErrors.Add("Data directory not found: $RuntimePgData")
+}
+elseif (-not (Test-Path -LiteralPath (Join-Path $RuntimePgData "PG_VERSION"))) {
+    $ValidationErrors.Add("PostgreSQL data directory is not initialized: $RuntimePgData")
 }
 
-if (-not (Test-Path -LiteralPath (Join-Path $PgData "pg_hba.conf"))) {
-    $ValidationErrors.Add("pg_hba.conf not found: $($PgData)\pg_hba.conf")
+if (-not (Test-Path -LiteralPath (Join-Path $RuntimePgData "postgresql.conf"))) {
+    $ValidationErrors.Add("postgresql.conf not found: $($RuntimePgData)\postgresql.conf")
+}
+
+if (-not (Test-Path -LiteralPath (Join-Path $RuntimePgData "pg_hba.conf"))) {
+    $ValidationErrors.Add("pg_hba.conf not found: $($RuntimePgData)\pg_hba.conf")
 }
 
 if ($ValidationErrors.Count -gt 0) {
@@ -275,17 +354,19 @@ if ($PortListener) {
     Write-Log "Port $PgPort is currently listening by PID $($PortListener.OwningProcess)."
 }
 
-$ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-
 if ($ExistingService) {
     Write-Log "Existing PostgreSQL service detected. Current state: $($ExistingService.Status)."
 
-    $CurrentPgCtl = (Resolve-Path -LiteralPath $PgCtl).Path
-    $CurrentDataDir = (Resolve-Path -LiteralPath $PgData).Path
-    $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
-    $ImagePathMatchesDeployment = Test-ServiceImageMatchesDeployment -ServiceImagePath $ServiceImagePath -CurrentPgCtl $CurrentPgCtl -CurrentDataDir $CurrentDataDir
+    $CurrentPgCtl = Resolve-ExistingPath -Path $PgCtl
+    $CurrentDataDir = Resolve-ExistingPath -Path $PgData
+    $CurrentDeploymentExists = $CurrentPgCtl -and $CurrentDataDir -and (Test-Path -LiteralPath (Join-Path $CurrentDataDir "postgresql.conf")) -and (Test-Path -LiteralPath (Join-Path $CurrentDataDir "pg_hba.conf"))
 
-    if (-not $ImagePathMatchesDeployment) {
+    $ImagePathMatchesDeployment = $false
+    if ($ServiceImagePath) {
+        $ImagePathMatchesDeployment = Test-ServiceImageMatchesDeployment -ServiceImagePath $ServiceImagePath -CurrentPgCtl $CurrentPgCtl -CurrentDataDir $CurrentDataDir
+    }
+
+    if ($CurrentDeploymentExists -and -not $ImagePathMatchesDeployment) {
         Write-Log "Service ImagePath does not match the current deployment. Re-registering the service..."
         Register-PostgreSQLService -PgCtl $PgCtl -PgData $PgData -PgPort $PgPort -ServiceName $ServiceName
         $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
