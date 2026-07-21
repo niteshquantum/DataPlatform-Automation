@@ -14,6 +14,13 @@ function Wait-Port([string]$hostName,[int]$port){for($i=0;$i -lt 30;$i++){try{$t
 function Install-RequiredBinary([string]$url,[string]$archive,[string]$destination,[string]$expected){New-Item -ItemType Directory -Force -Path (Split-Path -Parent $archive),(Split-Path -Parent $destination)|Out-Null;if(-not(Test-Path -LiteralPath $archive)){Log 'Downloading required MongoDB archive.';Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing};$stage=Join-Path (Split-Path -Parent $archive) ([guid]::NewGuid());Expand-Archive -LiteralPath $archive -DestinationPath $stage -Force;$source=Get-ChildItem -LiteralPath $stage -Directory|Select-Object -First 1;if(-not $source){throw "Archive did not contain a deployment directory: $archive"};Move-Item -LiteralPath $source.FullName -Destination $destination;if(-not(Test-Path -LiteralPath $expected)){throw "Expected executable was not extracted: $expected"}}
 function Same-Path([string]$left,[string]$right){$left -and $right -and ([IO.Path]::GetFullPath($left)).TrimEnd('\') -eq ([IO.Path]::GetFullPath($right)).TrimEnd('\')}
 function Move-PreservedDirectory([string]$source,[string]$destination,[string]$label){if(-not(Test-Path -LiteralPath $source) -or(Same-Path $source $destination)){return};if((Test-Path -LiteralPath $destination) -and (Get-ChildItem -LiteralPath $destination -Force|Measure-Object).Count -gt 0){throw "Cannot safely migrate $label from $source to non-empty destination $destination."};New-Item -ItemType Directory -Force -Path $destination|Out-Null;Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force;Log "$label copied from $source to $destination; source and existing contents preserved."}
+function Test-ListenerOwnedByDeployment([object]$listener,[object]$service,[object]$deployment){
+    if(-not $listener){return $false}
+    if($service -and $service.ProcessId -and $listener.OwningProcess -eq $service.ProcessId){return $true}
+    $owner=Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+    if(-not $owner -or $owner.ProcessName -ne 'mongod'){return $false}
+    return $deployment -and $deployment.Executable -and $owner.Path -and (Same-Path $owner.Path $deployment.Executable)
+}
 
 $root=(Resolve-Path "$PSScriptRoot\..\..\..").Path;$sourceConfig=Join-Path $root 'config\windows\mongodb.conf';if(-not(Test-Path -LiteralPath $sourceConfig)){throw "Config file not found: $sourceConfig"};$s=Read-Settings $sourceConfig
 $hostName=Required $s 'MONGODB_HOST';$port=[int](Required $s 'MONGODB_PORT');$serviceName=Required $s 'MONGODB_SERVICE_NAME';$displayName=Required $s 'MONGODB_SERVICE_DISPLAY_NAME';$installDir=Required $s 'MONGODB_INSTALL_DIR';$dataDir=Required $s 'MONGODB_DATA_DIR';$logDir=Required $s 'MONGODB_LOG_DIR';$configFile=Required $s 'MONGODB_CONFIG_FILE';$mongod=Required $s 'MONGODB_EXECUTABLE';$mongosh=Required $s 'MONGOSH_EXECUTABLE';$logPath=Join-Path $logDir (Required $s 'MONGODB_LOG_FILE')
@@ -50,14 +57,15 @@ net:
 Log "Configuration updated: $configFile"
 $reRegister=-not $service -or $service.Name -ne $serviceName -or $existing.Port -ne "$port" -or $existing.ConfigFile -ne $configFile -or $existing.Executable -ne $mongod
 $listener=Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue|Select-Object -First 1
-if($listener -and (-not $existing -or $existing.Port -ne "$port")){
+if($listener -and -not(Test-ListenerOwnedByDeployment $listener $service $existing)){
     $owner=Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
-    throw "Desired MongoDB port $port is already occupied by $($owner.ProcessName) (PID $($listener.OwningProcess))."
+    throw "Desired MongoDB port $port is already occupied by unrelated process $($owner.ProcessName) (PID $($listener.OwningProcess))."
 }
-if($service -and $service.State -ne 'Stopped'){Log "Stopping existing service $($service.Name).";Stop-Service -Name $service.Name -Force}
+if($listener){Log "Desired port $port is already listening by PID $($listener.OwningProcess), which belongs to the existing MongoDB deployment."}
+if($reRegister -and $service -and $service.State -ne 'Stopped'){Log "Stopping existing service $($service.Name) for configuration reconciliation.";Stop-Service -Name $service.Name -Force}
 if($reRegister -and $service){Log 'Service configuration mismatch detected; re-registering service. Existing databases are preserved.';& sc.exe delete $service.Name|Out-Null;for($i=0;$i -lt 30 -and(Get-Service -Name $service.Name -ErrorAction SilentlyContinue);$i++){Start-Sleep 1};if(Get-Service -Name $service.Name -ErrorAction SilentlyContinue){throw "Unable to remove existing service $($service.Name)."}}
-if($reRegister){& $mongod --config $configFile --serviceName $serviceName --serviceDisplayName $displayName --install;if($LASTEXITCODE -ne 0){throw "MongoDB service registration failed with exit code $LASTEXITCODE."};& sc.exe config $serviceName start= auto|Out-Null;if($LASTEXITCODE -ne 0){throw "Unable to set automatic startup for $serviceName."};if($existing -and $existing.Port -ne "$port"){Log "Port migration performed: $($existing.Port) -> $port."}}else{Log 'Existing service matches the desired configuration; it was not recreated.'}
-Start-Service -Name $serviceName -ErrorAction Stop;Wait-ServiceRunning $serviceName;Wait-Port $hostName $port
+if($reRegister){& $mongod --config $configFile --serviceName $serviceName --serviceDisplayName $displayName --install;if($LASTEXITCODE -ne 0){throw "MongoDB service registration failed with exit code $LASTEXITCODE."};& sc.exe config $serviceName start= auto|Out-Null;if($LASTEXITCODE -ne 0){throw "Unable to set automatic startup for $serviceName."};if($existing -and $existing.Port -ne "$port"){Log "Port migration performed: $($existing.Port) -> $port."}}else{Log 'Existing service matches the desired configuration; no restart is required.'}
+if((Get-Service -Name $serviceName -ErrorAction Stop).Status -ne 'Running'){Start-Service -Name $serviceName -ErrorAction Stop};Wait-ServiceRunning $serviceName;Wait-Port $hostName $port
 $listener=Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction Stop|Select-Object -First 1
 $owner=Get-Process -Id $listener.OwningProcess -ErrorAction Stop
 if($owner.ProcessName -ne 'mongod'){throw "Configured port $port is not owned by mongod (found $($owner.ProcessName))."}
