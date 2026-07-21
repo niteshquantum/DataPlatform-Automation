@@ -16,6 +16,7 @@ Generates:
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -171,21 +172,27 @@ def build_not_executed_output(
             }
         )
 
+    reconciliation_metadata = {
+        "database": database,
+        "generated_at_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "reconciliation_mode": (
+            "NOT_EXECUTED_DATABASE_REQUIRED"
+        ),
+        "reconciliation_note": (
+            "Target database was unavailable or not "
+            "configured. Reconciliation was not executed."
+        ),
+        "error": error,
+    }
+
+    build_number = os.environ.get("BUILD_NUMBER")
+    if build_number:
+        reconciliation_metadata["pipeline_build_number"] = build_number
+
     return {
-        "reconciliation_metadata": {
-            "database": database,
-            "generated_at_utc": datetime.now(
-                timezone.utc
-            ).isoformat(),
-            "reconciliation_mode": (
-                "NOT_EXECUTED_DATABASE_REQUIRED"
-            ),
-            "reconciliation_note": (
-                "Target database was unavailable or not "
-                "configured. Reconciliation was not executed."
-            ),
-            "error": error,
-        },
+        "reconciliation_metadata": reconciliation_metadata,
         "reconciliation_summary": {
             "total_datasets": len(datasets),
             "reconciled_datasets": 0,
@@ -1239,20 +1246,26 @@ def run_reconciliation(
         / "reconciliation.json"
     )
 
+    reconciliation_metadata = {
+        "database": database,
+        "generated_at_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "profiling_source": str(
+            PROJECT_ROOT
+            / "metadata"
+            / "profiling"
+            / database
+            / "profiling.json"
+        ),
+    }
+
+    build_number = os.environ.get("BUILD_NUMBER")
+    if build_number:
+        reconciliation_metadata["pipeline_build_number"] = build_number
+
     reconciliation_output = {
-        "reconciliation_metadata": {
-            "database": database,
-            "generated_at_utc": datetime.now(
-                timezone.utc
-            ).isoformat(),
-            "profiling_source": str(
-                PROJECT_ROOT
-                / "metadata"
-                / "profiling"
-                / database
-                / "profiling.json"
-            ),
-        },
+        "reconciliation_metadata": reconciliation_metadata,
         "reconciliation_summary": {
             "expected_datasets": len(
                 expected_datasets

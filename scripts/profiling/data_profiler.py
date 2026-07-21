@@ -9,6 +9,7 @@ and reporting modules.
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -379,17 +380,23 @@ def profile_database(database: str) -> Dict[str, Any]:
         for dataset in profiling_results
     )
     
+    profiling_metadata = {
+        "database": database,
+        "generated_at_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "input_directory": str(incoming_directory),
+        "supported_file_types": list(
+            SUPPORTED_FILE_TYPES
+        ),
+    }
+
+    build_number = os.environ.get("BUILD_NUMBER")
+    if build_number:
+        profiling_metadata["pipeline_build_number"] = build_number
+
     profiling_output = {
-        "profiling_metadata": {
-            "database": database,
-            "generated_at_utc": datetime.now(
-                timezone.utc
-            ).isoformat(),
-            "input_directory": str(incoming_directory),
-            "supported_file_types": list(
-                SUPPORTED_FILE_TYPES
-            ),
-        },
+        "profiling_metadata": profiling_metadata,
             "profiling_summary": {
             "total_files_found": len(dataset_files),
             "successful_files": len(profiling_results),

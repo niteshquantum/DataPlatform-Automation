@@ -22,6 +22,7 @@ Generates:
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -448,14 +449,13 @@ def run_assessment(
     # FINAL ASSESSMENT OUTPUT
     # --------------------------------------------------------
 
-    assessment_output = {
-        "assessment_metadata": {
-            "database": database,
-            "generated_at_utc": datetime.now(
-                timezone.utc
-            ).isoformat(),
-            "assessment_version": "1.0",
-            "assessment_inputs": {
+    assessment_metadata = {
+        "database": database,
+        "generated_at_utc": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "assessment_version": "1.0",
+        "assessment_inputs": {
             "profiling": str(
                 PROJECT_ROOT
                 / "metadata"
@@ -492,7 +492,14 @@ def run_assessment(
                 / "requirements_analysis.json"
             ),
         },
-        },
+    }
+
+    build_number = os.environ.get("BUILD_NUMBER")
+    if build_number:
+        assessment_metadata["pipeline_build_number"] = build_number
+
+    assessment_output = {
+        "assessment_metadata": assessment_metadata,
         "assessment_summary": {
             "database": database,
             "assessment_status": (

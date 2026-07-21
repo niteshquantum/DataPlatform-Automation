@@ -15,6 +15,7 @@ Technical and Executive report input architecture.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -181,23 +182,34 @@ def _get_metadata_database(
     return metadata.get("database")
 
 
+def _get_metadata_build_number(
+    output: Dict[str, Any],
+    metadata_key: str,
+) -> Optional[str]:
+
+    metadata = output.get(metadata_key, {})
+
+    return metadata.get("pipeline_build_number")
+
+
 def validate_artifact_freshness(
     database: str,
     report_inputs: Dict[str, Dict[str, Any]],
+    current_build_number: Optional[str] = None,
 ) -> None:
     """
     Validate that all input artifacts are mutually compatible
     and belong to the current pipeline run.
 
     Supported provenance modes:
-        VERIFIED            — all artifacts have consistent timestamps
-                              and database identity
+        VERIFIED            — all artifacts share the same pipeline
+                              build number and database identity
         UNVERIFIED_LEGACY   — one or more artifacts lack provenance
                               metadata; accepted with warning
         MISMATCHED          — artifacts belong to different databases
                               or runs; rejected
-        STALE               — artifact timestamps indicate a previous
-                              run; rejected
+        STALE               — artifact build number indicates a
+                              previous run; rejected
 
     Older JSON artifacts without provenance metadata are accepted
     as UNVERIFIED_LEGACY and do not cause report generation to fail.
@@ -210,14 +222,13 @@ def validate_artifact_freshness(
         "recommendation": "recommendation_metadata",
     }
 
-    timestamps = []
     databases = []
+    build_numbers = []
     unverified_count = 0
 
-    for input_name, rules in validation_rules.items():
+    for input_name, metadata_key in validation_rules.items():
 
         output = report_inputs[input_name]
-        metadata_key = rules
 
         if metadata_key not in output:
 
@@ -249,22 +260,18 @@ def validate_artifact_freshness(
 
             databases.append(artifact_database)
 
-        timestamp = _get_metadata_timestamp(
+        artifact_build_number = _get_metadata_build_number(
             output,
             metadata_key,
         )
 
-        if timestamp is not None:
+        if artifact_build_number is not None:
 
-            timestamps.append(timestamp)
+            build_numbers.append(artifact_build_number)
 
         else:
 
             unverified_count += 1
-
-    if unverified_count > 0:
-
-        return
 
     if len(set(databases)) > 1:
 
@@ -274,18 +281,44 @@ def validate_artifact_freshness(
             "Reports cannot mix cross-database artifacts."
         )
 
-    if len(set(timestamps)) > 1:
+    all_tagged = len(build_numbers) == len(validation_rules)
+    none_tagged = len(build_numbers) == 0
+
+    if none_tagged:
+
+        return
+
+    if not all_tagged:
 
         raise ValueError(
-            "Input artifacts have inconsistent timestamps. "
-            f"Found timestamps: {sorted(set(timestamps))}. "
-            "Reports cannot mix artifacts from different pipeline runs."
+            "Input artifacts have mixed run-identity metadata. "
+            f"Tagged artifacts: {len(build_numbers)}, "
+            f"untagged artifacts: {len(validation_rules) - len(build_numbers)}. "
+            "Reports cannot mix tagged and untagged artifacts."
+        )
+
+    if len(set(build_numbers)) > 1:
+
+        raise ValueError(
+            "Input artifacts belong to different pipeline runs. "
+            f"Found build numbers: {sorted(set(build_numbers))}. "
+            "Reports cannot mix artifacts from different builds."
+        )
+
+    if current_build_number is not None and build_numbers[0] != current_build_number:
+
+        raise ValueError(
+            "Input artifacts belong to a previous pipeline run. "
+            f"Artifact build number: {build_numbers[0]}. "
+            f"Current build number: {current_build_number}. "
+            "Stale artifacts are not allowed."
         )
 
 
 def validate_report_inputs(
     database: str,
     report_inputs: Dict[str, Dict[str, Any]],
+    current_build_number: Optional[str] = None,
 ) -> None:
     """
     Validate required structures, ensure all inputs belong
@@ -348,6 +381,7 @@ def validate_report_inputs(
     validate_artifact_freshness(
         database,
         report_inputs,
+        current_build_number,
     )
 
 
@@ -782,9 +816,12 @@ def build_report_data(
         database
     )
 
+    current_build_number = os.environ.get("BUILD_NUMBER")
+
     validate_report_inputs(
         database,
         report_inputs,
+        current_build_number,
     )
 
     profiling_model = (

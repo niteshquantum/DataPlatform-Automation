@@ -11,6 +11,7 @@ Generates:
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -975,6 +976,10 @@ def run_recommendation_engine(
         parents=True,
         exist_ok=True,
     )
+
+    build_number = os.environ.get("BUILD_NUMBER")
+    if build_number:
+        recommendation_output["recommendation_metadata"]["pipeline_build_number"] = build_number
 
     with output_file.open(
         "w",
