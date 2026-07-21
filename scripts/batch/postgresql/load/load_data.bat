@@ -50,6 +50,12 @@ echo RUNNING LIQUIBASE
 echo -------------------------------------
 echo.
 
+if not exist "%PROJECT_ROOT%\tools\liquibase\liquibase.bat" (
+    echo Liquibase not found. Installing tools...
+    call scripts\batch\common\install_tools.bat
+    if errorlevel 1 exit /b 1
+)
+
 call scripts\batch\postgresql\setup\run_liquibase.bat
 if errorlevel 1 exit /b 1
 
