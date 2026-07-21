@@ -1,3 +1,4 @@
+$ErrorActionPreference = "Stop"
 
 $ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
@@ -10,13 +11,14 @@ if (!(Test-Path $configFile)) {
 $port = (
     Get-Content $configFile |
     Where-Object { $_ -match "^MYSQL_PORT=" } |
-    ForEach-Object { ($_ -split "=")[1].Trim() }
+    ForEach-Object { ($_ -split "=", 2)[1].Trim() }
 )
 
 $baseDir = "$ROOT\databases\mysql\server"
 $dataDir = "$ROOT\databases\mysql\data"
 $mysqld  = "$baseDir\bin\mysqld.exe"
 $mysqladmin = "$baseDir\bin\mysqladmin.exe"
+$mysqlHost = "127.0.0.1"
 
 Write-Host ""
 Write-Host "====================================="
@@ -26,10 +28,6 @@ Write-Host "BaseDir : $baseDir"
 Write-Host "DataDir : $dataDir"
 Write-Host "Port    : $port"
 Write-Host ""
-
-# =====================================
-# VALIDATE FILES
-# =====================================
 
 if (!(Test-Path $mysqld)) {
     throw "mysqld.exe not found: $mysqld"
@@ -43,42 +41,29 @@ if (!(Test-Path $dataDir)) {
     throw "Data directory not found: $dataDir"
 }
 
-# =====================================
-# STOP OLD MYSQL PROCESS
-# =====================================
+$portListener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
-Get-Process mysqld -ErrorAction SilentlyContinue |
-ForEach-Object {
-    $processPath = $null
-
-    try {
-        $processPath = $_.Path
-    }
-    catch {
-        Write-Host "Skipping mysqld process with unreadable path (PID: $($_.Id))"
-        continue
-    }
-
-    if ($processPath -ne $mysqld) {
-        Write-Host "Skipping non-project mysqld process (PID: $($_.Id))"
-        continue
-    }
-
-    Write-Host "Stopping existing project mysqld process (PID: $($_.Id))"
+if ($portListener) {
+    Write-Host "Existing MySQL instance detected."
+    Write-Host "Reusing existing instance."
+    Write-Host "Skipping MySQL deployment."
+    Write-Host "Skipping MySQL installation."
 
     try {
-        Stop-Process -Id $_.Id -Force -ErrorAction Stop
+        & $mysqladmin --host=$mysqlHost --port=$port -u root ping 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Existing MySQL instance is responsive."
+            exit 0
+        }
     }
     catch {
-        Write-Host "WARNING: Could not stop project mysqld process (PID: $($_.Id)): $($_.Exception.Message)"
     }
+
+    Write-Host "Existing MySQL instance is present but not yet responsive."
+    Write-Host "Leaving it in place and continuing."
+    exit 0
 }
 
-Start-Sleep -Seconds 3
-
-# =====================================
-# START MYSQL
-# =====================================
 $env:JENKINS_NODE_COOKIE = "MySQLAutomationProcess"
 Start-Process `
     -FilePath $mysqld `
@@ -89,27 +74,17 @@ Start-Process `
     ) `
     -WindowStyle Hidden
 
-# =====================================
-# WAIT FOR MYSQL TO ACCEPT CONNECTIONS
-# =====================================
-
 $started = $false
 
 for ($i = 1; $i -le 60; $i++) {
 
     try {
-
-        & $mysqladmin `
-            --host=127.0.0.1 `
-            --port=$port `
-            -u root `
-            ping 2>$null | Out-Null
+        & $mysqladmin --host=$mysqlHost --port=$port -u root ping 2>$null | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
             $started = $true
             break
         }
-
     }
     catch {
     }
@@ -118,7 +93,6 @@ for ($i = 1; $i -le 60; $i++) {
 }
 
 if (-not $started) {
-
     Write-Host ""
     Write-Host "MySQL error log:"
     Write-Host "-------------------------------------"
@@ -139,4 +113,3 @@ Write-Host "MYSQL START SUCCESSFUL"
 Write-Host "Port : $port"
 Write-Host "====================================="
 Write-Host ""
-

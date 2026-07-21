@@ -13,6 +13,26 @@ function Get-ProjectRoot {
     return $Root
 }
 
+function Test-ExistingPostgresInstance {
+    param([int]$Port)
+
+    $Listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $Listener) {
+        return $false
+    }
+
+    $OwnerProcess = Get-Process -Id $Listener.OwningProcess -ErrorAction SilentlyContinue
+    if ($OwnerProcess -and $OwnerProcess.ProcessName -in @("postgres", "postmaster")) {
+        return $true
+    }
+
+    if ($OwnerProcess -and $OwnerProcess.ProcessName -eq "pg_ctl") {
+        return $true
+    }
+
+    return $false
+}
+
 $ProjectRoot     = Get-ProjectRoot
 $PgProjectBin    = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgProjectData   = Join-Path $ProjectRoot "databases\postgresql\data"
@@ -22,7 +42,6 @@ $PgProjectShare  = Join-Path $ProjectRoot "databases\postgresql\share"
 Write-Log "Project Root  : $ProjectRoot"
 Write-Log "Project PG Bin: $PgProjectBin"
 
-# Read config
 $ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
 if (!(Test-Path $ConfigFile)) {
     throw "Config not found: $ConfigFile"
@@ -36,20 +55,15 @@ Get-Content $ConfigFile | ForEach-Object {
 }
 
 $PgHost = $Config["POSTGRESQL_HOST"]
-
 $ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
-
 $PgDatabase = $Config["POSTGRESQL_DB"]
-
 $PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) {
     "postgres"
 }
 else {
     $Config["POSTGRESQL_USER"]
 }
-
 $PgPassword = $Config["POSTGRESQL_PASSWORD"]
-
 $PgVersion = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_VERSION"])) {
     throw "POSTGRESQL_VERSION is missing in config."
 }
@@ -63,24 +77,25 @@ Write-Log "Database           : $PgDatabase"
 Write-Log "User               : $PgUser"
 Write-Log "Version            : $PgVersion"
 
-# ---- FAST PATH: binaries AND data directory both ready ----
+if (Test-ExistingPostgresInstance -Port $ExpectedPort) {
+    Write-Log "Existing PostgreSQL instance detected on port $ExpectedPort."
+    Write-Log "Skipping PostgreSQL installation."
+    Write-Log "Skipping PostgreSQL deployment."
+    Write-Log "Reusing existing PostgreSQL instance."
+    exit 0
+}
 
 $BinReady  = Test-Path (Join-Path $PgProjectBin "pg_ctl.exe")
 $DataReady = Test-Path (Join-Path $PgProjectData "PG_VERSION")
 
 if ($BinReady -and $DataReady) {
-
-    Write-Log "Project PostgreSQL binaries already exist."
-    Write-Log "Project data directory already initialized."
-    Write-Log "Skipping installation."
-
+    Write-Log "Existing PostgreSQL deployment detected."
+    Write-Log "Skipping PostgreSQL installation."
+    Write-Log "Skipping PostgreSQL deployment."
     exit 0
 }
 
-# ---- If binaries exist but data not initialized, go straight to initdb ----
-
 if ($BinReady -and !$DataReady) {
-
     Write-Log "Binaries found but data directory not initialized - running initdb..."
 
     New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
@@ -107,13 +122,10 @@ if ($BinReady -and !$DataReady) {
     Add-Content $PgConfFile "`nfull_page_writes = off"
 
     Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
-
     exit 0
 }
 
 Write-Log "Project folder binaries not found - checking system installation..."
-
-# ---- Check system-installed PostgreSQL ----
 
 $SystemBinPaths = @(
     "C:\Program Files\PostgreSQL\$PgVersion\bin",
@@ -127,9 +139,7 @@ Write-Log "Searching PostgreSQL Version $PgVersion ..."
 $SystemBin = $null
 
 foreach ($BinPath in $SystemBinPaths) {
-
     if (Test-Path (Join-Path $BinPath "pg_ctl.exe")) {
-
         $SystemBin = $BinPath
         Write-Log "Found system PostgreSQL at: $SystemBin"
         break
@@ -143,24 +153,17 @@ else {
     Write-Log "System installation not found."
 }
 
-# ------------------------------------------------------------
-# Use cached ZIP if available
-# ------------------------------------------------------------
-
 if (!$SystemBin) {
-
     $ZipDir  = Join-Path $ProjectRoot "databases\postgresql\zip"
     $ZipFile = Join-Path $ZipDir "postgresql-binaries.zip"
     $ExtDir  = Join-Path $ZipDir "extracted"
-    
+
     New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
 
     if (Test-Path $ZipFile) {
-
         Write-Log "Using cached PostgreSQL ZIP."
     }
     else {
-
         Write-Log "PostgreSQL ZIP not found - downloading..."
 
         $ZipUrl = "https://get.enterprisedb.com/postgresql/postgresql-$PgVersion.5-1-windows-x64-binaries.zip"
@@ -179,7 +182,6 @@ if (!$SystemBin) {
     Write-Log "Extracting ZIP..."
 
     if (Test-Path $ExtDir) {
-
         Write-Log "Removing previous extraction..."
 
         Remove-Item `
@@ -211,8 +213,6 @@ if (!$SystemBin) {
 
     Write-Log "Using extracted binaries: $SystemBin"
 }
-
-# ---- Copy binaries to project folder ----
 
 Write-Log "Copying binaries from $SystemBin to project folder..."
 
@@ -259,10 +259,7 @@ if (!(Test-Path (Join-Path $PgProjectBin "psql.exe"))) {
 
 Write-Log "Binary validation successful."
 
-# ---- initdb: initialize project data directory ----
-
 if (!(Test-Path (Join-Path $PgProjectData "PG_VERSION"))) {
-
     Write-Log "Initializing data directory: $PgProjectData"
 
     New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
@@ -290,7 +287,8 @@ if (!(Test-Path (Join-Path $PgProjectData "PG_VERSION"))) {
 
     Write-Log "Data directory initialized with dev settings, port = $ExpectedPort"
 }
-else {    Write-Log "Data directory already initialized"
+else {
+    Write-Log "Data directory already initialized"
 }
 
 Write-Log ""

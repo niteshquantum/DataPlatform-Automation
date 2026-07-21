@@ -15,14 +15,8 @@ Write-Host ""
 Write-Host "MySQL Directory : $mysqlDir"
 Write-Host ""
 
-# =====================================
-# REMOVE MYSQL SERVER
-# =====================================
-
 if (Test-Path $serverDir) {
-
     Write-Host "Removing MySQL server directory..."
-
     Remove-Item $serverDir -Recurse -Force
 }
 else {
@@ -30,15 +24,9 @@ else {
     Write-Host "Nothing to remove."
 }
 
-# =====================================
-# REMOVE MYSQL ZIP
-# =====================================
-
 if (Test-Path $zipFile) {
-
     Write-Host ""
     Write-Host "Removing MySQL ZIP file..."
-
     Remove-Item $zipFile -Force
 }
 else {
@@ -46,10 +34,6 @@ else {
     Write-Host "MySQL ZIP file not found."
     Write-Host "Nothing to remove."
 }
-
-# =====================================
-# VALIDATE REMOVAL
-# =====================================
 
 Write-Host ""
 Write-Host "Validating MySQL deployment removal..."

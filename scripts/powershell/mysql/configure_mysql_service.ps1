@@ -125,9 +125,12 @@ if ($PortConnection) {
 
     $MySQLProcessId = $PortConnection.OwningProcess
 
-    Write-Host "Process found on configured port."
+    Write-Host "Existing MySQL instance detected."
     Write-Host "Port       : $MySQLPort"
     Write-Host "Process ID : $MySQLProcessId"
+    Write-Host "Skipping MySQL deployment."
+    Write-Host "Skipping MySQL installation."
+    Write-Host "Reusing existing instance."
 
     $MySQLProcess = Get-Process `
         -Id $MySQLProcessId `
@@ -138,13 +141,12 @@ if ($PortConnection) {
         $MySQLProcess.ProcessName -eq "mysqld"
     ) {
 
-        Write-Host "Stopping MySQL process PID: $MySQLProcessId"
-
-        Stop-Process `
-            -Id $MySQLProcessId `
-            -Force
-
-        Start-Sleep -Seconds 3
+        $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($ExistingService -and $ExistingService.Status -ne "Running") {
+            Write-Host "Starting existing MySQL service..."
+            Start-Service -Name $ServiceName
+        }
+        exit 0
     }
     else {
 
