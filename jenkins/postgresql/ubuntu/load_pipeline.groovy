@@ -25,20 +25,20 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
         sh """
             python3 scripts/logging/logger.py stage-end \
-            --database postgresql \
-            --action load \
-            --build-number "${env.BUILD_NUMBER}" \
-            --stage-name "${stageName}" \
-            --status FAILURE
+                --database postgresql \
+                --action load \
+                --build-number "${env.BUILD_NUMBER}" \
+                --stage-name "${stageName}" \
+                --status FAILURE
         """
 
         sh """
             python3 scripts/logging/logger.py set-error \
-            --database postgresql \
-            --action load \
-            --build-number "${env.BUILD_NUMBER}" \
-            --failed-stage "${stageName}" \
-            --message "Stage execution failed"
+                --database postgresql \
+                --action load \
+                --build-number "${env.BUILD_NUMBER}" \
+                --failed-stage "${stageName}" \
+                --message "Stage execution failed"
         """
 
         throw error
@@ -48,7 +48,9 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent any
+    agent {
+        label 'ubuntu-node'
+    }
 
     options {
         disableConcurrentBuilds()
@@ -57,35 +59,34 @@ pipeline {
 
     stages {
 
-        stage('Initialize Logging') {
+        stage('Set Permissions') {
 
             steps {
 
-                sh """
-                    python3 scripts/logging/logger.py init \
-                    --database postgresql \
-                    --action load \
-                    --os ubuntu \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --job-name "${env.JOB_NAME}" \
-                    --build-url "${env.BUILD_URL}"
-                """
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
             }
         }
 
 
-        stage('Set Permissions') {
+        stage('Initialize Logging') {
 
             steps {
 
                 script {
 
-                    runTrackedStage('Set Permissions') {
+                    sh """
+                        python3 scripts/logging/logger.py init \
+                        --database postgresql \
+                        --action load \
+                        --os ubuntu \
+                        --build-number "${env.BUILD_NUMBER}" \
+                        --job-name "${env.JOB_NAME}" \
+                        --build-url "${env.BUILD_URL}"
+                    """
 
-                        sh '''
-                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
-                    }
+                    env.POSTGRESQL_LOAD_LOGGING_INITIALIZED = 'true'
                 }
             }
         }
@@ -100,6 +101,21 @@ pipeline {
                     runTrackedStage('Validate Python Runtime') {
 
                         sh './scripts/bash/common/validate_python_runtime.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Install Python Requirements') {
+
+                        sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
                     }
                 }
             }
@@ -136,13 +152,13 @@ pipeline {
         }
 
 
-        stage('Validate PostgreSQL') {
+        stage('Validate PostgreSQL Instance') {
 
             steps {
 
                 script {
 
-                    runTrackedStage('Validate PostgreSQL') {
+                    runTrackedStage('Validate PostgreSQL Instance') {
 
                         sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
                     }
@@ -181,6 +197,36 @@ pipeline {
         }
 
 
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Create Database') {
+
+                        sh './scripts/bash/postgresql/setup/create_database.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Run CDC') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Run CDC') {
+
+                        sh './scripts/bash/postgresql/load/run_cdc.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('Load Data') {
 
             steps {
@@ -211,16 +257,30 @@ pipeline {
         }
 
 
-
-        stage('Deploy & Validate Database Objects') {
+        stage('Deploy Database Objects') {
 
             steps {
 
                 script {
 
-                    runTrackedStage('Deploy & Validate Database Objects') {
+                    runTrackedStage('Deploy Database Objects') {
 
                         sh './scripts/bash/postgresql/objects/deploy_objects.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Validate Database Objects') {
+
+                        sh './scripts/bash/postgresql/objects/validate_objects.sh'
                     }
                 }
             }
@@ -255,7 +315,6 @@ pipeline {
                 }
             }
         }
-
 
 
         stage('Reconcile Source and Target Data') {
@@ -432,27 +491,33 @@ pipeline {
 
                 def finalStatus = currentBuild.currentResult
 
-                sh """
-                    python3 scripts/logging/logger.py finalize \
-                    --database postgresql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --status "${finalStatus}"
-                """
+                if (env.POSTGRESQL_LOAD_LOGGING_INITIALIZED == 'true') {
 
-                sh """
-                    python3 scripts/reporting/generate_report.py \
-                    --database postgresql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/logging/logger.py finalize \
+                            --database postgresql \
+                            --action load \
+                            --build-number "${env.BUILD_NUMBER}" \
+                            --status "${finalStatus}"
+                    """
 
-                sh """
-                    python3 scripts/reporting/generate_history.py \
-                    --database postgresql \
-                    --action load \
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/reporting/generate_report.py \
+                            --database postgresql \
+                            --action load \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    sh """
+                        python3 scripts/reporting/generate_history.py \
+                            --database postgresql \
+                            --action load \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
 

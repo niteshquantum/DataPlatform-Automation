@@ -48,43 +48,45 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent any
+    agent {
+        label 'ubuntu-node'
+    }
 
     options {
         disableConcurrentBuilds()
     }
 
+
     stages {
-
-        stage('Initialize Logging') {
-
-            steps {
-
-                sh """
-                    python3 scripts/logging/logger.py init \
-                    --database postgresql \
-                    --action setup \
-                    --os ubuntu \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --job-name "${env.JOB_NAME}" \
-                    --build-url "${env.BUILD_URL}"
-                """
-            }
-        }
-
 
         stage('Set Permissions') {
 
             steps {
 
+                sh '''
+                    find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
+                '''
+            }
+        }
+
+
+        stage('Initialize Logging') {
+
+            steps {
+
                 script {
 
-                    runTrackedStage('Set Permissions') {
+                    sh """
+                        python3 scripts/logging/logger.py init \
+                        --database postgresql \
+                        --action setup \
+                        --os ubuntu \
+                        --build-number "${env.BUILD_NUMBER}" \
+                        --job-name "${env.JOB_NAME}" \
+                        --build-url "${env.BUILD_URL}"
+                    """
 
-                        sh '''
-                            find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
-                        '''
-                    }
+                    env.POSTGRESQL_SETUP_LOGGING_INITIALIZED = 'true'
                 }
             }
         }
@@ -165,15 +167,47 @@ pipeline {
         }
 
 
-        stage('Deploy PostgreSQL') {
+        stage('Check PostgreSQL Instance') {
 
             steps {
 
                 script {
 
-                    runTrackedStage('Deploy PostgreSQL') {
+                    runTrackedStage('Check PostgreSQL Instance') {
 
-                        sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+                        def output = sh(
+                            script: 'bash scripts/bash/postgresql/setup/check_instance.sh || true',
+                            returnStdout: true
+                        ).trim()
+
+                        def lines = output.split('\n')
+                        def state = 'UNKNOWN'
+
+                        for (int i = 0; i < lines.size(); i++) {
+
+                            def line = lines[i]
+
+                            if (line.startsWith('INSTANCE_STATE=')) {
+
+                                state = line.split('=', 2)[1].trim()
+
+                                break
+                            }
+                        }
+
+                        env.POSTGRESQL_INITIAL_INSTANCE_STATE = state
+
+                        echo "Instance State: ${state}"
+
+                        if (state == 'PORT_OCCUPIED_BY_NON_POSTGRESQL') {
+
+                            error "Port conflict: configured PostgreSQL port is occupied by a non-PostgreSQL process. Aborting setup."
+                        }
+
+                        if (state == 'UNKNOWN') {
+
+                            error "Unknown PostgreSQL instance state detected. Aborting setup."
+                        }
                     }
                 }
             }
@@ -181,6 +215,12 @@ pipeline {
 
 
         stage('Install PostgreSQL') {
+
+            when {
+                expression {
+                    return env.POSTGRESQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
+                }
+            }
 
             steps {
 
@@ -195,7 +235,35 @@ pipeline {
         }
 
 
+        stage('Deploy PostgreSQL') {
+
+            when {
+                expression {
+                    return env.POSTGRESQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Deploy PostgreSQL') {
+
+                        sh './scripts/bash/postgresql/setup/deploy_postgresql.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('Start PostgreSQL') {
+
+            when {
+                expression {
+                    def state = env.POSTGRESQL_INITIAL_INSTANCE_STATE
+                    return state == 'INSTANCE_INSTALLED_BUT_STOPPED' || state == 'NO_INSTANCE'
+                }
+            }
 
             steps {
 
@@ -210,40 +278,13 @@ pipeline {
         }
 
 
-        stage('Configure PostgreSQL User') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Configure PostgreSQL User') {
-
-                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
-                    }
-                }
-            }
-        }
-
-        stage('Create Database') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Create Database') {
-
-                        sh './scripts/bash/postgresql/setup/create_database.sh'
-                    }
-                }
-            }
-        }
-
-        stage('Run Liquibase') {
-            steps {
-                sh './scripts/bash/postgresql/setup/run_liquibase.sh'
-            }
-        }
         stage('Configure Global PSQL') {
+
+            when {
+                expression {
+                    return env.POSTGRESQL_INITIAL_INSTANCE_STATE != 'INSTANCE_RUNNING_AND_USABLE'
+                }
+            }
 
             steps {
 
@@ -251,22 +292,7 @@ pipeline {
 
                     runTrackedStage('Configure Global PSQL') {
 
-                        sh './scripts/bash/postgresql/setup/configure_global_psql.sh'
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate PostgreSQL') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Validate PostgreSQL') {
-
-                        sh './scripts/bash/postgresql/setup/validate_postgresql.sh'
+                        sh 'bash ./scripts/bash/postgresql/setup/configure_global_psql.sh'
                     }
                 }
             }
@@ -311,27 +337,33 @@ pipeline {
 
                 def finalStatus = currentBuild.currentResult
 
-                sh """
-                    python3 scripts/logging/logger.py finalize \
-                    --database postgresql \
-                    --action setup \
-                    --build-number "${env.BUILD_NUMBER}" \
-                    --status "${finalStatus}"
-                """
+                if (env.POSTGRESQL_SETUP_LOGGING_INITIALIZED == 'true') {
 
-                sh """
-                    python3 scripts/reporting/generate_report.py \
-                    --database postgresql \
-                    --action setup \
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/logging/logger.py finalize \
+                            --database postgresql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}" \
+                            --status "${finalStatus}"
+                    """
 
-                sh """
-                    python3 scripts/reporting/generate_history.py \
-                    --database postgresql \
-                    --action setup \
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    sh """
+                        python3 scripts/reporting/generate_report.py \
+                            --database postgresql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    sh """
+                        python3 scripts/reporting/generate_history.py \
+                            --database postgresql \
+                            --action setup \
+                            --build-number "${env.BUILD_NUMBER}"
+                    """
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
 
