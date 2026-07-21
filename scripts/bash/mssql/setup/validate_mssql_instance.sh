@@ -33,6 +33,7 @@ sqlcmd \
     -S "${MSSQL_HOST},${MSSQL_PORT}" \
     -U "${MSSQL_USER}" \
     -P "${MSSQL_PASSWORD}" \
+    -C \
     -Q "SELECT @@VERSION AS version, CONNECTIONPROPERTY('local_net_address') AS local_address, CONNECTIONPROPERTY('local_tcp_port') AS local_port;"
 
 echo

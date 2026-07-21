@@ -197,21 +197,6 @@ pipeline {
         }
 
 
-        stage('Validate CSV') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Validate CSV') {
-
-                        sh './scripts/bash/mssql/load/validate_csv.sh'
-                    }
-                }
-            }
-        }
-
-
         stage('Profile Source Data') {
 
             steps {
