@@ -78,7 +78,30 @@ def calculate_profiling_penalty(
 
 def calculate_reconciliation_penalty(
     reconciliation_summary: Dict[str, Any],
-) -> int:
+) -> Dict[str, Any]:
+
+    reconciliation_status = (
+        reconciliation_summary.get(
+            "reconciliation_status",
+            "EXECUTED",
+        )
+    )
+
+    if reconciliation_status == (
+        "NOT_EXECUTED_DATABASE_REQUIRED"
+    ):
+
+        return {
+            "penalty": 0,
+            "reconciliation_status": (
+                "NOT_EXECUTED_DATABASE_REQUIRED"
+            ),
+            "message": (
+                "Reconciliation was not executed because "
+                "the target database was unavailable. "
+                "No penalty applied."
+            ),
+        }
 
     high_issues = int(
         reconciliation_summary.get(
@@ -123,7 +146,14 @@ def calculate_reconciliation_penalty(
         + not_reconciled * 3
     )
 
-    return min(penalty, 45)
+    return {
+        "penalty": min(penalty, 45),
+        "reconciliation_status": "EXECUTED",
+        "message": (
+            "Source-to-target reconciliation "
+            "findings reduce migration readiness."
+        ),
+    }
 
 
 # ============================================================
@@ -226,6 +256,19 @@ def calculate_requirement_penalty(
         )
     )
 
+    has_duration_sla = migration_duration > 0
+    has_downtime_sla = maximum_downtime > 0
+
+    if not has_duration_sla and not has_downtime_sla:
+
+        retention_penalty = 0
+        sla_penalty = 0
+
+        return {
+            "retention_penalty": 0,
+            "sla_penalty": 0,
+        }
+
     retention_penalty = 0
     sla_penalty = 0
 
@@ -238,17 +281,21 @@ def calculate_requirement_penalty(
     if archive_required:
         retention_penalty += 2
 
-    if migration_duration <= 30:
-        sla_penalty += 5
+    if has_duration_sla:
 
-    elif migration_duration <= 120:
-        sla_penalty += 3
+        if migration_duration <= 30:
+            sla_penalty += 5
 
-    if maximum_downtime <= 5:
-        sla_penalty += 5
+        elif migration_duration <= 120:
+            sla_penalty += 3
 
-    elif maximum_downtime <= 30:
-        sla_penalty += 3
+    if has_downtime_sla:
+
+        if maximum_downtime <= 5:
+            sla_penalty += 5
+
+        elif maximum_downtime <= 30:
+            sla_penalty += 3
 
     return {
         "retention_penalty": min(
@@ -282,10 +329,14 @@ def assess_readiness(
         )
     )
 
-    reconciliation_penalty = (
+    reconciliation_penalty_result = (
         calculate_reconciliation_penalty(
             reconciliation_summary
         )
+    )
+
+    reconciliation_penalty = (
+        reconciliation_penalty_result["penalty"]
     )
 
     risk_penalty = calculate_risk_penalty(
@@ -363,6 +414,26 @@ def assess_readiness(
                     "Source-to-target reconciliation "
                     "findings reduce migration readiness."
                 ),
+            }
+        )
+
+    elif (
+        reconciliation_penalty_result.get(
+            "reconciliation_status"
+        )
+        == "NOT_EXECUTED_DATABASE_REQUIRED"
+    ):
+
+        readiness_factors.append(
+            {
+                "factor": "RECONCILIATION",
+                "penalty": 0,
+                "message": (
+                    "Reconciliation was not executed "
+                    "because the target database was "
+                    "unavailable. No penalty applied."
+                ),
+                "status": "NOT_EXECUTED_DATABASE_REQUIRED",
             }
         )
 

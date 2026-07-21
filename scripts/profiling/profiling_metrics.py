@@ -13,7 +13,7 @@ and executive reporting modules.
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -282,11 +282,182 @@ def calculate_data_quality_summary(
 
 
 # ============================================================
+# PRIMARY KEY VALIDATION
+# ============================================================
+
+def validate_primary_keys(
+    dataframe: pd.DataFrame,
+    safe_dataframe: pd.DataFrame,
+    primary_keys: List[str],
+    total_rows: int,
+) -> List[Dict[str, Any]]:
+    """
+    Validate primary key completeness and uniqueness.
+
+    Checks:
+        - No null values in any PK column
+        - No duplicate PK value combinations
+
+    Returns traceable findings with finding_id, dataset,
+    column/key, rule, severity, count, and evidence.
+    """
+
+    issues = []
+
+    missing_columns = [
+        column
+        for column in primary_keys
+        if column not in dataframe.columns
+    ]
+
+    if missing_columns:
+
+        issues.append(
+            {
+                "issue_type": (
+                    "PRIMARY_KEY_MISSING_COLUMNS"
+                ),
+                "severity": "HIGH",
+                "column": ", ".join(
+                    missing_columns
+                ),
+                "finding_id": (
+                    f"PK-MISSING-{len(missing_columns)}"
+                ),
+                "rule": "primary_key_validation",
+                "affected_records": total_rows,
+                "evidence": (
+                    "Primary key columns not found "
+                    f"in dataset: {missing_columns}"
+                ),
+                "message": (
+                    "Configured primary key columns "
+                    f"{missing_columns} "
+                    "were not found in the dataset."
+                ),
+            }
+        )
+
+        return issues
+
+    null_counts = {
+        column: int(
+            dataframe[column].isnull().sum()
+        )
+        for column in primary_keys
+    }
+
+    total_null_pk = sum(
+        null_counts.values()
+    )
+
+    if total_null_pk > 0:
+
+        issues.append(
+            {
+                "issue_type": (
+                    "PRIMARY_KEY_NULL"
+                ),
+                "severity": "HIGH",
+                "column": ", ".join(
+                    primary_keys
+                ),
+                "finding_id": "PK-NULL",
+                "rule": "primary_key_validation",
+                "affected_records": total_null_pk,
+                "evidence": (
+                    "Null values detected in primary key "
+                    f"columns: {null_counts}"
+                ),
+                "message": (
+                    f"{total_null_pk} records have "
+                    "null values in primary key columns."
+                ),
+            }
+        )
+
+    if len(primary_keys) == 1:
+
+        column = primary_keys[0]
+
+        duplicate_count = int(
+            safe_dataframe[column]
+            .duplicated(keep=False)
+            .sum()
+        )
+
+        if duplicate_count > 0:
+
+            issues.append(
+                {
+                    "issue_type": (
+                        "PRIMARY_KEY_DUPLICATE"
+                    ),
+                    "severity": "HIGH",
+                    "column": column,
+                    "finding_id": "PK-DUPLICATE",
+                    "rule": "primary_key_validation",
+                    "affected_records": (
+                        duplicate_count
+                    ),
+                    "evidence": (
+                        f"Duplicate values detected "
+                        f"in primary key column '{column}'"
+                    ),
+                    "message": (
+                        f"{duplicate_count} records have "
+                        f"duplicate values in primary key "
+                        f"column '{column}'."
+                    ),
+                }
+            )
+
+    else:
+
+        duplicate_count = int(
+            safe_dataframe[primary_keys]
+            .duplicated(keep=False)
+            .sum()
+        )
+
+        if duplicate_count > 0:
+
+            issues.append(
+                {
+                    "issue_type": (
+                        "PRIMARY_KEY_DUPLICATE"
+                    ),
+                    "severity": "HIGH",
+                    "column": ", ".join(
+                        primary_keys
+                    ),
+                    "finding_id": "PK-DUPLICATE-COMPOSITE",
+                    "rule": "primary_key_validation",
+                    "affected_records": (
+                        duplicate_count
+                    ),
+                    "evidence": (
+                        "Duplicate composite key values "
+                        f"detected for columns: {primary_keys}"
+                    ),
+                    "message": (
+                        f"{duplicate_count} records have "
+                        "duplicate composite primary key values."
+                    ),
+                }
+            )
+
+    return issues
+
+
+# ============================================================
 # PROFILING ISSUE DETECTION
 # ============================================================
 
 def detect_profiling_issues(
     dataframe: pd.DataFrame,
+    column_rules: Optional[Dict[str, str]] = None,
+    primary_keys: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Detect important profiling observations.
@@ -297,6 +468,17 @@ def detect_profiling_issues(
     It identifies data-quality observations for future
     assessment, recommendation, technical reporting,
     and executive reporting modules.
+
+    Args:
+        dataframe: The dataset to profile.
+        column_rules: Optional mapping of column names to semantic
+            types. Supported values: required, optional, nullable,
+            conditionally_required, primary_key, business_key,
+            foreign_key. When absent, all columns are treated as
+            UNKNOWN_SEMANTICS.
+        primary_keys: Optional list of column names that form the
+            primary key. When provided, PK completeness and
+            uniqueness are validated.
     """
 
     safe_dataframe = make_dataframe_hashable(
@@ -376,6 +558,21 @@ def detect_profiling_issues(
         )
 
     # --------------------------------------------------------
+    # PRIMARY KEY VALIDATION
+    # --------------------------------------------------------
+
+    if primary_keys:
+
+        pk_issues = validate_primary_keys(
+            dataframe,
+            safe_dataframe,
+            primary_keys,
+            total_rows,
+        )
+
+        issues.extend(pk_issues)
+
+    # --------------------------------------------------------
     # COLUMN NULL ANALYSIS
     # --------------------------------------------------------
 
@@ -401,41 +598,99 @@ def detect_profiling_issues(
             2,
         )
 
-        if null_percentage >= 80:
+        semantic = (
+            column_rules.get(
+                column_name,
+                "UNKNOWN",
+            )
+            if column_rules
+            else "UNKNOWN"
+        )
 
-            severity = "HIGH"
+        if semantic in (
+            "required",
+            "conditionally_required",
+            "primary_key",
+            "business_key",
+        ):
 
-        elif null_percentage >= 30:
+            if null_percentage >= 80:
 
-            severity = "MEDIUM"
+                severity = "HIGH"
+
+            elif null_percentage >= 30:
+
+                severity = "MEDIUM"
+
+            else:
+
+                severity = "LOW"
+
+            issues.append(
+                {
+                    "issue_type": (
+                        "NULL_VALUES"
+                    ),
+                    "severity": severity,
+                    "column": str(
+                        column_name
+                    ),
+                    "affected_records": (
+                        null_count
+                    ),
+                    "affected_percentage": (
+                        null_percentage
+                    ),
+                    "message": (
+                        f"Column '{column_name}' "
+                        f"contains "
+                        f"{null_percentage}% "
+                        "null values."
+                    ),
+                }
+            )
+
+        elif semantic == "optional":
+
+            if null_percentage >= 95:
+
+                continue
+
+            if null_percentage >= 80:
+
+                severity = "LOW"
+
+            else:
+
+                severity = "LOW"
+
+            issues.append(
+                {
+                    "issue_type": (
+                        "NULL_VALUES_OPTIONAL"
+                    ),
+                    "severity": severity,
+                    "column": str(
+                        column_name
+                    ),
+                    "affected_records": (
+                        null_count
+                    ),
+                    "affected_percentage": (
+                        null_percentage
+                    ),
+                    "message": (
+                        f"Optional column '{column_name}' "
+                        f"contains "
+                        f"{null_percentage}% "
+                        "null values."
+                    ),
+                }
+            )
 
         else:
 
-            severity = "LOW"
-
-        issues.append(
-            {
-                "issue_type": (
-                    "NULL_VALUES"
-                ),
-                "severity": severity,
-                "column": str(
-                    column_name
-                ),
-                "affected_records": (
-                    null_count
-                ),
-                "affected_percentage": (
-                    null_percentage
-                ),
-                "message": (
-                    f"Column '{column_name}' "
-                    f"contains "
-                    f"{null_percentage}% "
-                    "null values."
-                ),
-            }
-        )
+            pass
 
     # --------------------------------------------------------
     # CONSTANT COLUMN ANALYSIS

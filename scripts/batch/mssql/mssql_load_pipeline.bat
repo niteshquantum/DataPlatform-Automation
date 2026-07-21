@@ -70,6 +70,18 @@ if errorlevel 1 (
 
 
 REM =====================================
+REM CREATE DATABASE
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\create_database.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATABASE CREATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
 REM DOWNLOAD DATASET
 REM =====================================
 
@@ -77,6 +89,25 @@ call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
 
 if errorlevel 1 (
     echo ERROR: DATASET DOWNLOAD FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM CDC CHECK
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mssql\load\run_cdc.bat"
+
+if errorlevel 100 (
+    echo.
+    echo SKIPPING DATA LOAD — NO CDC CHANGES
+    echo.
+    goto :skip_data_load
+)
+
+if errorlevel 1 (
+    echo ERROR: CDC CHECK FAILED
     exit /b 1
 )
 
@@ -104,6 +135,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:skip_data_load
+
 
 REM =====================================
 REM DEPLOY DATABASE OBJECTS
@@ -129,28 +162,32 @@ if errorlevel 1 (
 )
 
 
-REM =====================================
-REM DATABASE ASSESSMENT
-REM =====================================
+@REM ============================================================
+@REM OPTIONAL POST-PROCESSING
+@REM Assessment/reporting is intentionally not part of CORE LOAD.
+@REM Execute through dedicated assessment/reporting entry point.
+@REM ============================================================
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\assessment\run_assessment.bat" all
+@REM call "%PROJECT_ROOT%\scripts\batch\mssql\assessment\run_assessment.bat" all
 
-if errorlevel 1 (
-    echo ERROR: DATABASE ASSESSMENT FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: DATABASE ASSESSMENT FAILED
+@REM     exit /b 1
+@REM )
 
 
-REM =====================================
-REM GENERATE ASSESSMENT REPORT
-REM =====================================
+@REM REM ============================================================
+@REM OPTIONAL POST-PROCESSING
+@REM Assessment/reporting is intentionally not part of CORE LOAD.
+@REM Execute through dedicated assessment/reporting entry point.
+@REM ============================================================
 
-call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
+@REM call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
 
-if errorlevel 1 (
-    echo ERROR: ASSESSMENT REPORT GENERATION FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: ASSESSMENT REPORT GENERATION FAILED
+@REM     exit /b 1
+@REM )
 
 
 echo.

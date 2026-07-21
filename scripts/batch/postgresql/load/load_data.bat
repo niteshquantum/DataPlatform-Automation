@@ -50,7 +50,7 @@ echo RUNNING LIQUIBASE
 echo -------------------------------------
 echo.
 
-REM call scripts\batch\postgresql\setup\run_liquibase.bat
+call scripts\batch\postgresql\setup\run_liquibase.bat
 if errorlevel 1 exit /b 1
 
 echo.
@@ -60,6 +60,8 @@ echo -------------------------------------
 echo.
 
 echo LOAD MODE : %LOAD_MODE%
+
+set "STRICT_SCHEMA=true"
 
 python scripts\data_loader.py postgresql
 if errorlevel 1 exit /b 1

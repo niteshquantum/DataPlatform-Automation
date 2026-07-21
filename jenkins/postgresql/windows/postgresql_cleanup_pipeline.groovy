@@ -48,11 +48,14 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent any
+    agent {
+        label 'windows-node'
+    }
 
     options {
         disableConcurrentBuilds()
     }
+
 
     parameters {
 
@@ -90,74 +93,6 @@ pipeline {
         }
 
 
-        stage('Cleanup Information') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Cleanup Information'
-                    ) {
-
-                        echo "====================================="
-                        echo "POSTGRESQL WINDOWS CLEANUP PIPELINE"
-                        echo "====================================="
-
-                        echo "Workspace    : ${WORKSPACE}"
-                        echo "Cleanup Mode : ${params.CLEANUP_MODE}"
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Cleanup Scripts') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Cleanup Scripts'
-                    ) {
-
-                        bat '''
-                            @echo off
-
-                            if not exist "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat" (
-                                echo ERROR: PostgreSQL cleanup pipeline not found
-                                exit /b 1
-                            )
-
-                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\stop_postgresql.ps1" (
-                                echo ERROR: PostgreSQL stop script not found
-                                exit /b 1
-                            )
-
-                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\remove_postgresql.ps1" (
-                                echo ERROR: PostgreSQL removal script not found
-                                exit /b 1
-                            )
-
-                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\reset_terraform_state.ps1" (
-                                echo ERROR: PostgreSQL Terraform reset script not found
-                                exit /b 1
-                            )
-
-                            if not exist "%WORKSPACE%\\scripts\\powershell\\postgresql\\cleanup\\validate_cleanup.ps1" (
-                                echo ERROR: PostgreSQL cleanup validation script not found
-                                exit /b 1
-                            )
-
-                            echo PostgreSQL cleanup scripts validated successfully
-                        '''
-                    }
-                }
-            }
-        }
-
-
         stage('Cleanup PostgreSQL') {
 
             steps {
@@ -172,26 +107,7 @@ pipeline {
                             "CLEANUP_MODE=${params.CLEANUP_MODE}"
                         ]) {
 
-                            bat '''
-                                @echo off
-
-                                echo.
-                                echo =====================================
-                                echo RUNNING POSTGRESQL CLEANUP
-                                echo =====================================
-                                echo.
-
-                                call "%WORKSPACE%\\scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat"
-
-                                if errorlevel 1 (
-                                    echo.
-                                    echo POSTGRESQL CLEANUP FAILED
-                                    exit /b 1
-                                )
-
-                                echo.
-                                echo POSTGRESQL CLEANUP COMPLETED SUCCESSFULLY
-                            '''
+                            bat 'scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat'
                         }
                     }
                 }

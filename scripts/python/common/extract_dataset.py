@@ -10,6 +10,12 @@ from scripts.python.common.config_loader import (
     load_common_config,
     get_project_root
 )
+from scripts.python.common.dataset_state import (
+    build_extraction_state,
+    mark_extraction_invalid,
+    load_state,
+    save_state
+)
 
 
 def print_header():
@@ -18,11 +24,24 @@ def print_header():
     print("DATASET EXTRACTION & MERGE")
     print("=" * 60)
 
+
+def validate_zip(path: Path) -> None:
+    if not path.exists():
+        raise FileNotFoundError(f"Archive not found: {path}")
+    if path.stat().st_size == 0:
+        raise ValueError(f"Archive is empty: {path}")
+    with zipfile.ZipFile(path, "r") as zf:
+        bad = zf.testzip()
+        if bad is not None:
+            raise ValueError(f"Corrupt ZIP entry: {bad}")
+
+
+def zip_top_folders(zip_path: Path):
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        return sorted({Path(p).parts[0] for p in zf.namelist() if "/" in p or "\\" in p})
+
+
 def extract_and_merge_zip(archive_file: Path, incoming_path: Path):
-    """
-    Zip ke andar ke content ko incoming folder me merge karta hai.
-    Permission error aane par overwrite karne ke liye purani file delete karne ki koshish karta hai.
-    """
     print()
     print("Extracting and merging dataset...")
     print()
@@ -30,28 +49,26 @@ def extract_and_merge_zip(archive_file: Path, incoming_path: Path):
     with zipfile.ZipFile(archive_file, "r") as zip_ref:
         for member in zip_ref.infolist():
             target_path = incoming_path / member.filename
-            
+
             if member.is_dir():
                 target_path.mkdir(parents=True, exist_ok=True)
                 continue
-                
+
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Agar file pehle se maujood hai aur locked/permission issue hai
+
             if target_path.exists():
                 try:
-                    target_path.unlink() # Purani file ko pehle delete karne ki koshish karein
+                    target_path.unlink()
                 except PermissionError:
-                    print(f"[WARNING] Cannot delete/overwrite {target_path}. Trying to force write...")
+                    print(f"[WARNING] Cannot delete {target_path}. Trying overwrite...")
 
             try:
                 with zip_ref.open(member) as source, open(target_path, "wb") as target:
                     shutil.copyfileobj(source, target)
             except PermissionError as e:
                 print(f"[ERROR] Permission Denied for file: {target_path}")
-                print("Tip: Jenkins workspace folders ke permissions `chmod -R 775` se sahi karein.")
                 raise e
-                
+
     print("[SUCCESS] Dataset extracted and merged successfully.")
 
 
@@ -65,51 +82,78 @@ def extract_dataset():
         config["DATASET_NAME"]
     )
 
-    if not archive_file.exists():
-        raise FileNotFoundError(
-            f"Dataset archive not found:\n{archive_file}"
-        )
+    validate_zip(archive_file)
 
     incoming_path = project_root / "incoming"
     incoming_path.mkdir(parents=True, exist_ok=True)
 
-    # Zip ke andar kaunse folders hain unhe scan karein
-    with zipfile.ZipFile(archive_file, "r") as zip_ref:
-        # Zip ke top-level folders nikalne ke liye
-        zip_top_folders = {Path(p).parts[0] for p in zip_ref.namelist() if '/' in p}
+    expected_folders = zip_top_folders(archive_file)
 
-    # Check karein kya zip ke saare folders already extracted aur non-empty hain
-    already_exists = True
-    for folder in zip_top_folders:
-        folder_path = incoming_path / folder
-        if not folder_path.exists() or not any(folder_path.iterdir()):
-            already_exists = False
-            break
+    state = load_state()
 
-    # Skip extraction agar sab pehle se maujood hai aur FORCE_EXTRACT true nahi hai
-    if already_exists and config["FORCE_EXTRACT"].lower() != "true":
-        print()
-        print("[INFO] All folders from ZIP already exist in incoming.")
-        print("[INFO] Skipping extraction.")
-        return
+    force = config.get("FORCE_EXTRACT", "false").lower() == "true"
 
-    # Extract aur merge process chalayein
+    if not force and state.get("extraction_status") == "EXTRACTED_COMPLETE":
+        current_state_archive = state.get("archive_path")
+        current_state_identity = state.get("dataset_identity")
+        actual_identity = None
+        try:
+            from scripts.python.common.dataset_state import _sha256
+            actual_identity = _sha256(archive_file)
+        except Exception:
+            actual_identity = None
+
+        state_archive_matches = (
+            current_state_archive is not None
+            and Path(current_state_archive).exists()
+            and Path(current_state_archive).resolve() == archive_file.resolve()
+        )
+
+        if state_archive_matches and actual_identity == current_state_identity:
+            missing = [
+                f for f in expected_folders
+                if not (incoming_path / f).exists()
+            ]
+            if not missing:
+                print()
+                print("[INFO] Archive already extracted successfully.")
+                print("[INFO] Skipping extraction.")
+                return
+            else:
+                print()
+                print(f"[WARNING] Missing extracted folders: {missing}")
+                print("[INFO] Re-extracting...")
+        else:
+            print()
+            print("[WARNING] State does not match current archive.")
+            print("[INFO] Re-extracting...")
+
     extract_and_merge_zip(archive_file, incoming_path)
 
-    if config["DELETE_ARCHIVE"].lower() == "true":
+    actual_folders = sorted(
+        str(p.relative_to(incoming_path))
+        for p in incoming_path.iterdir()
+        if p.is_dir()
+    )
+
+    missing = [f for f in expected_folders if f not in actual_folders]
+    if missing:
+        mark_extraction_invalid(f"Missing folders after extraction: {missing}")
+        raise RuntimeError(f"Extraction incomplete. Missing: {missing}")
+
+    state = build_extraction_state(config, archive_file, incoming_path)
+    save_state(state)
+
+    if config.get("DELETE_ARCHIVE", "false").lower() == "true":
         archive_file.unlink()
-        print("[INFO] Archive deleted.")
+        print("[INFO] Archive deleted after successful extraction.")
 
 
 def verify_dataset():
-    """
-    Ab ye zip ke hisab se dynamically verify karega ki jo zip me tha 
-    wo incoming folder me aaya ya nahi.
-    """
     config = load_common_config("dataset")
     project_root = get_project_root()
     incoming = project_root / "incoming"
-    
+
     archive_file = (
         project_root /
         config["DOWNLOAD_DIRECTORY"] /
@@ -121,7 +165,6 @@ def verify_dataset():
     print("DATASET VERIFICATION")
     print("=" * 60)
 
-    # Agar archive delete ho chuka hai toh sirf check karein ki incoming khali na ho
     if not archive_file.exists():
         if incoming.exists() and any(incoming.iterdir()):
             print("[OK] Incoming folder has data (Archive already deleted).")
@@ -129,9 +172,8 @@ def verify_dataset():
         else:
             raise Exception("Incoming folder is empty.")
 
-    # Zip ke mutabik folders check karein
-    with zipfile.ZipFile(archive_file, "r") as zip_ref:
-        zip_top_folders = {Path(p).parts[0] for p in zip_ref.namelist() if '/' in p}
+    with zipfile.ZipFile(archive_file, "r") as zf:
+        zip_top_folders = sorted({Path(p).parts[0] for p in zf.namelist() if "/" in p or "\\" in p})
 
     for folder in zip_top_folders:
         folder_path = incoming / folder

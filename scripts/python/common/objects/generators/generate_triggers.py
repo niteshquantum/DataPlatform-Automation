@@ -45,6 +45,8 @@ def generate_triggers(database):
 
     count = 1
 
+    skipped = []
+
     trigger_template = load_template(
         database,
         "trigger"
@@ -62,6 +64,13 @@ def generate_triggers(database):
             print(
                 f"Skipped trigger for {table_name}: "
                 "created_at column not found"
+            )
+
+            skipped.append(
+                {
+                    "table": table_name,
+                    "reason": "created_at column not found",
+                }
             )
 
             continue
@@ -93,3 +102,19 @@ def generate_triggers(database):
         print(f"Generated : {filename}")
 
         count += 1
+
+    report = {
+        "database": database,
+        "generated": count - 1,
+        "skipped": skipped,
+        "status": "complete",
+    }
+
+    root = get_project_root()
+    report_path = (
+        root / "metadata" / database / "trigger_generation_report.json"
+    )
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2)

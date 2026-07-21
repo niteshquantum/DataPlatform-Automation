@@ -15,24 +15,22 @@ def validate_postgresql():
 
     host = config["POSTGRESQL_HOST"]
     port = int(config["POSTGRESQL_PORT"])
-    database = config["POSTGRESQL_DB"]
     user = config["POSTGRESQL_USER"]
     password = config["POSTGRESQL_PASSWORD"]
 
     print("=" * 60)
-    print("VALIDATING POSTGRESQL")
+    print("VALIDATING POSTGRESQL INSTANCE")
     print("=" * 60)
 
     connection = psycopg2.connect(
         host=host,
         port=port,
-        database=database,
+        database="postgres",
         user=user,
         password=password
     )
 
     cursor = connection.cursor()
-
     cursor.execute("SELECT current_database();")
     current_database = cursor.fetchone()[0]
 

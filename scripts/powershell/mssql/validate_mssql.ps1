@@ -105,38 +105,20 @@ $result = sqlcmd `
     -S "$Server,$Port" `
     -U $User `
     -P $Password `
-    -d $Database `
+    -d "master" `
     -Q $query `
     -h -1 `
     -W
 
 if ($LASTEXITCODE -ne 0) {
-    throw "Database connection failed."
+    throw "Instance connection failed."
 }
 
 Write-Host ""
-Write-Host "[OK] Database connection successful."
+Write-Host "[OK] Instance connection successful."
 Write-Host ""
 
 Write-Host $result
-
-# =====================================
-# VALIDATE DATABASE EXISTS
-# =====================================
-
-$dbExists = sqlcmd `
-    -S "$Server,$Port" `
-    -U $User `
-    -P $Password `
-    -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name='$Database';" `
-    -h -1 `
-    -W
-
-if ($dbExists.Trim() -ne "1") {
-    throw "Database '$Database' does not exist."
-}
-
-Write-Host "[OK] Database '$Database' exists."
 
 # =====================================
 # SUCCESS

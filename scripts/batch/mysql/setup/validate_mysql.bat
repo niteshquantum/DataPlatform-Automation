@@ -15,16 +15,16 @@ echo PROJECT_ROOT=%PROJECT_ROOT%
 echo PYTHONPATH=%PYTHONPATH%
 echo.
 
-python "%PROJECT_ROOT%\scripts\python\mysql\load\validate_database.py"
+python "%PROJECT_ROOT%\scripts\python\mysql\setup\validate_instance.py"
 
 if errorlevel 1 (
     echo.
-    echo MYSQL VALIDATION FAILED
+    echo MYSQL INSTANCE VALIDATION FAILED
     exit /b 1
 )
 
 echo.
-echo MYSQL VALIDATION SUCCESSFUL
+echo MYSQL INSTANCE VALIDATION SUCCESSFUL
 echo.
 
 exit /b 0

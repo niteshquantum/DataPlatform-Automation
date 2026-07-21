@@ -12,7 +12,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -34,6 +34,40 @@ from scripts.profiling.profiling_metrics import (
     detect_profiling_issues,
     summarize_profiling_issues,
 )
+
+
+def load_column_classifications(
+    database: str,
+) -> Dict[str, Dict[str, str]]:
+    """
+    Load column classification rules for the selected database.
+
+    Returns a nested dict:
+        { "filename.csv": { "column_name": "required|optional|conditional|unknown" } }
+    """
+
+    config_path = (
+        PROJECT_ROOT
+        / "config"
+        / "profiling"
+        / "column_classifications.json"
+    )
+
+    if not config_path.exists():
+
+        return {}
+
+    with config_path.open(
+        "r",
+        encoding="utf-8",
+    ) as file:
+
+        configuration = json.load(file)
+
+    return configuration.get(
+        database,
+        {},
+    )
 
 
 # ============================================================
@@ -140,7 +174,11 @@ def read_dataset(file_path: Path) -> pd.DataFrame:
 # ============================================================
 # FILE PROFILING
 # ============================================================
-def profile_file(file_path: Path) -> Dict[str, Any]:
+def profile_file(
+    file_path: Path,
+    column_rules: Optional[Dict[str, str]] = None,
+    primary_keys: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     """
     Profile one incoming dataset file.
     """
@@ -150,7 +188,9 @@ def profile_file(file_path: Path) -> Dict[str, Any]:
     file_size_bytes = file_path.stat().st_size
 
     profiling_issues = detect_profiling_issues(
-        dataframe
+        dataframe,
+        column_rules=column_rules,
+        primary_keys=primary_keys,
     )
 
     return {
@@ -228,7 +268,6 @@ def profile_database(database: str) -> Dict[str, Any]:
             f"No supported CSV or JSON files found in: "
             f"{incoming_directory}"
         )
-
     print()
     print("=====================================")
     print("DATA PROFILING STARTED")
@@ -238,6 +277,10 @@ def profile_database(database: str) -> Dict[str, Any]:
     print(f"Files Found    : {len(dataset_files)}")
     print()
 
+    column_classifications = (
+        load_column_classifications(database)
+    )
+
     profiling_results = []
     failed_files = []
 
@@ -245,8 +288,28 @@ def profile_database(database: str) -> Dict[str, Any]:
 
         print(f"Profiling: {file_path.name}")
 
+        column_rules = (
+            column_classifications.get(
+                file_path.name,
+                {},
+            )
+        )
+
+        primary_keys = [
+            column
+            for column, semantic in (
+                column_rules.items()
+            )
+            if semantic == "primary_key"
+        ]
+
         try:
-            file_result = profile_file(file_path)
+
+            file_result = profile_file(
+                file_path,
+                column_rules=column_rules,
+                primary_keys=primary_keys,
+            )
             file_result["status"] = "SUCCESS"
 
             profiling_results.append(file_result)

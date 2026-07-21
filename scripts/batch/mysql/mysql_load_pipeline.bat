@@ -70,28 +70,121 @@ if errorlevel 1 (
 )
 
 
+REM =====================================
+REM CREATE DATABASE
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\setup\create_database.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATABASE CREATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM VALIDATE DATABASE
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_database.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATABASE VALIDATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM DEPLOY SCHEMA
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\deploy_schema.bat"
+
+if errorlevel 1 (
+    echo ERROR: SCHEMA DEPLOYMENT FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM VALIDATE SCHEMA
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_schema.bat"
+
+if errorlevel 1 (
+    echo ERROR: SCHEMA VALIDATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM DOWNLOAD DATASET
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATASET DOWNLOAD FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM CDC CHECK
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\run_cdc.bat"
+
+if errorlevel 100 (
+    echo.
+    echo SKIPPING DATA LOAD — NO CDC CHANGES
+    echo.
+    goto :skip_data_load
+)
+
+if errorlevel 1 (
+    echo ERROR: CDC CHECK FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM VALIDATE SOURCE DATA
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_source.bat"
+
+if errorlevel 1 (
+    echo ERROR: SOURCE DATA VALIDATION FAILED
+    exit /b 1
+)
+
+
 @REM REM =====================================
-@REM REM DOWNLOAD DATASET
+@REM REM LOAD DATA (STRICT — EXISTING SCHEMA ONLY)
 @REM REM =====================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data_strict.bat"
 
-@REM if errorlevel 1 (
-@REM     echo ERROR: DATASET DOWNLOAD FAILED
-@REM     exit /b 1
-@REM )
+if errorlevel 1 (
+    echo ERROR: DATA LOAD FAILED
+    exit /b 1
+)
 
 
 @REM REM =====================================
-@REM REM LOAD DATA
+@REM REM VALIDATE LOADED DATA
 @REM REM =====================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data.bat"
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_loaded_data.bat"
 
-@REM if errorlevel 1 (
-@REM     echo ERROR: DATA LOAD FAILED
-@REM     exit /b 1
-@REM )
+if errorlevel 1 (
+    echo ERROR: LOADED DATA VALIDATION FAILED
+    exit /b 1
+)
+
+:skip_data_load
 
 
 REM =====================================
@@ -106,40 +199,38 @@ if errorlevel 1 (
 )
 
 
-REM =====================================
-REM VALIDATE DATABASE OBJECTS
-REM =====================================
-
+@REM REM =====================================
+@REM REM VALIDATE DATABASE OBJECTS
+@REM REM =====================================
 call "%PROJECT_ROOT%\scripts\batch\mysql\objects\validate_objects.bat"
 
 if errorlevel 1 (
-    echo ERROR: DATABASE OBJECT VALIDATION FAILED
+    echo ERROR: DATABASE OBJECTS VALIDATION FAILED
     exit /b 1
 )
 
+@REM REM =====================================
+@REM REM DATABASE ASSESSMENT
+@REM REM =====================================
 
-REM =====================================
-REM DATABASE ASSESSMENT
-REM =====================================
+@REM call "%PROJECT_ROOT%\scripts\batch\mysql\assessment\run_assessment.bat" all
 
-call "%PROJECT_ROOT%\scripts\batch\mysql\assessment\run_assessment.bat" all
-
-if errorlevel 1 (
-    echo ERROR: DATABASE ASSESSMENT FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: DATABASE ASSESSMENT FAILED
+@REM     exit /b 1
+@REM )
 
 
-REM =====================================
-REM GENERATE ASSESSMENT REPORT
-REM =====================================
+@REM REM =====================================
+@REM REM GENERATE ASSESSMENT REPORT
+@REM REM =====================================
 
-call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
+@REM call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
 
-if errorlevel 1 (
-    echo ERROR: ASSESSMENT REPORT GENERATION FAILED
-    exit /b 1
-)
+@REM if errorlevel 1 (
+@REM     echo ERROR: ASSESSMENT REPORT GENERATION FAILED
+@REM     exit /b 1
+@REM )
 
 
 echo.

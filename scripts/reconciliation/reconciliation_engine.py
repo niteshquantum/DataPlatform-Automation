@@ -60,6 +60,9 @@ SYSTEM_TABLES = {
 }
 
 
+FOREIGN_KEYS = []
+
+
 # ============================================================
 # PROFILING INPUT
 # ============================================================
@@ -107,6 +110,99 @@ def get_dataset_name(
     """
 
     return Path(file_name).stem
+
+
+# ============================================================
+# NOT-EXECUTED OUTPUT
+# ============================================================
+
+def build_not_executed_output(
+    database: str,
+    expected_datasets: Dict[str, Dict[str, Any]],
+    error: str,
+) -> Dict[str, Any]:
+    """
+    Build a reconciliation output that explicitly records
+    reconciliation as NOT_EXECUTED_DATABASE_REQUIRED.
+
+    This prevents downstream readiness scoring from treating
+    an unexecuted check as a failed reconciliation.
+    """
+
+    datasets = []
+
+    for dataset_key, expected_dataset in (
+        expected_datasets.items()
+    ):
+
+        datasets.append(
+            {
+                "dataset_name": expected_dataset[
+                    "dataset_name"
+                ],
+                "source_file": expected_dataset[
+                    "source_file"
+                ],
+                "target_name": None,
+                "reconciliation_status": (
+                    "NOT_EXECUTED_DATABASE_REQUIRED"
+                ),
+                "row_reconciliation": {
+                    "expected_rows": expected_dataset[
+                        "expected_rows"
+                    ],
+                    "actual_rows": None,
+                    "status": "NOT_EXECUTED",
+                },
+                "column_reconciliation": {
+                    "expected_columns": expected_dataset[
+                        "expected_columns"
+                    ],
+                    "actual_columns": None,
+                    "status": "NOT_EXECUTED",
+                },
+                "reconciliation_issue_summary": {
+                    "total_issues": 0,
+                    "high_severity_issues": 0,
+                    "medium_severity_issues": 0,
+                    "low_severity_issues": 0,
+                },
+                "reconciliation_issues": [],
+            }
+        )
+
+    return {
+        "reconciliation_metadata": {
+            "database": database,
+            "generated_at_utc": datetime.now(
+                timezone.utc
+            ).isoformat(),
+            "reconciliation_mode": (
+                "NOT_EXECUTED_DATABASE_REQUIRED"
+            ),
+            "reconciliation_note": (
+                "Target database was unavailable or not "
+                "configured. Reconciliation was not executed."
+            ),
+            "error": error,
+        },
+        "reconciliation_summary": {
+            "total_datasets": len(datasets),
+            "reconciled_datasets": 0,
+            "not_reconciled_datasets": 0,
+            "missing_target_datasets": 0,
+            "extra_target_datasets": 0,
+            "total_issues": 0,
+            "high_severity_issues": 0,
+            "medium_severity_issues": 0,
+            "low_severity_issues": 0,
+            "reconciliation_status": (
+                "NOT_EXECUTED_DATABASE_REQUIRED"
+            ),
+        },
+        "datasets": datasets,
+        "extra_target_datasets": [],
+    }
 
 
 # ============================================================
@@ -500,6 +596,338 @@ def get_target_metrics(
 
 
 # ============================================================
+# FOREIGN KEY VALIDATION
+# ============================================================
+
+def validate_mysql_foreign_keys(
+    connection: Any,
+    foreign_keys: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Validate same-database foreign key referential integrity
+    for MySQL.
+    """
+
+    import mysql.connector
+
+    cursor = connection.cursor()
+
+    issues = []
+
+    try:
+
+        for fk in foreign_keys:
+
+            parent_table = fk["parent_table"]
+            parent_key = fk["parent_key"]
+            child_table = fk["child_table"]
+            child_key = fk["child_key"]
+
+            query = (
+                f"SELECT COUNT(*) "
+                f"FROM `{child_table}` "
+                f"WHERE `{child_key}` IS NOT NULL "
+                f"AND `{child_key}` NOT IN "
+                f"(SELECT `{parent_key}` FROM `{parent_table}`)"
+            )
+
+            cursor.execute(query)
+
+            orphan_count = int(
+                cursor.fetchone()[0]
+            )
+
+            if orphan_count > 0:
+
+                issues.append(
+                    {
+                        "issue_type": (
+                            "FOREIGN_KEY_ORPHAN"
+                        ),
+                        "severity": "HIGH",
+                        "parent_table": parent_table,
+                        "parent_key": parent_key,
+                        "child_table": child_table,
+                        "child_key": child_key,
+                        "orphan_count": orphan_count,
+                        "message": (
+                            f"Foreign key relationship "
+                            f"{child_table}.{child_key} -> "
+                            f"{parent_table}.{parent_key} "
+                            f"has {orphan_count} orphan records."
+                        ),
+                    }
+                )
+
+    finally:
+
+        cursor.close()
+
+    return issues
+
+
+def validate_postgresql_foreign_keys(
+    connection: Any,
+    foreign_keys: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Validate same-database foreign key referential integrity
+    for PostgreSQL.
+    """
+
+    cursor = connection.cursor()
+
+    issues = []
+
+    try:
+
+        for fk in foreign_keys:
+
+            parent_table = fk["parent_table"]
+            parent_key = fk["parent_key"]
+            child_table = fk["child_table"]
+            child_key = fk["child_key"]
+
+            query = (
+                f'SELECT COUNT(*) '
+                f'FROM "{child_table}" '
+                f'WHERE "{child_key}" IS NOT NULL '
+                f'AND "{child_key}" NOT IN '
+                f'(SELECT "{parent_key}" FROM "{parent_table}")'
+            )
+
+            cursor.execute(query)
+
+            orphan_count = int(
+                cursor.fetchone()[0]
+            )
+
+            if orphan_count > 0:
+
+                issues.append(
+                    {
+                        "issue_type": (
+                            "FOREIGN_KEY_ORPHAN"
+                        ),
+                        "severity": "HIGH",
+                        "parent_table": parent_table,
+                        "parent_key": parent_key,
+                        "child_table": child_table,
+                        "child_key": child_key,
+                        "orphan_count": orphan_count,
+                        "message": (
+                            f"Foreign key relationship "
+                            f"{child_table}.{child_key} -> "
+                            f"{parent_table}.{parent_key} "
+                            f"has {orphan_count} orphan records."
+                        ),
+                    }
+                )
+
+    finally:
+
+        cursor.close()
+
+    return issues
+
+
+def validate_mssql_foreign_keys(
+    connection: Any,
+    foreign_keys: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Validate same-database foreign key referential integrity
+    for MSSQL.
+    """
+
+    cursor = connection.cursor()
+
+    issues = []
+
+    try:
+
+        for fk in foreign_keys:
+
+            parent_table = fk["parent_table"]
+            parent_key = fk["parent_key"]
+            child_table = fk["child_table"]
+            child_key = fk["child_key"]
+
+            safe_parent = parent_table.replace("]", "]]")
+            safe_child = child_table.replace("]", "]]")
+
+            query = (
+                f"SELECT COUNT(*) "
+                f"FROM [{safe_child}] "
+                f"WHERE [{child_key}] IS NOT NULL "
+                f"AND [{child_key}] NOT IN "
+                f"(SELECT [{parent_key}] FROM [{safe_parent}])"
+            )
+
+            cursor.execute(query)
+
+            orphan_count = int(
+                cursor.fetchone()[0]
+            )
+
+            if orphan_count > 0:
+
+                issues.append(
+                    {
+                        "issue_type": (
+                            "FOREIGN_KEY_ORPHAN"
+                        ),
+                        "severity": "HIGH",
+                        "parent_table": parent_table,
+                        "parent_key": parent_key,
+                        "child_table": child_table,
+                        "child_key": child_key,
+                        "orphan_count": orphan_count,
+                        "message": (
+                            f"Foreign key relationship "
+                            f"{child_table}.{child_key} -> "
+                            f"{parent_table}.{parent_key} "
+                            f"has {orphan_count} orphan records."
+                        ),
+                    }
+                )
+
+    finally:
+
+        cursor.close()
+
+    return issues
+
+
+def validate_foreign_keys(
+    database: str,
+    connection: Any,
+    foreign_keys: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Route foreign key validation to the selected database.
+    """
+
+    if not foreign_keys:
+
+        return []
+
+    if database == "mysql":
+        return validate_mysql_foreign_keys(
+            connection,
+            foreign_keys,
+        )
+
+    if database == "postgresql":
+        return validate_postgresql_foreign_keys(
+            connection,
+            foreign_keys,
+        )
+
+    if database == "mssql":
+        return validate_mssql_foreign_keys(
+            connection,
+            foreign_keys,
+        )
+
+    return []
+
+
+def run_foreign_key_validation(
+    database: str,
+    foreign_keys: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Run foreign key validation for the selected database.
+    """
+
+    if not foreign_keys:
+
+        return []
+
+    if database == "mysql":
+
+        import mysql.connector
+
+        from scripts.python.common.config_loader import (
+            load_database_config,
+        )
+
+        config = load_database_config("mysql")
+
+        connection = mysql.connector.connect(
+            host=config["MYSQL_HOST"],
+            port=int(config["MYSQL_PORT"]),
+            user=config["MYSQL_USER"],
+            password=config["MYSQL_PASSWORD"],
+            database=config["MYSQL_DB"],
+        )
+
+        try:
+
+            return validate_mysql_foreign_keys(
+                connection,
+                foreign_keys,
+            )
+
+        finally:
+
+            connection.close()
+
+    if database == "postgresql":
+
+        import psycopg2
+
+        from scripts.python.common.config_loader import (
+            load_database_config,
+        )
+
+        config = load_database_config(
+            "postgresql"
+        )
+
+        connection = psycopg2.connect(
+            host=config["POSTGRESQL_HOST"],
+            port=int(config["POSTGRESQL_PORT"]),
+            user=config["POSTGRESQL_USER"],
+            password=config["POSTGRESQL_PASSWORD"],
+            dbname=config["POSTGRESQL_DB"],
+        )
+
+        try:
+
+            return validate_postgresql_foreign_keys(
+                connection,
+                foreign_keys,
+            )
+
+        finally:
+
+            connection.close()
+
+    if database == "mssql":
+
+        from scripts.python.mssql.setup.db_connection import (
+            get_connection,
+        )
+
+        connection = get_connection()
+
+        try:
+
+            return validate_mssql_foreign_keys(
+                connection,
+                foreign_keys,
+            )
+
+        finally:
+
+            connection.close()
+
+    return []
+
+
+# ============================================================
 # DATASET RECONCILIATION
 # ============================================================
 
@@ -594,9 +1022,37 @@ def run_reconciliation(
         )
     )
 
-    target_metrics = get_target_metrics(
-        database
-    )
+    try:
+
+        target_metrics = get_target_metrics(
+            database
+        )
+
+    except Exception as error:
+
+        print(
+            "====================================="
+        )
+        print(
+            "DATA RECONCILIATION SKIPPED"
+        )
+        print(
+            "====================================="
+        )
+        print(
+            f"Database       : {database}"
+        )
+        print(
+            f"Reason         : Target database unavailable "
+            f"or not configured ({error})"
+        )
+        print()
+
+        return build_not_executed_output(
+            database,
+            expected_datasets,
+            str(error),
+        )
 
     reconciliation_results = []
 
@@ -744,7 +1200,22 @@ def run_reconciliation(
                 target_dataset["target_name"]
             )
 
-            #all_issues.append(issue)
+            all_issues.append(issue)
+
+    # --------------------------------------------------------
+    # FOREIGN KEY VALIDATION
+    # --------------------------------------------------------
+
+    foreign_key_issues = (
+        run_foreign_key_validation(
+            database,
+            FOREIGN_KEYS,
+        )
+    )
+
+    all_issues.extend(
+        foreign_key_issues
+    )
 
     issue_summary = (
         summarize_reconciliation_issues(

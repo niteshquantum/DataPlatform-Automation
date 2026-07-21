@@ -890,50 +890,7 @@ if (currentBuild.number == 1) {
                         'windows'
                     ) {
 
-                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
-
-                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
-
-
-                        def adminStatus = bat(
-                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
-                            returnStatus: true
-                        )
-
-
-                        if (adminStatus == 0) {
-
-                            echo 'Administrator privileges available.'
-
-                            echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
-
-                            bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
-
-                            bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
-
-                        } else {
-
-                            echo 'Administrator privileges not available.'
-
-                            echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
-
-                            echo 'MongoDB will run using project-local mode.'
-
-                            bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
-                        }
-
-
-                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                        bat 'scripts\\batch\\mongodb\\mongodb_setup_pipeline.bat'
                     }
                 }
             }
@@ -982,43 +939,7 @@ if (currentBuild.number == 1) {
                         'windows'
                     ) {
 
-                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
-
-                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
-
-                        bat 'scripts\\batch\\common\\download_dataset.bat'
-
-                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mongodb'
-
-                        bat 'scripts\\batch\\mongodb\\load\\load_data.bat'
-
-                        bat 'scripts\\batch\\mongodb\\load\\validate_loaded_data.bat'
-
-                        bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
-
-                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
-
-                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat mongodb'
-
-                        bat 'python scripts\\discovery\\discovery_engine.py --database mongodb'
-
-                        bat 'python scripts\\discovery\\growth_analyzer.py --database mongodb'
-
-                        bat 'python scripts\\discovery\\requirement_analyzer.py --database mongodb'
-
-                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat mongodb'
-
-                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat mongodb'
-
-                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat mongodb'
-
-                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat mongodb'
-
-                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat mongodb'
+                        bat 'scripts\\batch\\mongodb\\mongodb_load_pipeline.bat'
                     }
                 }
             }
@@ -1121,27 +1042,7 @@ if (currentBuild.number == 1) {
                         'windows'
                     ) {
 
-                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\install_python_requirements.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
-
-                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
-
-						bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+                        bat 'scripts\\batch\\postgresql\\postgresql_setup_pipeline.bat'
                     }
                 }
             }
@@ -1190,50 +1091,7 @@ if (currentBuild.number == 1) {
                         'windows'
                     ) {
 
-                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
-
-                        bat 'scripts\\batch\\common\\download_dataset.bat'
-
-                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat postgresql'
-
-                        bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
-
-                        bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
-
-                        bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
-
-                        
-					
-						bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
-
-
-                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
-
-                        bat 'scripts\\batch\\common\\migration\\run_reconciliation.bat postgresql'
-
-                        bat 'python scripts\\discovery\\discovery_engine.py --database postgresql'
-
-                        bat 'python scripts\\discovery\\growth_analyzer.py --database postgresql'
-
-                        bat 'python scripts\\discovery\\requirement_analyzer.py --database postgresql'
-
-                        bat 'scripts\\batch\\common\\migration\\run_assessment.bat postgresql'
-
-                        bat 'scripts\\batch\\common\\migration\\run_recommendation.bat postgresql'
-
-                        bat 'scripts\\batch\\common\\migration\\run_action_plan.bat postgresql'
-
-                        bat 'scripts\\batch\\common\\migration\\generate_technical_report.bat postgresql'
-
-                        bat 'scripts\\batch\\common\\migration\\generate_executive_report.bat postgresql'
+                        bat 'scripts\\batch\\postgresql\\postgresql_load_pipeline.bat'
                     }
                 }
             }

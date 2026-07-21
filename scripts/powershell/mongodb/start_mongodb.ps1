@@ -60,6 +60,21 @@ Write-Host "Port         : $MongoPort"
 Write-Host ""
 
 # =====================================
+# CHECK IF ALREADY RUNNING
+# =====================================
+
+$AlreadyRunning = netstat -ano | Select-String ":$MongoPort"
+
+if ($AlreadyRunning) {
+
+    Write-Host ""
+    Write-Host "MongoDB already running on port $MongoPort"
+    Write-Host ""
+
+    exit 0
+}
+
+# =====================================
 # VALIDATE
 # =====================================
 
@@ -75,21 +90,6 @@ $LogDir = Split-Path $LogPath
 
 if (!(Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-}
-
-# =====================================
-# CHECK IF ALREADY RUNNING
-# =====================================
-
-$AlreadyRunning = netstat -ano | Select-String ":$MongoPort"
-
-if ($AlreadyRunning) {
-
-    Write-Host ""
-    Write-Host "MongoDB already running on port $MongoPort"
-    Write-Host ""
-
-    exit 0
 }
 
 # =====================================

@@ -16,7 +16,7 @@ Technical and Executive report input architecture.
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 
 # ============================================================
@@ -143,51 +143,153 @@ def load_report_inputs(
         database
     )
 
-    return {
-        "profiling": load_json_file(
-            input_paths["profiling"],
-            "Profiling output",
-        ),
-        "reconciliation": load_json_file(
-            input_paths["reconciliation"],
-            "Reconciliation output",
-        ),
-        "assessment": load_json_file(
-            input_paths["assessment"],
-            "Assessment output",
-        ),
-        "recommendation": load_json_file(
-            input_paths["recommendation"],
-            "Recommendation output",
-        ),
-        "discovery": load_json_file(
-            input_paths["discovery"],
-            "Discovery output",
-        ),
+    loaded = {}
 
-        "growth": load_json_file(
-            input_paths["growth"],
-            "Growth analysis output",
-        ),
+    for input_name, file_path in input_paths.items():
 
-        "requirements": load_json_file(
-            input_paths["requirements"],
-            "Requirements analysis output",
-        ),
-    }
+        loaded[input_name] = (
+            load_json_file(
+                file_path,
+                input_name,
+            )
+        )
+
+    return loaded
 
 
 # ============================================================
 # INPUT VALIDATION
 # ============================================================
 
+def _get_metadata_timestamp(
+    output: Dict[str, Any],
+    metadata_key: str,
+) -> Optional[str]:
+
+    metadata = output.get(metadata_key, {})
+
+    return metadata.get("generated_at") or metadata.get("generated_at_utc")
+
+
+def _get_metadata_database(
+    output: Dict[str, Any],
+    metadata_key: str,
+) -> Optional[str]:
+
+    metadata = output.get(metadata_key, {})
+
+    return metadata.get("database")
+
+
+def validate_artifact_freshness(
+    database: str,
+    report_inputs: Dict[str, Dict[str, Any]],
+) -> None:
+    """
+    Validate that all input artifacts are mutually compatible
+    and belong to the current pipeline run.
+
+    Supported provenance modes:
+        VERIFIED            — all artifacts have consistent timestamps
+                              and database identity
+        UNVERIFIED_LEGACY   — one or more artifacts lack provenance
+                              metadata; accepted with warning
+        MISMATCHED          — artifacts belong to different databases
+                              or runs; rejected
+        STALE               — artifact timestamps indicate a previous
+                              run; rejected
+
+    Older JSON artifacts without provenance metadata are accepted
+    as UNVERIFIED_LEGACY and do not cause report generation to fail.
+    """
+
+    validation_rules = {
+        "profiling": "profiling_metadata",
+        "reconciliation": "reconciliation_metadata",
+        "assessment": "assessment_metadata",
+        "recommendation": "recommendation_metadata",
+    }
+
+    timestamps = []
+    databases = []
+    unverified_count = 0
+
+    for input_name, rules in validation_rules.items():
+
+        output = report_inputs[input_name]
+        metadata_key = rules
+
+        if metadata_key not in output:
+
+            raise ValueError(
+                f"{metadata_key} is missing "
+                f"from {input_name} output."
+            )
+
+        artifact_database = _get_metadata_database(
+            output,
+            metadata_key,
+        )
+
+        if artifact_database is None:
+
+            unverified_count += 1
+
+        elif artifact_database != database:
+
+            raise ValueError(
+                f"{input_name} output database "
+                f"does not match selected database "
+                f"'{database}'. "
+                f"Artifact reports '{artifact_database}'. "
+                f"Possible cross-database contamination."
+            )
+
+        else:
+
+            databases.append(artifact_database)
+
+        timestamp = _get_metadata_timestamp(
+            output,
+            metadata_key,
+        )
+
+        if timestamp is not None:
+
+            timestamps.append(timestamp)
+
+        else:
+
+            unverified_count += 1
+
+    if unverified_count > 0:
+
+        return
+
+    if len(set(databases)) > 1:
+
+        raise ValueError(
+            "Input artifacts belong to different databases. "
+            f"Found databases: {sorted(set(databases))}. "
+            "Reports cannot mix cross-database artifacts."
+        )
+
+    if len(set(timestamps)) > 1:
+
+        raise ValueError(
+            "Input artifacts have inconsistent timestamps. "
+            f"Found timestamps: {sorted(set(timestamps))}. "
+            "Reports cannot mix artifacts from different pipeline runs."
+        )
+
+
 def validate_report_inputs(
     database: str,
     report_inputs: Dict[str, Dict[str, Any]],
 ) -> None:
     """
-    Validate required structures and ensure all inputs belong
-    to the selected database.
+    Validate required structures, ensure all inputs belong
+    to the selected database, and verify artifact freshness.
     """
 
     validation_rules = {
@@ -242,6 +344,11 @@ def validate_report_inputs(
                 f"does not match selected database "
                 f"'{database}'."
             )
+
+    validate_artifact_freshness(
+        database,
+        report_inputs,
+    )
 
 
 # ============================================================

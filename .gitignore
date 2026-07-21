@@ -62,6 +62,7 @@ metadata/**/schema_registry.json
 metadata/**/object_registry.json
 metadata/**/object_generation_report.json
 metadata/**/object_validation_report.json
+metadata/**/trigger_generation_report.json
 metadata/**/pipeline_log*.json
 metadata/**/*.jsonl
 
@@ -75,10 +76,17 @@ metadata/**/[0-9]*.json
 # CDC runtime metadata
 metadata/**/cdc_status.json
 metadata/**/cdc_summary.json
+metadata/**/migration_state.json
+
+# Schema runtime status
+metadata/**/schema_status.json
 
 # Keep required folder placeholders
 !metadata/*/.gitkeep
 !metadata/discovery/*/.gitkeep
+
+# Dataset runtime state
+metadata/common/dataset_state.json
 
 # =====================================================
 # Incoming / Archive / Failed

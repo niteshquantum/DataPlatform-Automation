@@ -22,6 +22,11 @@ $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
 $PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
 
+if (-not (Test-Path (Join-Path $PgBin "pg_ctl.exe"))) {
+    $PgBin = "C:\Program Files\PostgreSQL\17\bin"
+    $PgData = "C:\Program Files\PostgreSQL\17\data"
+}
+
 $PgCtl = Join-Path $PgBin "pg_ctl.exe"
 $Psql = Join-Path $PgBin "psql.exe"
 

@@ -1,6 +1,13 @@
 pipeline {
 
-    agent any
+    agent {
+        label 'windows-node'
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
+
 
     parameters {
 
@@ -16,68 +23,91 @@ pipeline {
 
     stages {
 
-        stage('Validate Cleanup Parameters') {
+        stage('Initialize Logging') {
+
             steps {
-                script {
 
-                    if (
-                        params.CLEANUP_MODE != 'PRESERVE_DATA' &&
-                        params.CLEANUP_MODE != 'DELETE_DATA'
-                    ) {
-                        error("Invalid CLEANUP_MODE: ${params.CLEANUP_MODE}")
-                    }
-
-                    echo "====================================="
-                    echo "MSSQL CLEANUP PARAMETERS"
-                    echo "====================================="
-                    echo "Cleanup Mode : ${params.CLEANUP_MODE}"
-                }
+                bat """
+                    python scripts\\logging\\logger.py init ^
+                    --database mssql ^
+                    --action cleanup ^
+                    --os windows ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --job-name "${env.JOB_NAME}" ^
+                    --build-url "${env.BUILD_URL}"
+                """
             }
         }
 
+
         stage('Run MSSQL Cleanup') {
+
             steps {
 
                 withEnv([
                     "CLEANUP_MODE=${params.CLEANUP_MODE}"
                 ]) {
 
-                    bat '''
-                    @echo off
-
-                    echo.
-                    echo =====================================
-                    echo RUNNING MSSQL CLEANUP
-                    echo =====================================
-                    echo.
-
-                    call "%WORKSPACE%\\scripts\\batch\\mssql\\cleanup\\mssql_cleanup_pipeline.bat"
-
-                    if errorlevel 1 (
-                        echo.
-                        echo MSSQL CLEANUP FAILED
-                        exit /b 1
-                    )
-
-                    echo.
-                    echo MSSQL CLEANUP COMPLETED SUCCESSFULLY
-                    '''
+                    bat 'scripts\\batch\\mssql\\cleanup\\mssql_cleanup_pipeline.bat'
                 }
             }
         }
     }
 
+
     post {
 
         success {
+
             echo 'MSSQL CLEANUP SUCCESSFUL'
         }
 
+
         failure {
+
             echo 'MSSQL CLEANUP FAILED'
         }
 
+
         always {
+
+            echo 'FINALIZING MSSQL CLEANUP LOGGING AND REPORTING'
+
+            script {
+
+                def finalStatus = currentBuild.currentResult
+
+                bat """
+                    python scripts\\logging\\logger.py finalize ^
+                    --database mssql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}" ^
+                    --status "${finalStatus}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_report.py ^
+                    --database mssql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+
+                bat """
+                    python scripts\\reporting\\generate_history.py ^
+                    --database mssql ^
+                    --action cleanup ^
+                    --build-number "${env.BUILD_NUMBER}"
+                """
+            }
+
+
+            archiveArtifacts(
+                artifacts: "logs/mssql/cleanup/build_${env.BUILD_NUMBER}/**, reports/mssql/cleanup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                fingerprint: true,
+                allowEmptyArchive: true
+            )
+
+            echo "Cleanup Mode: ${params.CLEANUP_MODE}"
             echo 'MSSQL CLEANUP PIPELINE COMPLETED'
         }
     }

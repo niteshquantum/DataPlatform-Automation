@@ -436,7 +436,7 @@ def truncate_table(conn, db_type, table_name):
     finally:
 
         cursor.close()
-def load_and_insert_file(conn, db_type, path, load_mode="skip"):
+def load_and_insert_file(conn, db_type, path, load_mode="skip", strict_schema=False):
     table_name = (
     path.stem
     .strip()
@@ -468,11 +468,21 @@ def load_and_insert_file(conn, db_type, path, load_mode="skip"):
     if existing_columns and load_mode == "reload":
         truncate_table(conn, db_type, table_name)
     if not existing_columns:
+        if strict_schema:
+            raise Exception(
+                f"Strict schema mode: table '{table_name}' does not exist. "
+                f"Refusing to create it."
+            )
         create_table(conn, db_type, table_name, file_columns)
         existing_columns = file_columns
     else:
         new_columns = [col for col in file_columns if col not in existing_columns]
         if new_columns:
+            if strict_schema:
+                raise Exception(
+                    f"Strict schema mode: table '{table_name}' has missing columns "
+                    f"not present in target schema: {new_columns}"
+                )
             add_missing_columns(conn, db_type, table_name, new_columns)
             existing_columns.extend(new_columns)
 
@@ -493,6 +503,7 @@ def main():
 
     project_root = Path(__file__).resolve().parents[1]
     load_mode = os.environ.get("LOAD_MODE", "skip").lower()
+    strict_schema = os.environ.get("STRICT_SCHEMA", "false").lower() == "true"
     db_type = sys.argv[1].lower() if len(sys.argv) > 1 else "mysql"
 
     global HISTORY_FILE
@@ -562,7 +573,8 @@ def main():
                 conn,
                 db_type,
                 path,
-                load_mode
+                load_mode,
+                strict_schema
             )
 
             status = "SUCCESS"

@@ -22,22 +22,6 @@ echo =====================================
 echo POSTGRESQL DATABASE OBJECT AUTOMATION
 echo =====================================
 echo.
-python scripts\python\common\check_schema_changed.py postgresql
-
-if errorlevel 2 (
-    echo.
-    echo =====================================
-    echo NO SCHEMA CHANGES DETECTED
-    echo SKIPPING DATABASE OBJECT DEPLOYMENT
-    echo =====================================
-    echo.
-    exit /b 0
-)
-
-if errorlevel 1 (
-    echo ERROR: Unable to read CDC status.
-    exit /b 1
-)
 
 REM =====================================
 REM GENERATE DATABASE OBJECTS

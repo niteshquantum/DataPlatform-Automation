@@ -61,6 +61,8 @@ echo.
 
 echo LOAD MODE : %LOAD_MODE%
 
+set "STRICT_SCHEMA=true"
+
 python scripts\data_loader.py mysql
 if errorlevel 1 exit /b 1
 

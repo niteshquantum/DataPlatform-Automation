@@ -48,11 +48,14 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent any
+    agent {
+        label 'windows-node'
+    }
 
     options {
         disableConcurrentBuilds()
     }
+
 
     parameters {
 
@@ -90,54 +93,6 @@ pipeline {
         }
 
 
-        stage('Cleanup Information') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Cleanup Information'
-                    ) {
-
-                        echo "====================================="
-                        echo "MYSQL WINDOWS CLEANUP PIPELINE"
-                        echo "====================================="
-
-                        echo "Workspace    : ${WORKSPACE}"
-                        echo "Cleanup Mode : ${params.CLEANUP_MODE}"
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Cleanup Scripts') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Cleanup Scripts'
-                    ) {
-
-                        bat '''
-                            @echo off
-
-                            if not exist "%WORKSPACE%\\scripts\\powershell\\mysql\\cleanup\\cleanup_mysql.ps1" (
-                                echo ERROR: MySQL cleanup script not found
-                                exit /b 1
-                            )
-
-                            echo MySQL cleanup scripts validated successfully
-                        '''
-                    }
-                }
-            }
-        }
-
-
         stage('Cleanup MySQL') {
 
             steps {
@@ -152,26 +107,7 @@ pipeline {
                             "CLEANUP_MODE=${params.CLEANUP_MODE}"
                         ]) {
 
-                            bat '''
-                                @echo off
-
-                                echo.
-                                echo =====================================
-                                echo RUNNING MYSQL CLEANUP
-                                echo =====================================
-                                echo.
-
-                                call scripts\\batch\\mysql\\cleanup\\cleanup_mysql.bat
-
-                                if errorlevel 1 (
-                                    echo.
-                                    echo MYSQL CLEANUP FAILED
-                                    exit /b 1
-                                )
-
-                                echo.
-                                echo MYSQL CLEANUP COMPLETED SUCCESSFULLY
-                            '''
+                            bat 'scripts\\batch\\mysql\\cleanup\\cleanup_mysql.bat'
                         }
                     }
                 }

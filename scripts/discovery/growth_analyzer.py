@@ -47,6 +47,9 @@ SUPPORTED_DATABASES = {
 }
 
 
+SNAPSHOT_SCHEMA_VERSION = "1.0"
+
+
 # ============================================================
 # LOAD JSON
 # ============================================================
@@ -61,6 +64,31 @@ def load_json(
     ) as file:
 
         return json.load(file)
+
+
+def validate_snapshot_provenance(
+    snapshot: Dict[str, Any],
+    database: str,
+) -> None:
+    """
+    Validate snapshot provenance metadata.
+
+    Raises ValueError if the snapshot belongs to a different
+    database or is from an incompatible schema version.
+
+    Legacy snapshots without provenance metadata are accepted
+    as UNVERIFIED_LEGACY and do not cause growth analysis to fail.
+    """
+
+    snapshot_database = snapshot.get("database")
+
+    if snapshot_database is not None and snapshot_database != database:
+
+        raise ValueError(
+            f"Snapshot database '{snapshot_database}' "
+            f"does not match current database '{database}'. "
+            "Growth analysis cannot compare cross-database snapshots."
+        )
 
 
 # ============================================================
@@ -308,6 +336,9 @@ def build_baseline_output(
                 timezone.utc
             ).isoformat()
         ),
+        "snapshot_schema_version": (
+            SNAPSHOT_SCHEMA_VERSION
+        ),
         "growth_status": "BASELINE_CREATED",
         "summary": {
             "previous_total_records": None,
@@ -414,6 +445,9 @@ def build_growth_output(
             datetime.now(
                 timezone.utc
             ).isoformat()
+        ),
+        "snapshot_schema_version": (
+            SNAPSHOT_SCHEMA_VERSION
         ),
         "growth_status": "ANALYZED",
         "comparison": {
@@ -589,6 +623,11 @@ def main():
 
             previous_output = load_json(
                 snapshot_file
+            )
+
+            validate_snapshot_provenance(
+                previous_output,
+                database,
             )
 
             growth_output = (

@@ -56,12 +56,12 @@ ForEach-Object {
     }
     catch {
         Write-Host "Skipping mysqld process with unreadable path (PID: $($_.Id))"
-        return
+        continue
     }
 
     if ($processPath -ne $mysqld) {
         Write-Host "Skipping non-project mysqld process (PID: $($_.Id))"
-        return
+        continue
     }
 
     Write-Host "Stopping existing project mysqld process (PID: $($_.Id))"

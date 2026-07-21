@@ -18,21 +18,56 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
 
-@REM call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql.bat"
-@REM if errorlevel 1 exit /b 1
+echo.
+echo =====================================
+echo CHECKING MSSQL INSTANCE STATE
+echo =====================================
+echo.
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql_gdrive.bat"
-if errorlevel 1 exit /b 1
+set "INST_INSTANCE_STATE="
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
-if errorlevel 1 exit /b 1
+for /f "tokens=1* delims==" %%A in ('"%PROJECT_ROOT%\scripts\batch\mssql\setup\check_instance.bat"') do (
+    set "INST_%%A=%%B"
+)
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
-if errorlevel 1 exit /b 1
+if not defined INST_INSTANCE_STATE (
+    echo ERROR: Failed to determine instance state.
+    exit /b 1
+)
 
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\create_database.bat"
-if errorlevel 1 exit /b 1
+echo Instance State: %INST_INSTANCE_STATE%
 
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_RUNNING_AND_USABLE" (
+    echo Reusing existing MSSQL instance.
+    goto :validate_environment
+)
+
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_INSTALLED_BUT_STOPPED" (
+    echo Starting existing MSSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
+    if errorlevel 1 exit /b 1
+    goto :validate_environment
+)
+
+if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
+    echo Deploying project-local MSSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql_gdrive.bat"
+    if errorlevel 1 exit /b 1
+
+    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
+    if errorlevel 1 exit /b 1
+
+    echo Starting MSSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
+    if errorlevel 1 exit /b 1
+    goto :validate_environment
+)
+
+echo ERROR: Unexpected instance state: %INST_INSTANCE_STATE%
+if defined INST_ERROR echo %INST_ERROR%
+exit /b 1
+
+:validate_environment
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

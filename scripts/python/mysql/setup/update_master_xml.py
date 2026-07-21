@@ -31,11 +31,9 @@ if not master_xml.exists():
 tree = ET.parse(master_xml)
 root = tree.getroot()
 
-# Existing include files
-existing_includes = {
-    elem.attrib["file"]
-    for elem in root.findall(f"{{{NS}}}include")
-}
+# Remove all existing includes
+for include_elem in root.findall(f"{{{NS}}}include"):
+    root.remove(include_elem)
 
 # Scan all XML files except master.xml
 xml_files = sorted(
@@ -47,9 +45,6 @@ for xml_file in xml_files:
 
     relative_path = xml_file.name
 
-    if relative_path in existing_includes:
-        continue
-
     include_elem = ET.SubElement(
         root,
         f"{{{NS}}}include"
@@ -57,7 +52,6 @@ for xml_file in xml_files:
 
     include_elem.set("file", relative_path)
 
-    # IMPORTANT
     include_elem.set(
         "relativeToChangelogFile",
         "true"

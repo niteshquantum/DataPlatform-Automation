@@ -18,18 +18,53 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
 
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\deploy_postgresql.bat"
-if errorlevel 1 exit /b 1
+echo.
+echo =====================================
+echo CHECKING POSTGRESQL INSTANCE STATE
+echo =====================================
+echo.
 
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\start_postgresql.bat"
-if errorlevel 1 exit /b 1
+set "INST_INSTANCE_STATE="
 
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\create_database.bat"
-if errorlevel 1 exit /b 1
+for /f "tokens=1* delims==" %%A in ('"%PROJECT_ROOT%\scripts\batch\postgresql\setup\check_instance.bat"') do (
+    set "INST_%%A=%%B"
+)
 
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\run_liquibase.bat"
-if errorlevel 1 exit /b 1
+if not defined INST_INSTANCE_STATE (
+    echo ERROR: Failed to determine instance state.
+    exit /b 1
+)
 
+echo Instance State: %INST_INSTANCE_STATE%
+
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_RUNNING_AND_USABLE" (
+    echo Reusing existing PostgreSQL instance.
+    goto :validate_environment
+)
+
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_INSTALLED_BUT_STOPPED" (
+    echo Starting existing PostgreSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\start_postgresql.bat"
+    if errorlevel 1 exit /b 1
+    goto :validate_environment
+)
+
+if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
+    echo Deploying project-local PostgreSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\deploy_postgresql.bat"
+    if errorlevel 1 exit /b 1
+
+    echo Starting PostgreSQL instance.
+    call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\start_postgresql.bat"
+    if errorlevel 1 exit /b 1
+    goto :validate_environment
+)
+
+echo ERROR: Unexpected instance state: %INST_INSTANCE_STATE%
+if defined INST_ERROR echo %INST_ERROR%
+exit /b 1
+
+:validate_environment
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

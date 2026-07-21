@@ -136,12 +136,15 @@ class PostgreSQLObjectValidator:
     def get_extensions(self):
         """PostgreSQL-specific: installed extensions via pg_extension."""
 
-        return self._fetch_names(
-            """
-            SELECT extname
-            FROM pg_extension
-            """
-        )
+        return {
+            name.replace("-", "_")
+            for name in self._fetch_names(
+                """
+                SELECT extname
+                FROM pg_extension
+                """
+            )
+        }
 
     def get_indexes(self):
 

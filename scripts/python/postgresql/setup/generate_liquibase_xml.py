@@ -28,13 +28,11 @@ existing_files = sorted(
     if f.name != "master.xml"
 )
 
+for old_file in existing_files:
+    if old_file.name[0].isdigit():
+        old_file.unlink()
 
-# Stores columns already covered by previous Liquibase changesets
-# Format:
-# {
-#     "table_name": {"column1", "column2"}
-# }
-
+existing_files = []
 covered_columns = {}
 
 

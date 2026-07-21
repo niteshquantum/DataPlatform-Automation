@@ -16,14 +16,13 @@ existing_files = sorted(
     f for f in liquibase_dir.glob("*.xml")
     if f.name != "master.xml"
 )
- 
-# FIX: instead of just recording "table exists", we now record which
-# COLUMNS have already been covered by a previous changeset (either the
-# original createTable, or a later addColumn). This lets us:
-#   - skip tables that are fully up to date (no new XML at all)
-#   - only emit the NEW columns for a table that already has a changeset
-# Table names are stored lowercase to match how they're used elsewhere.
-covered_columns = {}   # { table_name_lower: set(column_name_lower) }
+
+for old_file in existing_files:
+    if old_file.name[0].isdigit():
+        old_file.unlink()
+
+existing_files = []
+covered_columns = {}
  
 column_pattern = re.compile(r'<column name="([^"]+)"')
 table_pattern = re.compile(r'tableName="([^"]+)"')
