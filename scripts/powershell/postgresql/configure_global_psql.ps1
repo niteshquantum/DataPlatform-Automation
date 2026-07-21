@@ -1,5 +1,49 @@
 $ErrorActionPreference = "Stop"
 
+function Get-ServiceImagePath {
+    param([string]$Name)
+
+    $ServiceInfo = Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue
+    if ($ServiceInfo -and $ServiceInfo.PathName) {
+        return $ServiceInfo.PathName.Trim()
+    }
+
+    return $null
+}
+
+function Resolve-ServicePsqlPath {
+    param([string]$ServiceImagePath)
+
+    if ([string]::IsNullOrWhiteSpace($ServiceImagePath)) {
+        return $null
+    }
+
+    # PostgreSQL services registered by pg_ctl include the executable path in
+    # ImagePath. Derive the bin directory from that runtime rather than a
+    # workspace which may not contain an installation.
+    $PgCtlMatch = [regex]::Match(
+        $ServiceImagePath.Trim(),
+        '"?(?<path>[A-Za-z]:\\[^"\r\n]*?\\pg_ctl\.exe)"?',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    if (-not $PgCtlMatch.Success) {
+        return $null
+    }
+
+    $PgCtlPath = $PgCtlMatch.Groups['path'].Value.Trim('"')
+    if (-not (Test-Path -LiteralPath $PgCtlPath -PathType Leaf)) {
+        return $null
+    }
+
+    $PsqlPath = Join-Path (Split-Path -Parent $PgCtlPath) "psql.exe"
+    if (Test-Path -LiteralPath $PsqlPath -PathType Leaf) {
+        return (Resolve-Path -LiteralPath $PsqlPath).Path
+    }
+
+    return $null
+}
+
 Write-Host ""
 Write-Host "====================================="
 Write-Host "CONFIGURING GLOBAL PSQL COMMAND"
@@ -34,9 +78,24 @@ if (-not $PgPort) { throw "POSTGRESQL_PORT not found in postgresql.conf" }
 if (-not $PgDatabase) { throw "POSTGRESQL_DB not found in postgresql.conf" }
 if (-not $PgUser) { throw "POSTGRESQL_USER not found in postgresql.conf" }
 
-$PsqlExe = "$PROJECT_ROOT\databases\postgresql\bin\psql.exe"
-if (!(Test-Path $PsqlExe)) {
-    throw "psql.exe not found: $PsqlExe"
+$WorkspacePsqlExe = Join-Path $PROJECT_ROOT "databases\postgresql\bin\psql.exe"
+$PsqlExe = $null
+
+if (Test-Path -LiteralPath $WorkspacePsqlExe -PathType Leaf) {
+    $PsqlExe = (Resolve-Path -LiteralPath $WorkspacePsqlExe).Path
+}
+else {
+    $ServiceName = "PostgreSQLAutomation"
+    $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
+    $PsqlExe = Resolve-ServicePsqlPath -ServiceImagePath $ServiceImagePath
+
+    if ($PsqlExe) {
+        Write-Host "Resolved psql.exe from existing PostgreSQL service: $PsqlExe"
+    }
+}
+
+if (-not $PsqlExe) {
+    throw "psql.exe not found in workspace: $WorkspacePsqlExe. Unable to resolve it from the PostgreSQLAutomation service."
 }
 
 Write-Host "psql.exe : $PsqlExe"
