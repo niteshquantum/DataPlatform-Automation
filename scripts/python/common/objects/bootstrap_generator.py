@@ -1,3 +1,4 @@
+import json
 import shutil
 import sys
 
@@ -15,7 +16,7 @@ from generators.generate_materialized_views import generate_materialized_views
 from generators.generate_extensions import generate_extensions
 from generate_master_objects import generate_master_objects
 
-from config_loader import get_project_root
+from config_loader import get_project_root, load_database_config
 
 
 # ============================================================
@@ -43,6 +44,167 @@ from config_loader import get_project_root
 # ============================================================
 
 
+def _get_target_table_columns(database, table_name):
+
+    db = database.lower()
+
+    config = load_database_config(db)
+
+    if db == "mysql":
+
+        import mysql.connector
+
+        conn = mysql.connector.connect(
+            host=config["MYSQL_HOST"],
+            port=int(config["MYSQL_PORT"]),
+            user=config["MYSQL_USER"],
+            password=config["MYSQL_PASSWORD"],
+            database=config["MYSQL_DB"]
+        )
+
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS "
+            "WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+            (
+                config["MYSQL_DB"],
+                table_name
+            )
+        )
+
+        columns = [
+            row[0]
+            for row in cursor.fetchall()
+        ]
+
+        cursor.close()
+        conn.close()
+
+        return columns
+
+    if db == "mssql":
+
+        import pyodbc
+
+        conn_str = (
+            f"DRIVER={{{config['MSSQL_ODBC_DRIVER']}}};"
+            f"SERVER={config['MSSQL_HOST']},{config['MSSQL_PORT']};"
+            f"DATABASE={config['MSSQL_DB']};"
+            f"UID={config['MSSQL_USER']};"
+            f"PWD={config['MSSQL_PASSWORD']};"
+            "Encrypt=no;"
+            "TrustServerCertificate=yes;"
+            "Connection Timeout=30;"
+        )
+
+        conn = pyodbc.connect(conn_str)
+
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS "
+            "WHERE TABLE_CATALOG = ? AND TABLE_NAME = ?",
+            (
+                config["MSSQL_DB"],
+                table_name
+            )
+        )
+
+        columns = [
+            row[0]
+            for row in cursor.fetchall()
+        ]
+
+        cursor.close()
+        conn.close()
+
+        return columns
+
+    return []
+
+
+def _reconcile_schema_registry(database):
+
+    root = get_project_root()
+
+    registry_path = (
+        root
+        / "metadata"
+        / database
+        / "schema_registry.json"
+    )
+
+    if not registry_path.exists():
+
+        return
+
+    with open(
+        registry_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        registry = json.load(file)
+
+    for table_name, columns in list(registry.items()):
+
+        try:
+
+            actual_columns = _get_target_table_columns(
+                database,
+                table_name
+            )
+
+        except Exception as exc:
+
+            print(
+                f"WARNING: failed to query target columns for "
+                f"{table_name}: {exc}"
+            )
+
+            actual_columns = []
+
+        if actual_columns:
+
+            actual_set = {
+                c.lower()
+                for c in actual_columns
+            }
+
+            filtered = [
+                c
+                for c in columns
+                if c.lower() in actual_set
+            ]
+
+            if filtered != columns:
+
+                print(
+                    f"Reconciled {table_name}: "
+                    f"{len(columns)} source columns -> "
+                    f"{len(filtered)} target columns"
+                )
+
+                registry[table_name] = filtered
+
+        else:
+
+            registry[table_name] = []
+
+    with open(
+        registry_path,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            registry,
+            file,
+            indent=4
+        )
+
+
 def generate(database):
 
     print()
@@ -51,88 +213,143 @@ def generate(database):
     print("=====================================")
     print()
 
-    # --------------------------------------------------------
-    # PRE-GENERATION CLEANUP
-    #
-    # Remove stale generated files from a previous run so that
-    # schema changes (table renames, additions, removals) are
-    # reflected cleanly without leftover artefacts.
-    # --------------------------------------------------------
-
     root = get_project_root()
 
-    sql_out = root / "objects" / database / "generated"
-    lq_out  = root / "liquibase" / database / "objects"
-    master  = root / "liquibase" / database / "master_objects.xml"
+    registry_path = (
+        root
+        / "metadata"
+        / database
+        / "schema_registry.json"
+    )
 
-    if sql_out.exists():
-        shutil.rmtree(sql_out)
+    backup_path = (
+        registry_path.with_suffix(".json.bak")
+    )
 
-    if lq_out.exists():
-        shutil.rmtree(lq_out)
+    original_content = None
 
-    if master.exists():
-        master.unlink()
+    if registry_path.exists():
 
-    # --------------------------------------------------------
-    # STEP 1 : Detect schema metadata
-    # --------------------------------------------------------
+        backup_path.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
 
-    detector = ObjectDetector(database)
-    detector.detect()
+        shutil.copy2(
+            registry_path,
+            backup_path
+        )
 
-    # --------------------------------------------------------
-    # STEP 2 : Generate SQL object files
-    # --------------------------------------------------------
+        original_content = registry_path.read_text(
+            encoding="utf-8"
+        )
 
-    if supports_object(database, "views"):
-        generate_views(database)
+    try:
 
-    if supports_object(database, "functions"):
-        generate_functions(database)
+        # --------------------------------------------------------
+        # RECONCILE SCHEMA REGISTRY WITH TARGET DB
+        #
+        # Ensure auto-generated objects reference only columns
+        # that actually exist in the target database.
+        # --------------------------------------------------------
 
-    if supports_object(database, "procedures"):
-        generate_procedures(database)
+        _reconcile_schema_registry(database)
 
-    if supports_object(database, "triggers"):
-        generate_triggers(database)
+        # --------------------------------------------------------
+        # PRE-GENERATION CLEANUP
+        #
+        # Remove stale generated files from a previous run so that
+        # schema changes (table renames, additions, removals) are
+        # reflected cleanly without leftover artefacts.
+        # --------------------------------------------------------
 
-    if supports_object(database, "events"):
-        generate_events(database)
+        sql_out = root / "objects" / database / "generated"
+        lq_out  = root / "liquibase" / database / "objects"
+        master  = root / "liquibase" / database / "master_objects.xml"
 
-    if supports_object(database, "indexes"):
-        generate_indexes(database)
+        if sql_out.exists():
+            shutil.rmtree(sql_out)
 
-    # PostgreSQL-specific SQL generators
-    if supports_object(database, "materialized_views"):
-        generate_materialized_views(database)
+        if lq_out.exists():
+            shutil.rmtree(lq_out)
 
-    if supports_object(database, "extensions"):
-        generate_extensions(database)
+        if master.exists():
+            master.unlink()
 
-    # --------------------------------------------------------
-    # STEP 3 : Generate Liquibase XML changesets
-    # --------------------------------------------------------
+        # --------------------------------------------------------
+        # STEP 1 : Detect schema metadata
+        # --------------------------------------------------------
 
-    generate_liquibase_objects(database)
+        detector = ObjectDetector(database)
+        detector.detect()
 
-    # --------------------------------------------------------
-    # STEP 4 : Generate master object changelog
-    # --------------------------------------------------------
+        # --------------------------------------------------------
+        # STEP 2 : Generate SQL object files
+        # --------------------------------------------------------
 
-    generate_master_objects(database)
+        if supports_object(database, "views"):
+            generate_views(database)
 
-    print()
-    print("=====================================")
-    print("BOOTSTRAP GENERATION COMPLETE")
-    print("=====================================")
-    print()
+        if supports_object(database, "functions"):
+            generate_functions(database)
+
+        if supports_object(database, "procedures"):
+            generate_procedures(database)
+
+        if supports_object(database, "triggers"):
+            generate_triggers(database)
+
+        if supports_object(database, "events"):
+            generate_events(database)
+
+        if supports_object(database, "indexes"):
+            generate_indexes(database)
+
+        # PostgreSQL-specific SQL generators
+        if supports_object(database, "materialized_views"):
+            generate_materialized_views(database)
+
+        if supports_object(database, "extensions"):
+            generate_extensions(database)
+
+        # --------------------------------------------------------
+        # STEP 3 : Generate Liquibase XML changesets
+        # --------------------------------------------------------
+
+        generate_liquibase_objects(database)
+
+        # --------------------------------------------------------
+        # STEP 4 : Generate master object changelog
+        # --------------------------------------------------------
+
+        generate_master_objects(database)
+
+        print()
+        print("=====================================")
+        print("BOOTSTRAP GENERATION COMPLETE")
+        print("=====================================")
+        print()
+
+    finally:
+
+        if original_content is not None:
+
+            registry_path.write_text(
+                original_content,
+                encoding="utf-8"
+            )
+
+            backup_path.unlink(
+                missing_ok=True
+            )
 
 
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
+
         print("Usage : bootstrap_generator.py <database>")
+
         sys.exit(1)
 
     generate(sys.argv[1])
