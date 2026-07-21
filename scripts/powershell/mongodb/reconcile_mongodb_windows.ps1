@@ -13,7 +13,31 @@ function Wait-ServiceRunning([string]$name){for($i=0;$i -lt 30;$i++){if((Get-Ser
 function Wait-Port([string]$hostName,[int]$port){for($i=0;$i -lt 30;$i++){try{$tcp=[Net.Sockets.TcpClient]::new();$tcp.Connect($hostName,$port);$tcp.Dispose();return}catch{Start-Sleep 1}};throw "MongoDB port $port is not listening on host $hostName."}
 function Install-RequiredBinary([string]$url,[string]$archive,[string]$destination,[string]$expected){New-Item -ItemType Directory -Force -Path (Split-Path -Parent $archive),(Split-Path -Parent $destination)|Out-Null;if(-not(Test-Path -LiteralPath $archive)){Log 'Downloading required MongoDB archive.';Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing};$stage=Join-Path (Split-Path -Parent $archive) ([guid]::NewGuid());Expand-Archive -LiteralPath $archive -DestinationPath $stage -Force;$source=Get-ChildItem -LiteralPath $stage -Directory|Select-Object -First 1;if(-not $source){throw "Archive did not contain a deployment directory: $archive"};Move-Item -LiteralPath $source.FullName -Destination $destination;if(-not(Test-Path -LiteralPath $expected)){throw "Expected executable was not extracted: $expected"}}
 function Same-Path([string]$left,[string]$right){$left -and $right -and ([IO.Path]::GetFullPath($left)).TrimEnd('\') -eq ([IO.Path]::GetFullPath($right)).TrimEnd('\')}
-function Move-PreservedDirectory([string]$source,[string]$destination,[string]$label){if(-not(Test-Path -LiteralPath $source) -or(Same-Path $source $destination)){return};if((Test-Path -LiteralPath $destination) -and (Get-ChildItem -LiteralPath $destination -Force|Measure-Object).Count -gt 0){throw "Cannot safely migrate $label from $source to non-empty destination $destination."};New-Item -ItemType Directory -Force -Path $destination|Out-Null;Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force;Log "$label copied from $source to $destination; source and existing contents preserved."}
+function Test-MongoDataDirectory([string]$path){(Test-Path -LiteralPath (Join-Path $path 'WiredTiger')) -or (Test-Path -LiteralPath (Join-Path $path 'WiredTiger.wt'))}
+function Test-SameMongoData([string]$source,[string]$destination){
+    if(-not(Test-MongoDataDirectory $source) -or -not(Test-MongoDataDirectory $destination)){return $false}
+    foreach($name in @('WiredTiger','WiredTiger.wt','WiredTiger.turtle')){
+        $left=Join-Path $source $name;$right=Join-Path $destination $name
+        if((Test-Path -LiteralPath $left) -and (Test-Path -LiteralPath $right) -and (Get-FileHash -LiteralPath $left).Hash -eq (Get-FileHash -LiteralPath $right).Hash){return $true}
+    }
+    return $false
+}
+function Copy-PreservedDirectory([string]$source,[string]$destination,[string]$label){
+    if(-not(Test-Path -LiteralPath $source) -or(Same-Path $source $destination)){return}
+    $destinationHasContent=(Test-Path -LiteralPath $destination) -and (Get-ChildItem -LiteralPath $destination -Force|Measure-Object).Count -gt 0
+    if($destinationHasContent){
+        if($label -ne 'MongoDB data directory'){Log "$label already exists at $destination; reusing it.";return}
+        $marker=Join-Path $destination '.databaseautomation-mongodb-deployment.json'
+        $previousSource=$null
+        if(Test-Path -LiteralPath $marker){try{$previousSource=(Get-Content -Raw -LiteralPath $marker|ConvertFrom-Json).SourceDataDirectory}catch{}}
+        if((Test-MongoDataDirectory $destination) -and ((Same-Path $previousSource $source) -or (Test-SameMongoData $source $destination))){Log "Destination MongoDB data directory already belongs to this deployment; reusing it without migration.";return}
+        throw "Genuine MongoDB data conflict: source $source and populated destination $destination contain different deployments and cannot be merged safely."
+    }
+    New-Item -ItemType Directory -Force -Path $destination|Out-Null
+    Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force
+    if($label -eq 'MongoDB data directory'){[pscustomobject]@{SourceDataDirectory=$source;ReconciledAt=(Get-Date).ToString('o')}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $destination '.databaseautomation-mongodb-deployment.json') -Encoding utf8}
+    Log "$label copied from $source to $destination; source and existing contents preserved."
+}
 function Test-ListenerOwnedByDeployment([object]$listener,[object]$service,[object]$deployment){
     if(-not $listener){return $false}
     if($service -and $service.ProcessId -and $listener.OwningProcess -eq $service.ProcessId){return $true}
@@ -40,8 +64,8 @@ if(-not(Test-Path -LiteralPath $mongod)){
     }else{Install-RequiredBinary (Required $s 'MONGODB_DOWNLOAD_URL') (Join-Path (Split-Path -Parent $installDir) 'downloads\mongodb.zip') $installDir $mongod}
 }else{Log 'Existing mongod executable detected; reusing binaries.'}
 if(-not(Test-Path -LiteralPath $mongosh)){$mongoshRoot=Split-Path -Parent (Split-Path -Parent $mongosh);Install-RequiredBinary (Required $s 'MONGOSH_DOWNLOAD_URL') (Join-Path (Split-Path -Parent $mongoshRoot) 'downloads\mongosh.zip') $mongoshRoot $mongosh}
-if($needsDataMigration){Move-PreservedDirectory $existing.DataPath $dataDir 'MongoDB data directory'}
-if($needsLogMigration){Move-PreservedDirectory $existingLogDir $logDir 'MongoDB log directory'}
+if($needsDataMigration){Copy-PreservedDirectory $existing.DataPath $dataDir 'MongoDB data directory'}
+if($needsLogMigration){Copy-PreservedDirectory $existingLogDir $logDir 'MongoDB log directory'}
 New-Item -ItemType Directory -Force -Path $dataDir,$logDir,(Split-Path -Parent $configFile)|Out-Null
 @"
 systemLog:
