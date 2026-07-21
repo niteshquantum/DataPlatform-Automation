@@ -47,9 +47,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
