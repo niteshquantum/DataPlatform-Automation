@@ -48,9 +48,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -76,17 +74,269 @@ pipeline {
         }
 
 
-        stage('MongoDB Setup') {
+        stage('Check Administrator Privileges') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'MongoDB Setup'
+                        'Check Administrator Privileges'
                     ) {
 
-                        bat 'scripts\\batch\\mongodb\\mongodb_setup_pipeline.bat'
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'true'
+                            )
+
+                            echo 'Administrator privileges available.'
+                            echo 'Global Mongosh and MongoDB Service configuration will be enabled.'
+
+                        } else {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'false'
+                            )
+
+                            echo 'Administrator privileges not available.'
+                            echo 'Global Mongosh and MongoDB Service configuration will be skipped.'
+                            echo 'MongoDB will run using project-local mode.'
+                        }
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        echo "ADMIN STATUS = ${adminResult}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mongodb ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --administrator-privileges "${adminResult}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy MongoDB') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy MongoDB'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure Global Mongosh') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure Global Mongosh'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring Global Mongosh command...'
+
+                        bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure MongoDB Service') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure MongoDB Service'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring MongoDB Windows Service...'
+
+                        bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start MongoDB') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start MongoDB'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MongoDB') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MongoDB'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
                     }
                 }
             }
@@ -102,13 +352,8 @@ pipeline {
 
             script {
 
-                def adminResult = bat(
-                    script: 'python scripts\\logging\\logger.py get-environment ^
-                        --database mongodb ^
-                        --action setup ^
-                        --build-number "${env.BUILD_NUMBER}" ^
-                        --administrator-privileges',
-                    returnStdout: true
+                def adminResult = readFile(
+                    'admin_status.txt'
                 ).trim()
 
                 if (adminResult == 'true') {

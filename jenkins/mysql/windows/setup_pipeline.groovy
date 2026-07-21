@@ -46,11 +46,31 @@ def runTrackedStage(String stageName, Closure stageBody) {
 }
 
 
+def getInstanceState() {
+
+    def output = bat(
+        script: 'scripts\\batch\\mysql\\setup\\check_instance.bat',
+        returnStdout: true
+    ).trim()
+
+    def state = 'UNKNOWN'
+
+    output.eachLine { line ->
+
+        if (line.startsWith('INSTANCE_STATE=')) {
+
+            state = line.split('=', 2)[1]
+
+        }
+    }
+
+    return state
+}
+
+
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -76,17 +96,258 @@ pipeline {
         }
 
 
-        stage('MySQL Setup') {
+        stage('Check Administrator Privileges') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'MySQL Setup'
+                        'Check Administrator Privileges'
                     ) {
 
-                        bat 'scripts\\batch\\mysql\\mysql_setup_pipeline.bat'
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'true'
+                            )
+
+                            echo 'Administrator privileges available.'
+                            echo 'MySQL Service and Global MySQL configuration will be enabled.'
+
+                        } else {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'false'
+                            )
+
+                            echo 'Administrator privileges not available.'
+                            echo 'MySQL Service and Global MySQL configuration will be skipped.'
+                            echo 'MySQL will run using project-local mode.'
+                        }
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        echo "ADMIN STATUS = ${adminResult}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mysql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --administrator-privileges "${adminResult}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Check MySQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Check MySQL Instance'
+                    ) {
+
+                        def instanceState = getInstanceState()
+
+                        echo "Instance State: ${instanceState}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mysql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --instance-state "${instanceState}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy MySQL') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy MySQL'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\deploy_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start MySQL') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' || instanceState == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start MySQL'
+                    ) {
+
+                        echo 'Starting MySQL in project-local mode...'
+
+                        bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MySQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MySQL Instance'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_environment.bat'
                     }
                 }
             }
@@ -102,13 +363,8 @@ pipeline {
 
             script {
 
-                def adminResult = bat(
-                    script: 'python scripts\\logging\\logger.py get-environment ^
-                        --database mysql ^
-                        --action setup ^
-                        --build-number "${env.BUILD_NUMBER}" ^
-                        --administrator-privileges',
-                    returnStdout: true
+                def adminResult = readFile(
+                    'admin_status.txt'
                 ).trim()
 
                 if (adminResult == 'true') {

@@ -48,9 +48,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -76,17 +74,244 @@ pipeline {
         }
 
 
-        stage('MySQL Load') {
+        stage('Download Dataset') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'MySQL Load'
+                        'Download Dataset'
                     ) {
 
-                        bat 'scripts\\batch\\mysql\\mysql_load_pipeline.bat'
+                        bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Create Database'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Database'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\validate_database.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy Schema') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy Schema'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\deploy_schema.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Schema') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Schema'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\validate_schema.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Run CDC') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Run CDC'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\run_cdc.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Source Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\validate_source.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Load Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Load Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\load_data_strict.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Loaded Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Loaded Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\load\\validate_loaded_data.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy Database Objects'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\objects\\deploy_objects.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Database Objects'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\objects\\validate_objects.bat'
+                    }
+                }
+            }
+        }
+
+
+        /*
+        ============================================================
+        OPTIONAL POST-PROCESSING
+        Assessment/reporting is intentionally not part of CORE LOAD.
+        Execute through dedicated assessment/reporting entry point.
+        ============================================================
+        */
+
+
+        stage('Database Assessment') {
+
+            when {
+
+                expression {
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Database Assessment'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\assessment\\run_assessment.bat all'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assessment Report') {
+
+            when {
+
+                expression {
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Assessment Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
                     }
                 }
             }

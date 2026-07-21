@@ -10,4 +10,5 @@ cd /d "%PROJECT_ROOT%"
 set "PYTHONPATH=%PROJECT_ROOT%;%PYTHONPATH%"
 
 python "%PROJECT_ROOT%\scripts\python\mssql\setup\check_instance.py"
-exit /b %ERRORLEVEL%
+
+exit /b 0

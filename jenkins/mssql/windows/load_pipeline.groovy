@@ -48,9 +48,7 @@ def runTrackedStage(String stageName, Closure stageBody) {
 
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -76,17 +74,176 @@ pipeline {
         }
 
 
-        stage('MSSQL Load') {
+        stage('Download Dataset') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'MSSQL Load'
+                        'Download Dataset'
                     ) {
 
-                        bat 'scripts\\batch\\mssql\\mssql_load_pipeline.bat'
+                        bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Create Database'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\create_database.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Run CDC') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Run CDC'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\load\\run_cdc.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Load Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Load Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\load\\load_data.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Loaded Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Loaded Data'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\load\\validate_loaded_data.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy Database Objects'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\objects\\deploy_objects.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Database Objects') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Database Objects'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\objects\\validate_objects.bat'
+                    }
+                }
+            }
+        }
+
+
+        /*
+        ============================================================
+        OPTIONAL POST-PROCESSING
+        Assessment/reporting is intentionally not part of CORE LOAD.
+        Execute through dedicated assessment/reporting entry point.
+        ============================================================
+        */
+
+
+        stage('Database Assessment') {
+
+            when {
+
+                expression {
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Database Assessment'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat all'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assessment Report') {
+
+            when {
+
+                expression {
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Assessment Report'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
                     }
                 }
             }

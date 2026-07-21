@@ -1,8 +1,76 @@
+def runTrackedStage(String stageName, Closure stageBody) {
+
+    bat """
+        python scripts\\logging\\logger.py stage-start ^
+        --database mssql ^
+        --action setup ^
+        --build-number "${env.BUILD_NUMBER}" ^
+        --stage-name "${stageName}"
+    """
+
+    try {
+
+        stageBody()
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database mssql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status SUCCESS
+        """
+
+    } catch (Exception error) {
+
+        bat """
+            python scripts\\logging\\logger.py stage-end ^
+            --database mssql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --stage-name "${stageName}" ^
+            --status FAILURE
+        """
+
+        bat """
+            python scripts\\logging\\logger.py set-error ^
+            --database mssql ^
+            --action setup ^
+            --build-number "${env.BUILD_NUMBER}" ^
+            --failed-stage "${stageName}" ^
+            --message "Stage execution failed"
+        """
+
+        throw error
+    }
+}
+
+
+def getInstanceState() {
+
+    def output = bat(
+        script: 'scripts\\batch\\mssql\\setup\\check_instance.bat',
+        returnStdout: true
+    ).trim()
+
+    def state = 'UNKNOWN'
+
+    output.eachLine { line ->
+
+        if (line.startsWith('INSTANCE_STATE=')) {
+
+            state = line.split('=', 2)[1]
+
+        }
+    }
+
+    return state
+}
+
+
 pipeline {
 
-    agent {
-        label 'windows-node'
-    }
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -28,11 +96,284 @@ pipeline {
         }
 
 
-        stage('MSSQL Setup') {
+        stage('Check Administrator Privileges') {
 
             steps {
 
-                bat 'scripts\\batch\\mssql\\mssql_setup_pipeline.bat'
+                script {
+
+                    runTrackedStage(
+                        'Check Administrator Privileges'
+                    ) {
+
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'true'
+                            )
+
+                            echo 'Administrator privileges available.'
+                            echo 'SQL Server network configuration will be enabled.'
+
+                        } else {
+
+                            writeFile(
+                                file: 'admin_status.txt',
+                                text: 'false'
+                            )
+
+                            echo 'Administrator privileges not available.'
+                            echo 'SQL Server network configuration will be skipped.'
+                        }
+
+                        def adminResult = readFile(
+                            'admin_status.txt'
+                        ).trim()
+
+                        echo "ADMIN STATUS = ${adminResult}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mssql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --administrator-privileges "${adminResult}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Check MSSQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Check MSSQL Instance'
+                    ) {
+
+                        def instanceState = getInstanceState()
+
+                        echo "Instance State: ${instanceState}"
+
+                        bat """
+                            python scripts\\logging\\logger.py set-environment ^
+                            --database mssql ^
+                            --action setup ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --instance-state "${instanceState}"
+                        """
+                    }
+                }
+            }
+        }
+
+
+        stage('Deploy SQL Server') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Deploy SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\deploy_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure SQL Server') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'NO_INSTANCE' && readFile('admin_status.txt').trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\configure_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start SQL Server') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' || instanceState == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\start_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate SQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_environment.bat'
+                    }
+                }
             }
         }
     }
@@ -46,13 +387,8 @@ pipeline {
 
             script {
 
-                def adminResult = bat(
-                    script: 'python scripts\\logging\\logger.py get-environment ^
-                        --database mssql ^
-                        --action setup ^
-                        --build-number "${env.BUILD_NUMBER}" ^
-                        --administrator-privileges',
-                    returnStdout: true
+                def adminResult = readFile(
+                    'admin_status.txt'
                 ).trim()
 
                 if (adminResult == 'true') {
