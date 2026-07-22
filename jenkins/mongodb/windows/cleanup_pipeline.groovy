@@ -15,7 +15,7 @@ pipeline {
                 'PRESERVE_DATA',
                 'DELETE_DATA'
             ],
-            description: 'Select MSSQL cleanup mode'
+            description: 'Select MongoDB cleanup mode'
         )
     }
 
@@ -27,7 +27,7 @@ pipeline {
 
                 bat """
                     python scripts\\logging\\logger.py init ^
-                    --database mssql ^
+                    --database mongodb ^
                     --action cleanup ^
                     --os windows ^
                     --build-number "${env.BUILD_NUMBER}" ^
@@ -38,7 +38,7 @@ pipeline {
         }
 
 
-        stage('Run MSSQL Cleanup') {
+        stage('Run MongoDB Cleanup') {
 
             steps {
 
@@ -46,7 +46,7 @@ pipeline {
                     "CLEANUP_MODE=${params.CLEANUP_MODE}"
                 ]) {
 
-                    bat 'scripts\\batch\\mssql\\cleanup\\mssql_cleanup_pipeline.bat'
+                    bat 'scripts\\batch\\mongodb\\cleanup\\mongodb_cleanup_pipeline.bat'
                 }
             }
         }
@@ -57,19 +57,19 @@ pipeline {
 
         success {
 
-            echo 'MSSQL CLEANUP SUCCESSFUL'
+            echo 'MONGODB CLEANUP SUCCESSFUL'
         }
 
 
         failure {
 
-            echo 'MSSQL CLEANUP FAILED'
+            echo 'MONGODB CLEANUP FAILED'
         }
 
 
         always {
 
-            echo 'FINALIZING MSSQL CLEANUP LOGGING AND REPORTING'
+            echo 'FINALIZING MONGODB CLEANUP LOGGING AND REPORTING'
 
             script {
 
@@ -77,7 +77,7 @@ pipeline {
 
                 bat """
                     python scripts\\logging\\logger.py finalize ^
-                    --database mssql ^
+                    --database mongodb ^
                     --action cleanup ^
                     --build-number "${env.BUILD_NUMBER}" ^
                     --status "${finalStatus}"
@@ -85,14 +85,14 @@ pipeline {
 
                 bat """
                     python scripts\\reporting\\generate_report.py ^
-                    --database mssql ^
+                    --database mongodb ^
                     --action cleanup ^
                     --build-number "${env.BUILD_NUMBER}"
                 """
 
                 bat """
                     python scripts\\reporting\\generate_history.py ^
-                    --database mssql ^
+                    --database mongodb ^
                     --action cleanup ^
                     --build-number "${env.BUILD_NUMBER}"
                 """
@@ -100,13 +100,13 @@ pipeline {
 
 
             archiveArtifacts(
-                artifacts: "logs/mssql/cleanup/build_${env.BUILD_NUMBER}/**, reports/mssql/cleanup/build_${env.BUILD_NUMBER}/**, reports/history/**",
+                artifacts: "logs/mongodb/cleanup/build_${env.BUILD_NUMBER}/**, reports/mongodb/cleanup/build_${env.BUILD_NUMBER}/**, reports/history/**",
                 fingerprint: true,
                 allowEmptyArchive: true
             )
 
             echo "Cleanup Mode: ${params.CLEANUP_MODE}"
-            echo 'MSSQL CLEANUP PIPELINE COMPLETED'
+            echo 'MONGODB CLEANUP PIPELINE COMPLETED'
         }
     }
 }
