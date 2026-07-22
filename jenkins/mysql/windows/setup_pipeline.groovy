@@ -55,12 +55,17 @@ def getInstanceState() {
 
     def state = 'UNKNOWN'
 
-    output.eachLine { line ->
+    def lines = output.split('\n')
+
+    for (int i = 0; i < lines.size(); i++) {
+
+        def line = lines[i]
 
         if (line.startsWith('INSTANCE_STATE=')) {
 
             state = line.split('=', 2)[1]
 
+            break
         }
     }
 
@@ -250,14 +255,6 @@ pipeline {
                         def instanceState = getInstanceState()
 
                         echo "Instance State: ${instanceState}"
-
-                        bat """
-                            python scripts\\logging\\logger.py set-environment ^
-                            --database mysql ^
-                            --action setup ^
-                            --build-number "${env.BUILD_NUMBER}" ^
-                            --instance-state "${instanceState}"
-                        """
                     }
                 }
             }

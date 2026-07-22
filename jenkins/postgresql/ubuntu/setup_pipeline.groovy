@@ -278,6 +278,21 @@ pipeline {
         }
 
 
+        stage('Configure PostgreSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Configure PostgreSQL User') {
+
+                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('Configure Global PSQL') {
 
             when {

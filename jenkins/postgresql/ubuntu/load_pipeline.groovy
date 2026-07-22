@@ -107,21 +107,6 @@ pipeline {
         }
 
 
-        stage('Install Python Requirements') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Install Python Requirements') {
-
-                        sh './scripts/bash/postgresql/setup/install_python_requirements.sh'
-                    }
-                }
-            }
-        }
-
-
         stage('Validate Python Requirements') {
 
             steps {
