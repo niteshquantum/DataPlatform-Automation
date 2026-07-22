@@ -133,14 +133,21 @@ Write-Log "Checking configured PostgreSQL connection..."
 
 $env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
 
+$ConfiguredConnectionExitCode = 0
+
+$PreviousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
 & "$Psql" `
     --host="$PgHost" `
     --port="$ExpectedPort" `
     --username="$PgUser" `
     --dbname="$PgDatabase" `
-    --command="SELECT 1;" *> $null
+    --command="SELECT 1;" > $null 2>&1
 
 $ConfiguredConnectionExitCode = $LASTEXITCODE
+
+$ErrorActionPreference = $PreviousErrorActionPreference
 
 $env:PGPASSWORD = $null
 
@@ -168,9 +175,14 @@ if ($ConfiguredConnectionExitCode -eq 0) {
 
 Write-Log "Checking current PostgreSQL instance..."
 
+$PreviousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
 & "$PgCtl" `
     status `
-    -D "$PgData" *> $null
+    -D "$PgData" > $null 2>&1
+
+$ErrorActionPreference = $PreviousErrorActionPreference
 
 if ($LASTEXITCODE -eq 0) {
 
@@ -231,14 +243,19 @@ if ($PortConnection) {
 
         $env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
 
+        $PreviousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+
         & "$Psql" `
             --host="$PgHost" `
             --port="$ExpectedPort" `
             --username="$PgUser" `
             --dbname="postgres" `
-            --command="SELECT 1;" *> $null
+            --command="SELECT 1;" > $null 2>&1
 
         $PsqlExitCode = $LASTEXITCODE
+
+        $ErrorActionPreference = $PreviousErrorActionPreference
 
         $env:PGPASSWORD = $null
 
@@ -319,9 +336,14 @@ for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
 
     Start-Sleep -Seconds 1
 
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
     & "$PgCtl" `
         status `
-        -D "$PgData" *> $null
+        -D "$PgData" > $null 2>&1
+
+    $ErrorActionPreference = $PreviousErrorActionPreference
 
     $StatusExitCode = $LASTEXITCODE
 
