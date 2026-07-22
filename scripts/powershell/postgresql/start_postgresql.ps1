@@ -12,76 +12,35 @@ function Get-ProjectRoot {
     return $Root
 }
 
-# =====================================================
-# PROJECT PATHS
-# =====================================================
-
 $ProjectRoot = Get-ProjectRoot
-
 $PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
 $PgData = Join-Path $ProjectRoot "databases\postgresql\data"
 $PgLog  = Join-Path $ProjectRoot "outputs\logs\postgresql.log"
-
-if (-not (Test-Path (Join-Path $PgBin "pg_ctl.exe"))) {
-    $PgBin = "C:\Program Files\PostgreSQL\17\bin"
-    $PgData = "C:\Program Files\PostgreSQL\17\data"
-}
-
 $PgCtl = Join-Path $PgBin "pg_ctl.exe"
 $Psql = Join-Path $PgBin "psql.exe"
-
-# =====================================================
-# CREATE LOG DIRECTORY
-# =====================================================
+$ServiceName = "PostgreSQLAutomation"
 
 $LogDirectory = Split-Path $PgLog -Parent
-
 if (!(Test-Path $LogDirectory)) {
-    New-Item `
-        -ItemType Directory `
-        -Path $LogDirectory `
-        -Force | Out-Null
+    New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
 }
 
-# =====================================================
-# READ CONFIGURATION
-# =====================================================
-
 $ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
-
 if (!(Test-Path $ConfigFile)) {
     throw "Configuration file not found: $ConfigFile"
 }
 
 $Config = @{}
-
 Get-Content $ConfigFile | ForEach-Object {
-
     if ($_ -match "^([^#=]+)=(.*)$") {
         $Config[$Matches[1].Trim()] = $Matches[2].Trim()
     }
 }
 
 $PgHost = $Config["POSTGRESQL_HOST"]
-
 $ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
-
 $PgDatabase = $Config["POSTGRESQL_DB"]
-
-$PgUser = if (
-    [string]::IsNullOrWhiteSpace(
-        $Config["POSTGRESQL_USER"]
-    )
-) {
-    "postgres"
-}
-else {
-    $Config["POSTGRESQL_USER"]
-}
-
-# =====================================================
-# VALIDATION
-# =====================================================
+$PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) { "postgres" } else { $Config["POSTGRESQL_USER"] }
 
 if ([string]::IsNullOrWhiteSpace($PgHost)) {
     throw "POSTGRESQL_HOST missing."
@@ -107,15 +66,10 @@ if (!(Test-Path (Join-Path $PgData "PG_VERSION"))) {
     throw "PostgreSQL data directory is not initialized: $PgData"
 }
 
-# =====================================================
-# START REPORT
-# =====================================================
-
 Write-Log ""
 Write-Log "======================================="
 Write-Log "POSTGRESQL START"
 Write-Log "======================================="
-
 Write-Log "Project Root : $ProjectRoot"
 Write-Log "Host         : $PgHost"
 Write-Log "Port         : $ExpectedPort"
@@ -125,195 +79,41 @@ Write-Log "pg_ctl       : $PgCtl"
 Write-Log "Data Dir     : $PgData"
 Write-Log "Log File     : $PgLog"
 
-# =====================================================
-# CHECK CONFIGURED CONNECTION
-# =====================================================
-
-Write-Log "Checking configured PostgreSQL connection..."
-
 $env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
-
-$ConfiguredConnectionExitCode = 0
-
-$PreviousErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-
-& "$Psql" `
-    --host="$PgHost" `
-    --port="$ExpectedPort" `
-    --username="$PgUser" `
-    --dbname="$PgDatabase" `
-    --command="SELECT 1;" > $null 2>&1
-
+& "$Psql" --host="$PgHost" --port="$ExpectedPort" --username="$PgUser" --dbname="$PgDatabase" --command="SELECT 1;" *> $null
 $ConfiguredConnectionExitCode = $LASTEXITCODE
-
-$ErrorActionPreference = $PreviousErrorActionPreference
-
 $env:PGPASSWORD = $null
 
 if ($ConfiguredConnectionExitCode -eq 0) {
-
     Write-Log "Configured PostgreSQL is already reachable."
-
-    Write-Log ""
-    Write-Log "======================================="
-    Write-Log "POSTGRESQL START COMPLETED"
-    Write-Log "======================================="
-
-    Write-Log "Host      : $PgHost"
-    Write-Log "Port      : $ExpectedPort"
-    Write-Log "Database  : $PgDatabase"
-    Write-Log "User      : $PgUser"
-    Write-Log "Data Dir  : $PgData"
-
+    Write-Log "Windows Service already running."
     exit 0
 }
 
-# =====================================================
-# CHECK CURRENT PROJECT INSTANCE
-# =====================================================
+$ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
-Write-Log "Checking current PostgreSQL instance..."
-
-$PreviousErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-
-& "$PgCtl" `
-    status `
-    -D "$PgData" > $null 2>&1
-
-$ErrorActionPreference = $PreviousErrorActionPreference
-
-if ($LASTEXITCODE -eq 0) {
-
-    Write-Log "Current project PostgreSQL is already running."
-
-    Write-Log ""
-    Write-Log "======================================="
-    Write-Log "POSTGRESQL START COMPLETED"
-    Write-Log "======================================="
-
-    Write-Log "Host      : $PgHost"
-    Write-Log "Port      : $ExpectedPort"
-    Write-Log "Database  : $PgDatabase"
-    Write-Log "User      : $PgUser"
-    Write-Log "Data Dir  : $PgData"
-
-    exit 0
-}
-
-Write-Log "Current project PostgreSQL is not running."
-
-# =====================================================
-# CHECK PORT
-# =====================================================
-
-Write-Log "Checking configured port $ExpectedPort..."
-
-$PortConnection = Get-NetTCPConnection `
-    -LocalPort $ExpectedPort `
-    -State Listen `
-    -ErrorAction SilentlyContinue |
-    Select-Object -First 1
-
-if ($PortConnection) {
-
-    $OwnerProcessId = $PortConnection.OwningProcess
-
-    $OwnerProcess = Get-Process `
-        -Id $OwnerProcessId `
-        -ErrorAction SilentlyContinue
-
-    Write-Host ""
-    Write-Host "======================================="
-    Write-Host "PORT CONFLICT"
-    Write-Host "======================================="
-
-    Write-Host "Port       : $ExpectedPort"
-    Write-Host "Process ID : $OwnerProcessId"
-
-    if ($OwnerProcess) {
-        Write-Host "Process    : $($OwnerProcess.ProcessName)"
+if ($ExistingService) {
+    if ($ExistingService.Status -eq "Running") {
+        Write-Log "Windows Service already running."
+        Write-Log "Reusing existing PostgreSQL instance."
+        exit 0
     }
 
-    if ($OwnerProcess -and $OwnerProcess.ProcessName -eq "postgres") {
-
-        Write-Host ""
-        Write-Host "Detected PostgreSQL on configured port. Validating connection..."
-
-        $env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
-
-        $PreviousErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = "Continue"
-
-        & "$Psql" `
-            --host="$PgHost" `
-            --port="$ExpectedPort" `
-            --username="$PgUser" `
-            --dbname="postgres" `
-            --command="SELECT 1;" > $null 2>&1
-
-        $PsqlExitCode = $LASTEXITCODE
-
-        $ErrorActionPreference = $PreviousErrorActionPreference
-
-        $env:PGPASSWORD = $null
-
-        if ($PsqlExitCode -eq 0) {
-
-            Write-Host ""
-            Write-Host "======================================="
-            Write-Host "POSTGRESQL START COMPLETED"
-            Write-Host "======================================="
-            Write-Host "Configured PostgreSQL is already reachable."
-            Write-Host "Host      : $PgHost"
-            Write-Host "Port      : $ExpectedPort"
-            Write-Host "User      : $PgUser"
-            Write-Host ""
-
-            exit 0
-        }
-    }
-
-    throw "Port $ExpectedPort is already occupied."
+    Write-Log "Starting existing PostgreSQL service..."
+    Start-Service -Name $ServiceName
 }
-
-Write-Log "Port $ExpectedPort is available."
-
-# =====================================================
-# PREPARE PG_CTL OUTPUT FILES
-# =====================================================
+else {
+    Write-Log "Existing PostgreSQL instance detected."
+    Write-Log "Reusing existing PostgreSQL instance."
+}
 
 $PgCtlOutput = Join-Path $LogDirectory "pg_ctl_start_output.log"
-
 $PgCtlError = Join-Path $LogDirectory "pg_ctl_start_error.log"
-
-if (Test-Path $PgCtlOutput) {
-    Remove-Item $PgCtlOutput -Force
-}
-
-if (Test-Path $PgCtlError) {
-    Remove-Item $PgCtlError -Force
-}
-# =====================================================
-# START POSTGRESQL
-# =====================================================
+if (Test-Path $PgCtlOutput) { Remove-Item $PgCtlOutput -Force }
+if (Test-Path $PgCtlError) { Remove-Item $PgCtlError -Force }
 
 Write-Log "Starting PostgreSQL..."
-
-$PgCtlArguments = @(
-    "start"
-    "-D"
-    "`"$PgData`""
-    "-l"
-    "`"$PgLog`""
-    "-o"
-    "`"-p $ExpectedPort`""
-    "-w"
-    "-t"
-    "60"
-)
-
+$PgCtlArguments = @("start", "-D", "`"$PgData`"", "-l", "`"$PgLog`"", "-o", "`"-p $ExpectedPort`"", "-w", "-t", "60")
 $PreviousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 & "$PgCtl" @PgCtlArguments > $PgCtlOutput 2> $PgCtlError
@@ -324,47 +124,21 @@ if ($PgCtlExitCode -ne 0) {
     throw "pg_ctl start failed with exit code $PgCtlExitCode."
 }
 
-Write-Log "pg_ctl start completed."
-
-# =====================================================
-# WAIT FOR POSTGRESQL READINESS
-# =====================================================
-
 $PostgreSQLReady = $false
-
 for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
-
     Start-Sleep -Seconds 1
 
-    $PreviousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-
-    & "$PgCtl" `
-        status `
-        -D "$PgData" > $null 2>&1
-
-    $ErrorActionPreference = $PreviousErrorActionPreference
-
+    & "$PgCtl" status -D "$PgData" *> $null
     $StatusExitCode = $LASTEXITCODE
 
     if ($StatusExitCode -eq 0) {
-
         try {
-
             $TcpClient = New-Object System.Net.Sockets.TcpClient
-
-            $TcpClient.Connect(
-                $PgHost,
-                $ExpectedPort
-            )
-
+            $TcpClient.Connect($PgHost, $ExpectedPort)
             $TcpClient.Close()
-
             $PostgreSQLReady = $true
-
             Write-Log "PostgreSQL process is running."
             Write-Log "PostgreSQL port is reachable."
-
             break
         }
         catch {
@@ -376,41 +150,30 @@ for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
     }
 }
 
-# =====================================================
-# CHECK START RESULT
-# =====================================================
-
 if (!$PostgreSQLReady) {
-
     Write-Host ""
     Write-Host "======================================="
     Write-Host "POSTGRESQL FAILED TO START"
     Write-Host "======================================="
 
     if (Test-Path $PgCtlOutput) {
-
         Write-Host ""
         Write-Host "PG_CTL OUTPUT:"
         Write-Host ""
-
         Get-Content $PgCtlOutput
     }
 
     if (Test-Path $PgCtlError) {
-
         Write-Host ""
         Write-Host "PG_CTL ERROR:"
         Write-Host ""
-
         Get-Content $PgCtlError
     }
 
     if (Test-Path $PgLog) {
-
         Write-Host ""
         Write-Host "LAST POSTGRESQL LOG ENTRIES:"
         Write-Host ""
-
         Get-Content $PgLog -Tail 50
     }
 
@@ -418,16 +181,10 @@ if (!$PostgreSQLReady) {
 }
 
 Write-Log "PostgreSQL startup completed successfully."
-
-# =====================================================
-# SUCCESS
-# =====================================================
-
 Write-Log ""
 Write-Log "======================================="
 Write-Log "POSTGRESQL START COMPLETED"
 Write-Log "======================================="
-
 Write-Log "Host      : $PgHost"
 Write-Log "Port      : $ExpectedPort"
 Write-Log "Database  : $PgDatabase"
