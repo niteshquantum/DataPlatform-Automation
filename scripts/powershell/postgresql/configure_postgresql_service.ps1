@@ -81,7 +81,37 @@ Write-Host ""
 # =====================================
 
 if (!(Test-Path $PgCtl)) {
-    throw "pg_ctl.exe not found: $PgCtl"
+
+    Write-Host ""
+    Write-Host "Resolving pg_ctl.exe from existing PostgreSQL service..."
+
+    $ServiceImagePath = Get-CimInstance `
+        Win32_Service `
+        -Filter "Name='$ServiceName'" `
+        -ErrorAction SilentlyContinue
+
+    if ($ServiceImagePath -and $ServiceImagePath.PathName) {
+
+        $PgCtlMatch = [regex]::Match(
+            $ServiceImagePath.PathName.Trim(),
+            '"?(?<path>[A-Za-z]:\\[^"\r\n]*?\\pg_ctl\.exe)"?',
+            [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+        )
+
+        if ($PgCtlMatch.Success) {
+
+            $ServicePgCtl = $PgCtlMatch.Groups['path'].Value.Trim('"')
+
+            if (Test-Path -LiteralPath $ServicePgCtl -PathType Leaf) {
+                Write-Host "Resolved pg_ctl.exe from service: $ServicePgCtl"
+                $PgCtl = $ServicePgCtl
+            }
+        }
+    }
+
+    if (!(Test-Path $PgCtl)) {
+        throw "pg_ctl.exe not found in workspace: $PgBin. Unable to resolve it from the PostgreSQLAutomation service."
+    }
 }
 
 if (!(Test-Path "$PgData\PG_VERSION")) {

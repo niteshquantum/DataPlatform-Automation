@@ -1,5 +1,6 @@
 from pathlib import Path
 import socket
+import subprocess
 import sys
 
 import psycopg2
@@ -26,11 +27,18 @@ def check_instance():
     user = config["POSTGRESQL_USER"]
     password = config["POSTGRESQL_PASSWORD"]
 
+    root = Path(__file__).resolve().parents[4]
+    pg_bin = root / "databases" / "postgresql" / "bin" / "pg_ctl.exe"
+    pg_data = root / "databases" / "postgresql" / "data"
+
+    managed = pg_bin.is_file() and pg_data.is_dir() and (pg_data / "PG_VERSION").exists()
+
     print("=" * 60)
     print("CHECKING POSTGRESQL INSTANCE")
     print("=" * 60)
     print(f"Host : {host}")
     print(f"Port : {port}")
+    print(f"Managed deployment : {'yes' if managed else 'no'}")
     print()
 
     try:
@@ -51,17 +59,34 @@ def check_instance():
         print(f"Instance detected : PostgreSQL on {host}:{port}")
         print(f"Version           : {version}")
         print()
-        print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
-        return "INSTANCE_RUNNING_AND_USABLE"
+
+        if managed:
+            try:
+                result = subprocess.run(
+                    [str(pg_bin), "status", "-D", str(pg_data)],
+                    capture_output=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    print("Managed instance verified running.")
+                    print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
+                    return "INSTANCE_RUNNING_AND_USABLE"
+            except Exception:
+                pass
+
+            print("PostgreSQL reachable but managed instance status could not be verified.")
+            print("INSTANCE_STATE=INSTANCE_INSTALLED_BUT_STOPPED")
+            return "INSTANCE_INSTALLED_BUT_STOPPED"
+
+        print("PostgreSQL is reachable but current workspace does not contain managed binaries/data.")
+        print("INSTANCE_STATE=NO_INSTANCE")
+        return "NO_INSTANCE"
 
     except psycopg2.OperationalError as e:
         print(f"Instance not reachable : {e}")
         print()
 
-        root = Path(__file__).resolve().parents[4]
-        data_dir = root / "databases" / "postgresql" / "data"
-
-        if data_dir.exists() and (data_dir / "PG_VERSION").exists():
+        if managed:
             print("INSTANCE_STATE=INSTANCE_INSTALLED_BUT_STOPPED")
             return "INSTANCE_INSTALLED_BUT_STOPPED"
 
