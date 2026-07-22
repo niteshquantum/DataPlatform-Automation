@@ -61,16 +61,20 @@ pipeline {
 
             steps {
 
-                bat """
-                    python scripts\\logging\\logger.py init ^
-                    --database postgresql ^
-                    --action load ^
-                    --os windows ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --job-name "${env.JOB_NAME}" ^
-                    --build-url "${env.BUILD_URL}"
-                """
-                env.POSTGRESQL_LOAD_LOGGING_INITIALIZED = 'true'
+                script {
+
+                    bat """
+                        python scripts\\logging\\logger.py init ^
+                        --database postgresql ^
+                        --action load ^
+                        --os windows ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --job-name "${env.JOB_NAME}" ^
+                        --build-url "${env.BUILD_URL}"
+                    """
+
+                    env.POSTGRESQL_LOAD_LOGGING_INITIALIZED = 'true'
+                }
             }
         }
 
