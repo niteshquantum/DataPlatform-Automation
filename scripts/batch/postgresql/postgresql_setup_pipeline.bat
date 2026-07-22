@@ -2,6 +2,7 @@
 setlocal
 
 call "%~dp0..\common\set_project_root.bat"
+if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\common\validate_python_runtime.bat"
 if errorlevel 1 exit /b 1
@@ -17,6 +18,44 @@ if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
+
+echo.
+echo =====================================
+echo CHECKING ADMINISTRATOR PRIVILEGES
+echo =====================================
+echo.
+
+set "ADMIN_STATUS="
+
+call "%PROJECT_ROOT%\scripts\batch\common\check_admin_privileges.bat"
+if errorlevel 1 (
+    set "ADMIN_STATUS=false"
+) else (
+    set "ADMIN_STATUS=true"
+)
+
+echo Administrator Status: %ADMIN_STATUS%
+
+if /I "%ADMIN_STATUS%"=="true" (
+    echo.
+    echo =====================================
+    echo CONFIGURING POSTGRESQL WINDOWS SERVICE
+    echo =====================================
+    echo.
+    call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\configure_postgresql_service.bat"
+    if errorlevel 1 exit /b 1
+
+    echo.
+    echo =====================================
+    echo CONFIGURING GLOBAL PSQL COMMAND
+    echo =====================================
+    echo.
+    call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\configure_global_psql.bat"
+    if errorlevel 1 exit /b 1
+) else (
+    echo Administrator privileges not available.
+    echo PostgreSQL Service and Global PSQL configuration will be skipped.
+)
 
 echo.
 echo =====================================

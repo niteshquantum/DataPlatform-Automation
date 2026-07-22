@@ -71,18 +71,6 @@ if errorlevel 1 (
 
 
 REM =====================================
-REM CREATE DATABASE
-REM =====================================
-
-call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\create_database.bat"
-
-if errorlevel 1 (
-    echo ERROR: DATABASE CREATION FAILED
-    exit /b 1
-)
-
-
-REM =====================================
 REM DOWNLOAD DATASET
 REM =====================================
 
@@ -90,6 +78,30 @@ call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
 
 if errorlevel 1 (
     echo ERROR: DATASET DOWNLOAD FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM PROFILE SOURCE DATA
+REM =====================================
+
+python scripts\profiling\data_profiler.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: DATA PROFILING FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM CREATE DATABASE
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\create_database.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATABASE CREATION FAILED
     exit /b 1
 )
 
@@ -163,32 +175,136 @@ if errorlevel 1 (
 )
 
 
-@REM ============================================================
-@REM OPTIONAL POST-PROCESSING
-@REM Assessment/reporting is intentionally not part of CORE LOAD.
-@REM Execute through dedicated assessment/reporting entry point.
-@REM ============================================================
+REM =====================================
+REM DATABASE ASSESSMENT
+REM =====================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\postgresql\assessment\run_assessment.bat" all
+call "%PROJECT_ROOT%\scripts\batch\postgresql\assessment\run_assessment.bat" all
 
-@REM if errorlevel 1 (
-@REM     echo ERROR: DATABASE ASSESSMENT FAILED
-@REM     exit /b 1
-@REM )
+if errorlevel 1 (
+    echo ERROR: DATABASE ASSESSMENT FAILED
+    exit /b 1
+)
 
 
-@REM REM ============================================================
-@REM OPTIONAL POST-PROCESSING
-@REM Assessment/reporting is intentionally not part of CORE LOAD.
-@REM Execute through dedicated assessment/reporting entry point.
-@REM ============================================================
+REM =====================================
+REM ASSESSMENT REPORT
+REM =====================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
+call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
 
-@REM if errorlevel 1 (
-@REM     echo ERROR: ASSESSMENT REPORT GENERATION FAILED
-@REM     exit /b 1
-@REM )
+if errorlevel 1 (
+    echo ERROR: ASSESSMENT REPORT GENERATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM RECONCILE SOURCE AND TARGET DATA
+REM =====================================
+
+python scripts\reconciliation\reconciliation_engine.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: RECONCILIATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM DISCOVER DATABASE ENVIRONMENT
+REM =====================================
+
+python scripts\discovery\discovery_engine.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: DISCOVERY FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM ANALYZE DATABASE GROWTH
+REM =====================================
+
+python scripts\discovery\growth_analyzer.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: GROWTH ANALYSIS FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM ANALYZE MIGRATION REQUIREMENTS
+REM =====================================
+
+python scripts\discovery\requirement_analyzer.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: REQUIREMENT ANALYSIS FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM ASSESS MIGRATION
+REM =====================================
+
+python scripts\assessment\assessment_engine.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: MIGRATION ASSESSMENT FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM GENERATE MIGRATION RECOMMENDATIONS
+REM =====================================
+
+python scripts\recommendation\recommendation_engine.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: RECOMMENDATION GENERATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM GENERATE GOVERNANCE ACTION PLAN
+REM =====================================
+
+python scripts\governance\action_plan_engine.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: ACTION PLAN GENERATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM GENERATE TECHNICAL MIGRATION REPORT
+REM =====================================
+
+python scripts\reporting\migration\technical_report.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: TECHNICAL REPORT GENERATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM GENERATE EXECUTIVE MIGRATION REPORT
+REM =====================================
+
+python scripts\reporting\migration\executive_report.py --database postgresql
+
+if errorlevel 1 (
+    echo ERROR: EXECUTIVE REPORT GENERATION FAILED
+    exit /b 1
+)
 
 
 echo.

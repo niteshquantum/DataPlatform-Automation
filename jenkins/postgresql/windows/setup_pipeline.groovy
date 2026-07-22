@@ -55,12 +55,17 @@ def getInstanceState() {
 
     def state = 'UNKNOWN'
 
-    output.eachLine { line ->
+    def lines = output.split('\n')
+
+    for (int i = 0; i < lines.size(); i++) {
+
+        def line = lines[i]
 
         if (line.startsWith('INSTANCE_STATE=')) {
 
             state = line.split('=', 2)[1]
 
+            break
         }
     }
 
@@ -91,6 +96,7 @@ pipeline {
                     --job-name "${env.JOB_NAME}" ^
                     --build-url "${env.BUILD_URL}"
                 """
+                env.POSTGRESQL_SETUP_LOGGING_INITIALIZED = 'true'
             }
         }
 
@@ -248,15 +254,19 @@ pipeline {
 
                         def instanceState = getInstanceState()
 
+                        env.POSTGRESQL_INITIAL_INSTANCE_STATE = instanceState
+
                         echo "Instance State: ${instanceState}"
 
-                        bat """
-                            python scripts\\logging\\logger.py set-environment ^
-                            --database postgresql ^
-                            --action setup ^
-                            --build-number "${env.BUILD_NUMBER}" ^
-                            --instance-state "${instanceState}"
-                        """
+                        if (instanceState == 'PORT_OCCUPIED_BY_NON_POSTGRESQL') {
+
+                            error "Port conflict: configured PostgreSQL port is occupied by a non-PostgreSQL process. Aborting setup."
+                        }
+
+                        if (instanceState == 'UNKNOWN') {
+
+                            error "Unknown PostgreSQL instance state detected. Aborting setup."
+                        }
                     }
                 }
             }
@@ -330,6 +340,33 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure PostgreSQL Service') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure PostgreSQL Service'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
                     }
                 }
             }
@@ -426,29 +463,36 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult
+                def finalStatus = currentBuild.currentResult ?: 'FAILURE'
 
-                bat """
-                    python scripts\\logging\\logger.py finalize ^
-                    --database postgresql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --status "${finalStatus}"
-                """
+                if (env.POSTGRESQL_SETUP_LOGGING_INITIALIZED == 'true') {
 
-                bat """
-                    python scripts\\reporting\\generate_report.py ^
-                    --database postgresql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\logging\\logger.py finalize ^
+                        --database postgresql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --status "${finalStatus}"
+                    """
 
-                bat """
-                    python scripts\\reporting\\generate_history.py ^
-                    --database postgresql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\reporting\\generate_report.py ^
+                        --database postgresql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    bat """
+                        python scripts\\reporting\\generate_history.py ^
+                        --database postgresql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
             archiveArtifacts(

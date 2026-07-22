@@ -70,6 +70,75 @@ pipeline {
                     --job-name "${env.JOB_NAME}" ^
                     --build-url "${env.BUILD_URL}"
                 """
+                env.POSTGRESQL_LOAD_LOGGING_INITIALIZED = 'true'
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Start PostgreSQL') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start PostgreSQL'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate PostgreSQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate PostgreSQL Instance'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
+                    }
+                }
             }
         }
 
@@ -85,6 +154,23 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'python scripts\\profiling\\data_profiler.py --database postgresql'
                     }
                 }
             }
@@ -114,11 +200,49 @@ pipeline {
 
                 script {
 
-                    runTrackedStage(
-                        'Run CDC'
-                    ) {
+                    bat """
+                        python scripts\\logging\\logger.py stage-start ^
+                        --database postgresql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Run CDC"
+                    """
 
-                        bat 'scripts\\batch\\postgresql\\load\\run_cdc.bat'
+                    def cdcResult = bat(
+                        script: 'scripts\\batch\\postgresql\\load\\run_cdc.bat',
+                        returnStatus: true
+                    )
+
+                    if (cdcResult == 0 || cdcResult == 100) {
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database postgresql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status SUCCESS
+                        """
+                        if (cdcResult == 100) {
+                            env.SKIP_DATA_LOAD = 'true'
+                        }
+                    } else {
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database postgresql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status FAILURE
+                        """
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database postgresql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Run CDC" ^
+                            --message "CDC execution failed with exit code ${cdcResult}"
+                        """
+                        error "CDC execution failed with exit code ${cdcResult}"
                     }
                 }
             }
@@ -126,6 +250,12 @@ pipeline {
 
 
         stage('Load Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
@@ -143,6 +273,12 @@ pipeline {
 
 
         stage('Validate Loaded Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
@@ -193,23 +329,7 @@ pipeline {
         }
 
 
-        /*
-        ============================================================
-        OPTIONAL POST-PROCESSING
-        Assessment/reporting is intentionally not part of CORE LOAD.
-        Execute through dedicated assessment/reporting entry point.
-        ============================================================
-        */
-
-
         stage('Database Assessment') {
-
-            when {
-
-                expression {
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
 
             steps {
 
@@ -228,13 +348,6 @@ pipeline {
 
         stage('Assessment Report') {
 
-            when {
-
-                expression {
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
-
             steps {
 
                 script {
@@ -244,6 +357,159 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Reconcile Source and Target Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Reconcile Source and Target Data'
+                    ) {
+
+                        bat 'python scripts\\reconciliation\\reconciliation_engine.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Discover Database Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Discover Database Environment'
+                    ) {
+
+                        bat 'python scripts\\discovery\\discovery_engine.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Database Growth') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Database Growth'
+                    ) {
+
+                        bat 'python scripts\\discovery\\growth_analyzer.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Analyze Migration Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Analyze Migration Requirements'
+                    ) {
+
+                        bat 'python scripts\\discovery\\requirement_analyzer.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Assess Migration') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Assess Migration'
+                    ) {
+
+                        bat 'python scripts\\assessment\\assessment_engine.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Migration Recommendations') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Migration Recommendations'
+                    ) {
+
+                        bat 'python scripts\\recommendation\\recommendation_engine.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Governance Action Plan') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Governance Action Plan'
+                    ) {
+
+                        bat 'python scripts\\governance\\action_plan_engine.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Technical Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Technical Migration Report'
+                    ) {
+
+                        bat 'python scripts\\reporting\\migration\\technical_report.py --database postgresql'
+                    }
+                }
+            }
+        }
+
+
+        stage('Generate Executive Migration Report') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Generate Executive Migration Report'
+                    ) {
+
+                        bat 'python scripts\\reporting\\migration\\executive_report.py --database postgresql'
                     }
                 }
             }
@@ -271,29 +537,36 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult
+                def finalStatus = currentBuild.currentResult ?: 'FAILURE'
 
-                bat """
-                    python scripts\\logging\\logger.py finalize ^
-                    --database postgresql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --status "${finalStatus}"
-                """
+                if (env.POSTGRESQL_LOAD_LOGGING_INITIALIZED == 'true') {
 
-                bat """
-                    python scripts\\reporting\\generate_report.py ^
-                    --database postgresql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\logging\\logger.py finalize ^
+                        --database postgresql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --status "${finalStatus}"
+                    """
 
-                bat """
-                    python scripts\\reporting\\generate_history.py ^
-                    --database postgresql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\reporting\\generate_report.py ^
+                        --database postgresql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    bat """
+                        python scripts\\reporting\\generate_history.py ^
+                        --database postgresql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
 
