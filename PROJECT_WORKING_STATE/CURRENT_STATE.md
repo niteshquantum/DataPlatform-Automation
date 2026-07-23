@@ -5,7 +5,7 @@ Last updated: 2026-07-24 02:23 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `Pending commit`
+- **HEAD**: `9103b9b`
 - **Commit message**: `fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
@@ -228,7 +228,7 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 ## Relevant Commits
 
-- Pending: `fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step`
+- 9103b9b: fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step
 - ee1bf77: fix(mssql-windows): align LOAD lifecycle parity, fix ordering, wire assessment/migration
 - 726f7ec: chore(mssql-windows): update working state after finalization milestone
 - 5ecfeff: fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers
