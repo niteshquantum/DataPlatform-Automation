@@ -20,9 +20,9 @@ Last updated: 2026-07-23 21:27 IST
 
 ## Development Status
 
-MILESTONE 2 COMPLETE — LOCAL RUNTIME PROVEN + JENKINS MANUAL BOUNDARY IDENTIFIED
+MILESTONE 3 COMPLETE — DEDICATED JENKINS RUNTIME PROVEN
 
-Local MongoDB Windows lifecycle is fully runtime-proven end-to-end on real managed MongoDBAutomation instance. Cross-workspace ownership detection fixed with PID fallback. CDC/idempotency validated. Dedicated Jenkins runtime ready but blocked by auth/branch configuration requiring manual UI action.
+Dedicated MongoDB Windows Jenkins LOAD pipeline (`mongodb20` job) is fully runtime-proven in Jenkins. Job configured for branch `mongodb-windows-final-v1` with parameter `RUN_ASSESSMENT`. Fresh Jenkins workspace correctly reuses managed MongoDBAutomation instance, downloads dataset, loads data with schema/CDC, validates, and finalizes. All stages pass. Jenkins build #5 SUCCESS.
 
 ## Current Implementation State
 
@@ -102,6 +102,36 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
    - Explicit boundaries in .bat and Groovy
    - Cleanup has PRESERVE_DATA/DELETE_DATA modes
 
+## Jenkins Runtime Proof (HANDOFF 000009)
+
+- **Job**: `mongodb20`
+- **Jenkins Build**: #5 - SUCCESS
+- **Branch**: `mongodb-windows-final-v1` (commit `f6a3102`)
+- **Script Path**: `jenkins/mongodb/windows/load_pipeline.groovy`
+- **Parameters**: `RUN_ASSESSMENT` (default false)
+- **Instance**: Reused running `MongoDBAutomation` on port 27019
+- **Dataset**: Downloaded `testdatasmall.zip`, extracted to `incoming/mongodb`
+- **Schema**: Detected 3 CSV files (employees, orders, products)
+- **CDC**: Generated `cdc_status.json` with NEW status for all collections
+- **Collections**: 7 created/validated (employees, orders, products, cart_events, customer_preferences, customer_segments, order_returns, product_seo)
+- **Data Loaded**: employees (40 docs), orders (38 docs), products (40 docs)
+- **Validation**: Post-load validation SUCCESS
+- **Assessment**: Correctly skipped when RUN_ASSESSMENT=false
+- **Duration**: ~118 seconds
+
+### Jenkins Job Configuration
+- **Job**: mongodb20
+- **Type**: Pipeline / CpsScmFlowDefinition
+- **SCM**: https://github.com/niteshquantum/DataPlatform-Automation
+- **Branch**: `*/mongodb-windows-final-v1`
+- **Lightweight checkout**: true
+- **Parameters**: `RUN_ASSESSMENT` choice (false/true, default false)
+- **Purpose**: Dedicated MongoDB Windows LOAD pipeline runtime test. Left on `mongodb-windows-final-v1` for continued runtime validation.
+
+### Files Changed
+- `jenkins/mongodb/windows/load_pipeline.groovy` - Added RUN_ASSESSMENT parameter, fixed Jenkins CPS `eachLine` failure
+- `C:\Users\Admin\.jenkins\jobs\mongodb20\config.xml` - Updated branch and added parameter (Jenkins runtime config)
+
 ## Critical Gaps Found
 
 ### Instance Ownership — RUNTIME PROVEN + SERVICE-ANCHOR FIXED
@@ -163,10 +193,10 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 4. ~~Close dedicated Groovy LOAD parity with local .bat~~ DONE HANDOFF 000006
 5. ~~Runtime-prove managed instance and CDC/idempotency~~ DONE HANDOFF 000007
 6. ~~Document exact Jenkins runtime manual boundary~~ DONE HANDOFF 000008
-7. Manual: Configure and run Jenkins job `mongodb20` with branch `mongodb-windows-final-v1` and parameters
-8. Implement MongoDB object deployment/validation pipeline
-9. Implement migration/discovery/reporting pipeline
-10. Integrate MongoDB into main Jenkinsfile after proven
+7. ~~Runtime-prove dedicated Jenkins LOAD pipeline~~ DONE HANDOFF 000009
+8. Integrate MongoDB stages into main `jenkins/Jenkinsfile` after validation
+9. Implement MongoDB object deployment/validation pipeline
+10. Implement migration/discovery/reporting pipeline
 
 ## Relevant Commits (from baseline)
 
