@@ -134,32 +134,75 @@ def _get_service_status(service_name):
         return None
 
 
+import tempfile
+
+# Cache helper script path to avoid rewriting on every call
+_HELPER_PS1_PATH = ROOT / "scripts" / "powershell" / "get_service_info.ps1"
+
+
+def _get_service_info(service_name):
+    """Return service ProcessId and resolved executable path, or None."""
+    if not service_name:
+        return None
+    try:
+        if not _HELPER_PS1_PATH.exists():
+            return None
+        completed = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", str(_HELPER_PS1_PATH),
+                service_name,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        raw = completed.stdout.strip()
+        if not raw or raw == "NOT_FOUND" or "|" not in raw:
+            return None
+        pid_str, path_str = raw.split("|", 1)
+        path = Path(path_str)
+        return {
+            "ProcessId": int(pid_str),
+            "ExecutablePath": path.resolve() if path.exists() else path,
+        }
+    except Exception:
+        return None
+
+
 def _is_project_owned(pid):
     """Check whether the listener PID belongs to the expected project-managed mongod.
 
     Ownership is determined by positive durable evidence in this order:
-    1. Windows service MongoDBAutomation PathName matches the listener executable.
-       This works across fresh workspaces because the service is a machine-level
-       durable anchor created by SETUP.
-    2. Listener executable path matches the current workspace's expected path.
+    1. Listener executable path matches the durable service MongoDBAutomation PathName.
+    2. Listener PID matches the durable service MongoDBAutomation ProcessId.
+    3. Listener executable path matches the current workspace's expected path.
     """
     if pid is None:
         return False
+
     actual = _get_process_executable(pid)
-    if actual is None:
-        return False
 
     try:
-        service_exe = _get_service_executable_path("MongoDBAutomation")
-        if service_exe is not None and actual == service_exe:
-            return True
+        service_info = _get_service_info("MongoDBAutomation")
+        if service_info is not None:
+            service_exe = service_info.get("ExecutablePath")
+            if actual is not None and service_exe is not None and actual == service_exe:
+                return True
+            if pid == service_info.get("ProcessId"):
+                return True
     except Exception:
         pass
 
-    try:
-        return actual == EXPECTED_MONGOD_PATH
-    except Exception:
-        return False
+    if actual is not None:
+        try:
+            return actual == EXPECTED_MONGOD_PATH
+        except Exception:
+            return False
+
+    return False
 
 
 def check():

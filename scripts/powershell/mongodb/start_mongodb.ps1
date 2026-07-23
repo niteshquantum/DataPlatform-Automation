@@ -103,7 +103,7 @@ if ($Listener) {
     # DURABLE SERVICE OWNERSHIP CHECK (CROSS-WORKSPACE)
     # =====================================
 
-    if (-not $IsProjectOwned -and $ActualPath) {
+    if (-not $IsProjectOwned) {
 
         $ServiceName = "MongoDBAutomation"
 
@@ -127,9 +127,14 @@ if ($Listener) {
                 $ServiceExe = $ServicePathName.Split(' ')[0]
             }
 
-            $ServiceExe = [System.IO.Path]::GetFullPath($ServiceExe)
+            if ($ActualPath) {
+                $ServiceExe = [System.IO.Path]::GetFullPath($ServiceExe)
+                if ($ActualPath.Equals($ServiceExe, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $IsProjectOwned = $true
+                }
+            }
 
-            if ($ActualPath.Equals($ServiceExe, [System.StringComparison]::OrdinalIgnoreCase)) {
+            if (-not $IsProjectOwned -and $OwnerProcessId -eq $ServiceInfo.ProcessId) {
                 $IsProjectOwned = $true
             }
         }

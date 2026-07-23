@@ -1,6 +1,6 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 18:30 IST
+Last updated: 2026-07-23 21:05 IST
 
 ## Repository Baseline
 
@@ -20,9 +20,9 @@ Last updated: 2026-07-23 18:30 IST
 
 ## Development Status
 
-MILESTONE 1 COMPLETE — LOCAL LOAD FINALIZED + GROOVY LOAD PARITY IMPLEMENTED
+MILESTONE 2 IN PROGRESS — RUNTIME PROOF + CDC CHECKPOINT + SERVICE-ANCHOR FIX
 
-MongoDB Windows LOAD end-to-end contract is finalized for local execution. Dedicated Jenkins Groovy LOAD pipeline is aligned with local .bat state-aware preflight. Instance ownership is hardened and cross-workspace safe. Directly related batch parsing defect fixed and validated.
+Local MongoDB Windows lifecycle is runtime-proven end-to-end on real managed MongoDBAutomation instance. Cross-workspace ownership detection fixed with PID fallback. CDC/idempotency validated. Dedicated Jenkins runtime blocked by 403 auth; exact manual action identified.
 
 ## Current Implementation State
 
@@ -104,20 +104,19 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 
 ## Critical Gaps Found
 
-### Instance Ownership — FINALIZED + CROSS-WORKSPACE SAFE
-- `scripts/python/mongodb/setup/check_instance.py`: ownership uses durable Windows service `MongoDBAutomation` anchor first, then falls back to workspace-local path check. When port is closed, returns `INSTANCE_INSTALLED_BUT_STOPPED` if durable service exists (even without local binaries), enabling fresh-workspace discovery.
-- `scripts/powershell/mongodb/start_mongodb.ps1`: same service-anchor logic for running case; added service-start path for stopped durable service in fresh workspaces. Foreign process still rejected with diagnostics.
-- `scripts/batch/mongodb/mongodb_load_pipeline.bat`: instance preflight with state-aware branching preserves ownership semantics.
-- Durable anchor: `Win32_Service.PathName` for `MongoDBAutomation` service.
-- Live foreign detection verified: port 27019 occupied by PID 4908 correctly identified as foreign
-- Live free-port detection verified via targeted tests
-- Cross-workspace acceptance/rejection verified via simulated mocks
-- Service status helper verified: returns None when service absent
-- UNPROVEN: owned-instance reuse in same workspace (requires actual running project mongod.exe binary)
-- UNPROVEN: service-start path in start_mongodb.ps1 (requires actual installed service for live test)
-- RUNTIME PROVEN: foreign listener rejection and local LOAD abort behavior
+### Instance Ownership — RUNTIME PROVEN + SERVICE-ANCHOR FIXED
+- `scripts/python/mongodb/setup/check_instance.py`: ownership uses durable Windows service `MongoDBAutomation` anchor first, then falls back to workspace-local path check, then PID match as final fallback.
+- `scripts/powershell/mongodb/start_mongodb.ps1`: service-anchor logic with PID fallback when process executable path is unresolvable.
+- `scripts/python/mongodb/setup/test_ownership.py`: updated to use new `_get_service_info` helper; all targeted tests PASS.
+- **RUNTIME PROVEN**: Real managed MongoDBAutomation service on port 27019 (PID 4892) correctly recognized as `INSTANCE_RUNNING_AND_USABLE`.
+- Live foreign detection previously verified: port 27019 occupied by foreign mongod correctly identified as foreign.
+- Live free-port detection verified via targeted tests.
+- Cross-workspace acceptance/rejection verified via simulated mocks.
+- Service status helper verified: returns None when service absent.
+- UNPROVEN: owned-instance reuse in same workspace with local binary (binary absent from workspace).
+- UNPROVEN: service-start path in start_mongodb.ps1 (requires actual stopped service for live test).
 
-### Fresh Workspace Safety — FINALIZED
+### Fresh Workspace Safety — RUNTIME PROVEN
 - `scripts/batch/mongodb/mongodb_load_pipeline.bat` has instance preflight before start
   - INSTANCE_RUNNING_AND_USABLE -> reuse, no duplicate start
   - INSTANCE_INSTALLED_BUT_STOPPED -> call start_mongodb.bat
@@ -125,7 +124,8 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
   - PORT_OCCUPIED_BY_NON_MONGODB -> clear failure with diagnostics
 - `check_instance.py` returns INSTANCE_INSTALLED_BUT_STOPPED when durable MongoDBAutomation service exists but port is closed, even without local binaries
 - `start_mongodb.ps1` can start a stopped durable service via `Start-Service MongoDBAutomation` when local binary is absent
-- RUNTIME PROVEN: local LOAD correctly aborts on foreign listener with full diagnostics
+- RUNTIME PROVEN: local LOAD correctly reuses managed instance, completes schema detection, collection creation, data load, and post-load validation
+- RUNTIME PROVEN: idempotent re-run skips already-processed files and preserves existing data
 - Directly related batch parsing defect fixed: delayed expansion used for error diagnostics containing parentheses
 
 ### Missing Object/Migration Flows (MEDIUM PRIORITY)
@@ -161,9 +161,10 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 2. ~~Make ownership cross-workspace safe using durable service anchor~~ DONE HANDOFF 000004
 3. ~~ALIGN fresh workspace safety: LOAD preflight + stopped service start~~ DONE HANDOFF 000005
 4. ~~Close dedicated Groovy LOAD parity with local .bat~~ DONE HANDOFF 000006
-5. Implement MongoDB object deployment/validation pipeline
-6. Implement migration/discovery/reporting pipeline
-7. Integrate MongoDB into main Jenkinsfile after proven
+5. ~~Runtime-prove managed instance and CDC/idempotency~~ DONE HANDOFF 000007
+6. Implement MongoDB object deployment/validation pipeline
+7. Implement migration/discovery/reporting pipeline
+8. Integrate MongoDB into main Jenkinsfile after proven
 
 ## Relevant Commits (from baseline)
 
