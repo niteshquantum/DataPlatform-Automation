@@ -1,4 +1,4 @@
-configure_mysql_user.sh#!/bin/bash
+#!/bin/bash
 
 set -e
 
