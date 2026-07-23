@@ -74,6 +74,95 @@ pipeline {
         }
 
 
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+            }
+        }
+
+
+        stage('Check Instance State') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Check Instance State'
+                    ) {
+
+                        def output = bat(
+                            script: 'scripts\\batch\\mongodb\\setup\\check_instance.bat',
+                            returnStdout: true
+                        ).trim()
+
+                        def instanceState = 'UNKNOWN'
+                        def instanceError = ''
+
+                        output.eachLine { line ->
+                            if (line.startsWith('INSTANCE_STATE=')) {
+                                instanceState = line.split('=', 2)[1].trim()
+                            }
+                            if (line.startsWith('ERROR=')) {
+                                instanceError = line.split('=', 2)[1].trim()
+                            }
+                        }
+
+                        if (!output || !output.contains('INSTANCE_STATE=')) {
+                            throw new Exception("check_instance.bat produced no valid instance state output. ${output ? 'Partial output: ' + output : 'Empty output'}")
+                        }
+
+                        echo "Instance state: ${instanceState}"
+                        if (instanceError) {
+                            echo "Instance error: ${instanceError}"
+                        }
+
+                        if (instanceState == 'INSTANCE_RUNNING_AND_USABLE') {
+                            echo 'Managed instance already running. Reusing.'
+                        } else if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED') {
+                            echo 'Managed instance stopped. Starting...'
+                            bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
+                        } else if (instanceState == 'NO_INSTANCE') {
+                            throw new Exception("No managed MongoDB instance found. Run SETUP first to deploy and configure MongoDB. ${instanceError}")
+                        } else if (instanceState == 'PORT_OCCUPIED_BY_NON_MONGODB') {
+                            throw new Exception("Foreign process detected on MongoDB port. Aborting LOAD to avoid deploying over or reusing an unmanaged listener. ${instanceError}")
+                        } else {
+                            throw new Exception("Unexpected instance state: ${instanceState}. ${instanceError}")
+                        }
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MongoDB') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MongoDB'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Download Dataset') {
 
             steps {

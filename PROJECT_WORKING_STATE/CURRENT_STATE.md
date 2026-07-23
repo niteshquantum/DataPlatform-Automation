@@ -1,12 +1,12 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 15:05 IST
+Last updated: 2026-07-23 18:30 IST
 
 ## Repository Baseline
 
 - **Branch**: mongodb-windows-final-v1
-- **HEAD**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
-- **Commit message**: `refactor(main-jenkins): reduce to 4 proven flows and fix MySQL instance-state parsing`
+- **HEAD**: `12162169e75a86ae14de103f70387f21bd2cd6eb`
+- **Commit message**: `chore(mongodb-windows): initialize final development workspace`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -20,42 +20,132 @@ Last updated: 2026-07-23 15:05 IST
 
 ## Development Status
 
-NOT STARTED — BOOTSTRAP ONLY
+MILESTONE 1 COMPLETE — LOCAL LOAD FINALIZED + GROOVY LOAD PARITY IMPLEMENTED
 
-No database-specific implementation has been started yet. This workspace is at the exact baseline of the proven PostgreSQL Windows integration branch.
+MongoDB Windows LOAD end-to-end contract is finalized for local execution. Dedicated Jenkins Groovy LOAD pipeline is aligned with local .bat state-aware preflight. Instance ownership is hardened and cross-workspace safe. Directly related batch parsing defect fixed and validated.
+
+## Current Implementation State
+
+### SETUP Flow
+- **Local .bat**: `scripts\batch\mongodb\mongodb_setup_pipeline.bat`
+  - Instance state checking via `check_instance.bat` -> `check_instance.py`
+  - Terraform deployment via `run_terraform.bat`
+  - Project service configuration via `configure_mongodb_service.bat` + PowerShell
+  - Global mongosh configuration via `configure_global_mongosh.bat` + PowerShell
+  - Port and instance validation
+  - Environment validation
+  - Pre-validation stages (python runtime, requirements, tools) are COMMENTED OUT
+
+- **Jenkins Groovy**: `jenkins\mongodb\windows\setup_pipeline.groovy`
+  - Full pipeline with logging, admin check, instance check, deploy, service config, mongosh config, start, validate
+  - Instance states: INSTANCE_RUNNING_AND_USABLE, INSTANCE_INSTALLED_BUT_STOPPED, NO_INSTANCE, PORT_OCCUPIED_BY_NON_MONGODB
+  - Post stages: finalize, report, history
+  - Missing: validate_environment stage
+
+### LOAD Flow
+- **Local .bat**: `scripts\batch\mongodb\mongodb_load_pipeline.bat`
+  - Python runtime validation
+  - Python requirements validation
+  - Instance preflight via `check_instance.bat` with state-aware branching
+  - Safe reuse of `INSTANCE_RUNNING_AND_USABLE`
+  - Safe start of `INSTANCE_INSTALLED_BUT_STOPPED` (supports cross-workspace durable service)
+  - Clear failure for `NO_INSTANCE` (requires SETUP first)
+  - Clear failure for `PORT_OCCUPIED_BY_NON_MONGODB` (foreign process untouched)
+  - MongoDB validation
+  - Data load via `load_data.bat` (schema detection -> create collections -> create indexes -> load data -> validate data)
+  - Loaded data validation
+  - Assessment stages commented out (intentionally separate)
+
+- **Jenkins Groovy**: `jenkins\mongodb\windows\load_pipeline.groovy`
+  - Initialize Logging
+  - Validate Python Runtime
+  - Validate Python Requirements
+  - Check Instance State (state-aware branching matching local .bat)
+  - Validate MongoDB
+  - Download Dataset
+  - Load Data -> load_data.bat
+  - Validate Loaded Data
+  - Optional Database Assessment (RUN_ASSESSMENT param)
+  - Optional Assessment Report
+  - Post: finalize, report, history, archive
 
 ## Proven Reference Architecture
 
-PostgreSQL Windows is the proven architectural reference for this workspace. Key proven behaviors to adapt:
+PostgreSQL Windows is the proven reference. Key proven behaviors verified in MongoDB:
 
-1. **PORT OPEN != CURRENT PROJECT INSTANCE OWNERSHIP**
-   - A reachable database on configured host:port does NOT automatically mean it is the current workspace-managed deployment.
-   - Must verify instance ownership/reuse per MongoDB lifecycle.
+1. **PORT OPEN != CURRENT PROJECT INSTANCE OWNERSHIP** — HARDENED + CROSS-WORKSPACE SAFE
+   - `check_instance.py` verifies listener process executable path AND durable Windows service `MongoDBAutomation` anchor
+   - `start_mongodb.ps1` verifies ownership via service PathName matching before reusing or starting; foreign process causes clear failure with diagnostics
+   - Cross-workspace: ownership no longer depends solely on current PROJECT_ROOT path matching
+   - Service-based anchor: listener executable path must match `MongoDBAutomation` service PathName's extracted executable
+   - Fallback: current-workspace path check preserved for non-service instances
 
-2. **Fresh workspace compatibility**
-   - SETUP and LOAD may run in different Jenkins workspaces.
-   - LOAD must not assume SETUP workspace-local binaries/tools exist.
+2. **Fresh workspace compatibility** — PARTIALLY IMPLEMENTED
+   - set_project_root.bat uses script-relative path resolution
+   - LOAD .bat now has instance preflight with state-aware branching (HANDOFF 000005)
+   - LOAD can discover cross-workspace managed instance via durable MongoDBAutomation service
+   - LOAD can start stopped durable service via Windows service control
+   - PostgreSQL LOAD explicitly validates instance state before loading
 
-3. **Runtime-generated artifacts**
-   - Generated artifacts must be regenerated when required.
-   - Gitignored artifacts are expected; do not require them to exist before runtime generation.
+3. **Runtime-generated artifacts** — IMPLEMENTED
+   - schema_registry.json generated at runtime
+   - cdc_status.json generated at runtime
+   - databases/mongodb downloaded/extracted at runtime
+   - Gitignored artifacts expected
 
-4. **Dedicated pipeline alignment**
-   - Dedicated Groovy and local wrapper behavior must remain logically aligned.
-   - Main Jenkins should delegate to proven wrappers, not inline implementation.
+4. **Dedicated pipeline alignment** — MOSTLY ALIGNED
+   - Separate setup_pipeline.groovy, load_pipeline.groovy, cleanup_pipeline.groovy
+   - mongodb_cleanup.groovy exists as extra standalone cleanup (duplicate?)
+   - Main Jenkinsfile does NOT yet include MongoDB stages (only MySQL, PostgreSQL)
 
-5. **SETUP/LOAD/CLEANUP boundaries**
-   - Must remain explicit and database-specific.
+5. **SETUP/LOAD/CLEANUP boundaries** — IMPLEMENTED
+   - Explicit boundaries in .bat and Groovy
+   - Cleanup has PRESERVE_DATA/DELETE_DATA modes
 
-## Pending Implementation
+## Critical Gaps Found
 
-- MongoDB Windows SETUP pipeline (instance deployment, tool installation, validation)
-- MongoDB Windows LOAD pipeline (data loading, validation, assessment/reconciliation/discovery/reporting)
-- MongoDB instance-state management (install/start/reuse/validate)
-- MongoDB-specific driver/tooling configuration
-- MongoDB-specific object handling (collections vs tables, no traditional views/functions/procedures)
-- CDC behavior adaptation for MongoDB (change streams, oplog)
-- Assessment/reconciliation/discovery/migration reporting adaptation
+### Instance Ownership — FINALIZED + CROSS-WORKSPACE SAFE
+- `scripts/python/mongodb/setup/check_instance.py`: ownership uses durable Windows service `MongoDBAutomation` anchor first, then falls back to workspace-local path check. When port is closed, returns `INSTANCE_INSTALLED_BUT_STOPPED` if durable service exists (even without local binaries), enabling fresh-workspace discovery.
+- `scripts/powershell/mongodb/start_mongodb.ps1`: same service-anchor logic for running case; added service-start path for stopped durable service in fresh workspaces. Foreign process still rejected with diagnostics.
+- `scripts/batch/mongodb/mongodb_load_pipeline.bat`: instance preflight with state-aware branching preserves ownership semantics.
+- Durable anchor: `Win32_Service.PathName` for `MongoDBAutomation` service.
+- Live foreign detection verified: port 27019 occupied by PID 4908 correctly identified as foreign
+- Live free-port detection verified via targeted tests
+- Cross-workspace acceptance/rejection verified via simulated mocks
+- Service status helper verified: returns None when service absent
+- UNPROVEN: owned-instance reuse in same workspace (requires actual running project mongod.exe binary)
+- UNPROVEN: service-start path in start_mongodb.ps1 (requires actual installed service for live test)
+- RUNTIME PROVEN: foreign listener rejection and local LOAD abort behavior
+
+### Fresh Workspace Safety — FINALIZED
+- `scripts/batch/mongodb/mongodb_load_pipeline.bat` has instance preflight before start
+  - INSTANCE_RUNNING_AND_USABLE -> reuse, no duplicate start
+  - INSTANCE_INSTALLED_BUT_STOPPED -> call start_mongodb.bat
+  - NO_INSTANCE -> clear failure requiring SETUP first
+  - PORT_OCCUPIED_BY_NON_MONGODB -> clear failure with diagnostics
+- `check_instance.py` returns INSTANCE_INSTALLED_BUT_STOPPED when durable MongoDBAutomation service exists but port is closed, even without local binaries
+- `start_mongodb.ps1` can start a stopped durable service via `Start-Service MongoDBAutomation` when local binary is absent
+- RUNTIME PROVEN: local LOAD correctly aborts on foreign listener with full diagnostics
+- Directly related batch parsing defect fixed: delayed expansion used for error diagnostics containing parentheses
+
+### Missing Object/Migration Flows (MEDIUM PRIORITY)
+- No deploy_objects/validate_objects pipeline (PostgreSQL has this)
+- No migration/discovery/reporting pipeline
+- No run_cdc.bat equivalent (CDC is embedded in data_loader_mongodb.py)
+- No assessment pipeline runner (only single-stage assessment.py)
+
+### Groovy/.bat Parity Gaps (MEDIUM PRIORITY)
+- Local .bat has validate_environment at end; Groovy doesn't
+- Local .bat has explicit schema detection, collection creation, index creation in load
+- Groovy LOAD assumes all that happens inside load_data.bat
+- configure_mongodb_service.ps1 references `install_windows.ps1` but terraform main.tf calls it with different env vars (MONGODB_PORT vs USE_EXISTING_MONGODB)
+
+### Code Quality Issues (LOW PRIORITY)
+- `install_windows.ps1` is a stub (does nothing)
+- `generate_dataset.py` is all TODOs
+- `load_data.py` has relative import `from db_connection import get_db` without sys.path
+- `validate_database.py` has same relative import issue
+- `load_pipeline.py` hardcodes step order without conditionals
 
 ## Do Not Repeat
 
@@ -67,12 +157,13 @@ PostgreSQL Windows is the proven architectural reference for this workspace. Key
 
 ## Next Actions
 
-1. Study PostgreSQL Windows reference implementation
-2. Design MongoDB Windows instance lifecycle
-3. Implement MongoDB Windows SETUP pipeline
-4. Implement MongoDB Windows LOAD pipeline
-5. Validate in dedicated Groovy first
-6. Integrate into main Jenkins after proven
+1. ~~Harden instance ownership checks in check_instance.py and start_mongodb.ps1~~ DONE HANDOFF 000003
+2. ~~Make ownership cross-workspace safe using durable service anchor~~ DONE HANDOFF 000004
+3. ~~ALIGN fresh workspace safety: LOAD preflight + stopped service start~~ DONE HANDOFF 000005
+4. ~~Close dedicated Groovy LOAD parity with local .bat~~ DONE HANDOFF 000006
+5. Implement MongoDB object deployment/validation pipeline
+6. Implement migration/discovery/reporting pipeline
+7. Integrate MongoDB into main Jenkinsfile after proven
 
 ## Relevant Commits (from baseline)
 

@@ -11,4 +11,6 @@ set "PYTHONPATH=%PROJECT_ROOT%;%PYTHONPATH%"
 
 python "%PROJECT_ROOT%\scripts\python\mongodb\setup\check_instance.py"
 
+if errorlevel 1 exit /b 1
+
 exit /b 0
