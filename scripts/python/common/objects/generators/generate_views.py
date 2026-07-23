@@ -55,7 +55,7 @@ def generate_views(database):
             column_text = ",\n".join(f'"{col}"' for col in columns)
         else:
             column_text = ",\n".join(columns)
-        print(f"DEBUG PostgreSQL columns: {column_text}")
+
         view_template = load_template(
             database,
             "view"

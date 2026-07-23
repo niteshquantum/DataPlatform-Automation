@@ -28,13 +28,9 @@ existing_files = sorted(
     if f.name != "master.xml"
 )
 
-for old_file in existing_files:
-    if old_file.name[0].isdigit():
-        old_file.unlink()
-
-existing_files = []
+# Parse existing files BEFORE any deletion to discover which
+# columns are already covered by deployed changesets.
 covered_columns = {}
-
 
 column_pattern = re.compile(r'<column name="([^"]+)"')
 
@@ -68,7 +64,34 @@ for file in existing_files:
         pass
 
 
-next_number = len(existing_files) + 1
+# Remove only XML files for tables that no longer exist in the
+# current schema registry. This prevents stale changelogs from
+# referencing dropped tables while preserving deployed history
+# for existing tables.
+for old_file in list(existing_files):
+
+    try:
+
+        content = old_file.read_text(encoding="utf-8")
+
+        table_match = table_pattern.search(content)
+
+        if not table_match:
+            continue
+
+        table_name = table_match.group(1).lower()
+
+        if table_name not in schema_registry:
+            old_file.unlink()
+
+    except Exception:
+        pass
+
+
+next_number = len([
+    f for f in existing_files
+    if f.name[0].isdigit()
+]) + 1
 
 generated_any = False
 
