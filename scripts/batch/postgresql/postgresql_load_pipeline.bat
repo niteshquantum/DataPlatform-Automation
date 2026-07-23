@@ -47,6 +47,30 @@ if errorlevel 1 (
 
 
 REM =====================================
+REM INSTALL TOOLS
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\install_tools.bat"
+
+if errorlevel 1 (
+    echo ERROR: POSTGRESQL TOOLS INSTALLATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM VALIDATE TOOLS
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\validate_tools.bat"
+
+if errorlevel 1 (
+    echo ERROR: POSTGRESQL TOOLS VALIDATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
 REM START POSTGRESQL
 REM =====================================
 

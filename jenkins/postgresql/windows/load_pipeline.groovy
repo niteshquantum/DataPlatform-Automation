@@ -96,17 +96,51 @@ pipeline {
         }
 
 
-        stage('Validate Python Requirements') {
+        stage('Validate PostgreSQL Requirements') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Validate Python Requirements'
+                        'Validate PostgreSQL Requirements'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\validate_tools.bat'
                     }
                 }
             }
