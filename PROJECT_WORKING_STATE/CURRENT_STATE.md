@@ -5,8 +5,8 @@ Last updated: 2026-07-23 18:30 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `ee1bf77`
-- **Commit message**: `fix(mssql-windows): align LOAD lifecycle parity, fix ordering, wire assessment/migration`
+- **HEAD**: `8063f99`
+- **Commit message**: `docs(mssql-windows): record code-level freeze readiness`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -249,3 +249,47 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 ### Next Milestone After Code Freeze
 
 Obtain access to a real Jenkins agent and runtime-prove the full MSSQL Windows SETUP + LOAD pipelines against a genuinely fresh workspace. Alternatively, provision a project-managed MSSQL instance on a test machine and runtime-prove all lifecycle branches end-to-end.
+
+### Safe Post-Freeze Local Runtime Validation (2026-07-23)
+
+#### Toolchain Runtime Validation
+- **Python runtime**: Python 3.12.6 — PASS (real local runtime)
+- **Python requirements**: PyYAML, python-dotenv, pyodbc, pandas — PASS (real local runtime)
+- **Java runtime**: OpenJDK 21.0.11 — PASS (real local runtime)
+- **Liquibase**: NOT AVAILABLE (liquibase.bat not found in workspace) — Defers to install_tools.bat provisioning
+- **sqlcmd**: v1.10.0 — PASS (real local runtime)
+- **MSSQL JDBC driver**: NOT AVAILABLE (mssql-jdbc-12.10.0.jre11.jar not found) — Defers to install_tools.bat provisioning
+
+#### Schema Liquibase Isolated Test
+- **Fresh artifact generation**: Created temporary schema_registry.json with 2 tables, ran generate_liquibase_xml.py → generated 001_create_test_table.xml and 002_create_another_table.xml — PASS
+- **Master XML update**: Ran update_master_xml.py → master.xml updated with 2 includes — PASS
+- **Artifact ordering**: schema registry → generate_liquibase_xml → update_master_xml → master.xml — PASS
+- **Idempotency**: Reran generate_liquibase_xml.py without cleaning — same 2 files regenerated, no duplicates — PASS
+- **Missing-registry behavior**: Removed schema_registry.json → script exited 0, wrote schema_status.json with reason "no_schema_registry" — PASS
+- **Classification**: TARGETED RUNTIME PROVEN (artifact generation validated against temporary isolated metadata)
+
+#### Object Flow Isolated Test
+- **Object generation**: Ran bootstrap_generator.py mssql with temporary schema → generated 6 SQL files (views, functions, procedures) and 6 Liquibase XML files — PASS
+- **Master objects XML**: master_objects.xml generated with 6 includes — PASS
+- **Source-of-truth validation**: No system tables (sys.tables) or Liquibase internal tables referenced in generated objects — PASS
+- **Idempotency**: Reran bootstrap_generator.py mssql → same files, no duplicate increments — PASS
+- **Classification**: TARGETED RUNTIME PROVEN (artifact generation validated without live database)
+
+#### Assessment/Migration/Reporting Wrapper Runtime Contract
+- **Import validation**: assessment.py, assessment_report.py, discovery_engine.py, reconciliation_engine.py, growth_analyzer.py, requirement_analyzer.py, recommendation_engine.py, action_plan_engine.py, technical_report.py, executive_report.py all import cleanly — PASS
+- **Help/argument validation**: All engines accept --database mssql argument — PASS
+- **Wrapper structure**: run_assessment_pipeline.bat and run_migration_pipeline.bat contain project-root setup, PYTHONPATH, and correct script paths — PASS
+- **Classification**: TARGETED RUNTIME PROVEN (wrapper orchestration contract validated; live database execution deferred)
+
+#### Local SETUP/LOAD Control-Flow Targeted Tests
+- **State-machine simulation**: test_load_bootstrap_sm.bat passed for RUNNING, STOPPED, NOINSTANCE states — PASS
+- **Admin-gating structure**: check_admin_privileges.bat returns 0 for admin, non-zero for non-admin — PASS
+- **Classification**: SIMULATED/MOCK PROVEN (state machine uses simulated check_instance output, does not touch live database)
+
+#### Safe Isolated MSSQL Test Option
+- **Finding**: No existing safe isolated MSSQL test mechanism found in repository
+- **No LocalDB path**: No LocalDB configuration or scripts
+- **No container path**: No Docker or containerized MSSQL test configuration
+- **No test instance config**: No alternate test instance/port configuration
+- **Classification**: Live database runtime PROOF DEFERRED (no project-managed isolated test path exists)
+
