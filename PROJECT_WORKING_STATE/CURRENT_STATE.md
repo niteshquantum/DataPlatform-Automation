@@ -1,14 +1,66 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 17:05 IST
+Last updated: 2026-07-23 17:22 IST
 
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `f4aefd3`
-- **Commit message**: `fix(mssql-windows-groovy): handle CDC exit-100 skip without failing stage`
+- **HEAD**: `52f9b92` (dirty — uncommitted Groovy parity fix)
+- **Commit message**: `fix(mssql-windows): bootstrap fresh-workspace dependencies and instance resolution in local LOAD`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
+
+## Audit Status
+
+**COMPLETED** — MSSQL Windows implementation audited against PostgreSQL Windows proven reference.
+
+## Implemented Fixes
+
+### CDC Exit-100 Propagation (LOAD Groovy)
+
+`jenkins/mssql/windows/load_pipeline.groovy` CDC stage changed from `runTrackedStage` to explicit `bat(returnStatus: true)` with manual logging:
+- exit 0 → log SUCCESS, continue pipeline
+- exit 100 → log SUCCESS, set `env.SKIP_DATA_LOAD = 'true'`, continue pipeline
+- other non-zero → log FAILURE, call `set-error`, `error` to fail stage
+- `Load Data` and `Validate Loaded Data` stages now have `when { env.SKIP_DATA_LOAD != 'true' }` guards
+
+### Instance Ownership Verification (check_instance.py)
+
+`scripts/python/mssql/setup/check_instance.py` now verifies project-managed instance identity before trusting service/port state:
+- Queries service `ImagePath` via `sc.exe qc` to confirm binary is `sqlservr.exe`
+- Enumerates `HKLM\SOFTWARE\Microsoft\Microsoft SQL Server` registry subkeys to find a `Setup\InstanceName` matching the configured instance
+- Verifies registry `ImagePath` also points to `sqlservr.exe`
+
+A foreign instance that happens to share the service name and/or port but lacks matching registry provenance is classified as `NO_INSTANCE`. A legitimately managed instance (running or stopped) is recognized by its registry entry.
+
+### LOAD Fresh-Workspace Bootstrap (local .bat)
+
+`scripts/batch/mssql/mssql_load_pipeline.bat` now bootstraps workspace-local dependencies and safely resolves/reuses the managed MSSQL instance before data operations:
+- Installs Python requirements (`install_python_requirements.bat`) after runtime validation
+- Validates Java runtime (`validate_java_runtime.bat`)
+- Installs tools (`install_tools.bat`) — Liquibase, sqlcmd, MSSQL JDBC driver
+- Checks instance state (`check_instance.bat`) and handles:
+  - `NO_INSTANCE` → `deploy_mssql_gdrive.bat` + `configure_mssql.bat` + start
+  - `INSTANCE_INSTALLED_BUT_STOPPED` → start
+  - `INSTANCE_RUNNING_AND_USABLE` → reuse (start_mssql is idempotent)
+- Preserves existing CDC, load, validate, deploy, and object validation stages unchanged
+
+### LOAD Fresh-Workspace Bootstrap (Jenkins Groovy)
+
+`jenkins/mssql/windows/load_pipeline.groovy` now bootstraps workspace-local dependencies and safely resolves/reuses the managed MSSQL instance before data operations, mirroring the proven local .bat contract:
+- Validates Python runtime
+- Installs Python requirements (`install_python_requirements.bat`)
+- Validates Python requirements (`validate_python_requirements.bat`)
+- Validates Java runtime (`validate_java_runtime.bat`)
+- Installs tools (`install_tools.bat`) — Liquibase, sqlcmd, MSSQL JDBC driver
+- Checks instance state (`check_instance.bat`) and handles:
+  - `NO_INSTANCE` → `deploy_mssql_gdrive.bat` + `configure_mssql.bat` + start
+  - `INSTANCE_INSTALLED_BUT_STOPPED` → start
+  - `INSTANCE_RUNNING_AND_USABLE` → reuse (start_mssql is idempotent)
+- Unexpected state → fail closed with diagnostic
+- Preserves existing CDC exit-100 handling, SKIP_DATA_LOAD guards, and downstream LOAD stages unchanged
+
+This makes the dedicated Jenkins Groovy LOAD logically equivalent to the local .bat fresh-workspace contract.
 
 ## Audit Status
 
@@ -94,18 +146,11 @@ A foreign instance that happens to share the service name and/or port but lacks 
 
 ## Proven Gaps
 
-### 1. Fresh Workspace Safety in Groovy LOAD (CRITICAL — LOCAL .BAT FIXED, GROOVY PENDING)
+### 1. SETUP Configure Gating Difference (NOT YET FIXED)
 
-Local `.bat` LOAD now bootstraps Python requirements, Java, tools, and MSSQL instance resolution before data operations. The dedicated Jenkins Groovy LOAD pipeline (`jenkins/mssql/windows/load_pipeline.groovy`) **still skips all these steps**.
+Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groovy only runs it when `admin_status.txt == true`. Without admin, Groovy may leave MSSQL unconfigured.
 
-If SETUP and LOAD execute in different Jenkins workspaces, Groovy LOAD will fail because:
-- Python requirements not installed
-- Tools/liquibase/JDBC driver not installed
-- MSSQL instance not started/validated
-
-Once local .bat is proven, Groovy can mirror the exact proven bootstrap contract.
-
-### 2. SETUP Configure Gating Difference (NOT YET FIXED)
+### 2. Missing Assessment/Migration Wrappers (NOT YET FIXED)
 
 Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groovy only runs it when `admin_status.txt == true`. Without admin, Groovy may leave MSSQL unconfigured.
 
@@ -125,7 +170,6 @@ Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groov
 
 ## Pending Implementation
 
-- Mirror fresh-workspace bootstrap into MSSQL Groovy LOAD (exact contract now proven in local .bat)
 - Align configure_mssql gating between .bat and Groovy
 - Add missing `run_assessment_pipeline.bat` and `run_migration_pipeline.bat` for MSSQL
 - Wire schema Liquibase evolution into LOAD flow
@@ -142,14 +186,14 @@ Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groov
 
 ## Next Actions
 
-1. Mirror proven local .bat fresh-workspace bootstrap into MSSQL Groovy LOAD
-2. Align configure_mssql gating between .bat and Groovy
-3. Add missing assessment/migration pipeline wrappers
-4. Wire schema Liquibase evolution into LOAD flow
-5. Update master Jenkinsfile for MSSQL
+1. Align configure_mssql gating between .bat and Groovy
+2. Add missing assessment/migration pipeline wrappers
+3. Wire schema Liquibase evolution into LOAD flow
+4. Update master Jenkinsfile for MSSQL
 
 ## Relevant Commits
 
+- 52f9b92: fix(mssql-windows): bootstrap fresh-workspace dependencies and instance resolution in local LOAD
 - f4aefd3: fix(mssql-windows-groovy): handle CDC exit-100 skip without failing stage
 - 19806e1: fix(mssql-windows): verify managed instance ownership via registry/service path
 - 963840e: chore(mssql-windows): initialize final development workspace

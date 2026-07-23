@@ -74,6 +74,228 @@ pipeline {
         }
 
 
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Check Instance') {
+
+            steps {
+
+                script {
+
+                    bat """
+                        python scripts\\logging\\logger.py stage-start ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Check Instance"
+                    """
+
+                    def checkResult = bat(
+                        script: 'scripts\\batch\\mssql\\setup\\check_instance.bat',
+                        returnStatus: true,
+                        returnStdout: true
+                    )
+
+                    def output = checkResult[1]
+                    def instanceStateLine = output.readLines().find { line ->
+                        line.startsWith('INSTANCE_STATE=')
+                    }
+                    def instanceState = instanceStateLine?.split('=', 2)[1]?.trim()
+
+                    if (!instanceState) {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Check Instance" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Check Instance" ^
+                            --message "Unable to determine MSSQL instance state"
+                        """
+
+                        error "Unable to determine MSSQL instance state from check_instance output"
+
+                    }
+
+                    if (instanceState == 'NO_INSTANCE') {
+
+                        echo 'Deploying project-local MSSQL instance.'
+
+                        bat 'scripts\\batch\\mssql\\setup\\deploy_mssql_gdrive.bat'
+
+                        bat 'scripts\\batch\\mssql\\setup\\configure_mssql.bat'
+
+                    } else if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED') {
+
+                        echo 'Starting existing managed MSSQL instance.'
+
+                    } else if (instanceState == 'INSTANCE_RUNNING_AND_USABLE') {
+
+                        echo 'Reusing existing managed MSSQL instance.'
+
+                    } else {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Check Instance" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Check Instance" ^
+                            --message "Unexpected instance state: ${instanceState}"
+                        """
+
+                        error "Unexpected MSSQL instance state: ${instanceState}"
+
+                    }
+
+                    bat """
+                        python scripts\\logging\\logger.py stage-end ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Check Instance" ^
+                        --status SUCCESS
+                    """
+                }
+            }
+        }
+
+
+        stage('Start SQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\start_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate SQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Download Dataset') {
 
             steps {
