@@ -34,18 +34,6 @@ if errorlevel 1 (
 
 
 REM =====================================
-REM VALIDATE PYTHON REQUIREMENTS
-REM =====================================
-
-call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_python_requirements.bat"
-
-if errorlevel 1 (
-    echo ERROR: PYTHON REQUIREMENTS VALIDATION FAILED
-    exit /b 1
-)
-
-
-REM =====================================
 REM INSTALL PYTHON REQUIREMENTS
 REM =====================================
 
@@ -53,6 +41,18 @@ call "%PROJECT_ROOT%\scripts\batch\mssql\setup\install_python_requirements.bat"
 
 if errorlevel 1 (
     echo ERROR: PYTHON REQUIREMENTS INSTALLATION FAILED
+    exit /b 1
+)
+
+
+REM =====================================
+REM VALIDATE PYTHON REQUIREMENTS
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_python_requirements.bat"
+
+if errorlevel 1 (
+    echo ERROR: PYTHON REQUIREMENTS VALIDATION FAILED
     exit /b 1
 )
 
@@ -106,8 +106,36 @@ if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
     echo.
     call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql_gdrive.bat"
     if errorlevel 1 exit /b 1
-    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
-    if errorlevel 1 exit /b 1
+
+    echo.
+    echo =====================================
+    echo CHECKING ADMINISTRATOR PRIVILEGES FOR CONFIGURATION
+    echo =====================================
+    echo.
+
+    set "LOAD_ADMIN_STATUS="
+
+    call "%PROJECT_ROOT%\scripts\batch\common\check_admin_privileges.bat"
+    if errorlevel 1 (
+        set "LOAD_ADMIN_STATUS=false"
+    ) else (
+        set "LOAD_ADMIN_STATUS=true"
+    )
+
+    echo Administrator Status: %LOAD_ADMIN_STATUS%
+
+    if /I "%LOAD_ADMIN_STATUS%"=="true" (
+        echo.
+        echo =====================================
+        echo CONFIGURING SQL SERVER
+        echo =====================================
+        echo.
+        call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
+        if errorlevel 1 exit /b 1
+    ) else (
+        echo Administrator privileges not available.
+        echo SQL Server network configuration will be skipped.
+    )
 )
 
 if /I "%INST_INSTANCE_STATE%"=="INSTANCE_INSTALLED_BUT_STOPPED" (
@@ -238,30 +266,32 @@ if errorlevel 1 (
 
 @REM ============================================================
 @REM OPTIONAL POST-PROCESSING
-@REM Assessment/reporting is intentionally not part of CORE LOAD.
-@REM Execute through dedicated assessment/reporting entry point.
+@REM Assessment and migration reporting are orchestrated through
+@REM dedicated pipeline wrappers and run as post-LOAD stages.
 @REM ============================================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\mssql\assessment\run_assessment.bat" all
-
-@REM if errorlevel 1 (
-@REM     echo ERROR: DATABASE ASSESSMENT FAILED
-@REM     exit /b 1
-@REM )
+call "%PROJECT_ROOT%\scripts\batch\mssql\assessment\run_assessment_pipeline.bat"
+if errorlevel 1 (
+    echo.
+    echo ERROR: ASSESSMENT & RECONCILIATION FAILED
+    echo.
+    exit /b 1
+)
 
 
 @REM REM ============================================================
 @REM OPTIONAL POST-PROCESSING
-@REM Assessment/reporting is intentionally not part of CORE LOAD.
-@REM Execute through dedicated assessment/reporting entry point.
+@REM Discovery/migration reporting is orchestrated through
+@REM dedicated pipeline wrapper and runs as post-LOAD stage.
 @REM ============================================================
 
-@REM call "%PROJECT_ROOT%\scripts\batch\common\generate_assessment_report.bat"
-
-@REM if errorlevel 1 (
-@REM     echo ERROR: ASSESSMENT REPORT GENERATION FAILED
-@REM     exit /b 1
-@REM )
+call "%PROJECT_ROOT%\scripts\batch\mssql\migration\run_migration_pipeline.bat"
+if errorlevel 1 (
+    echo.
+    echo ERROR: DISCOVERY & MIGRATION REPORTING FAILED
+    echo.
+    exit /b 1
+)
 
 
 echo.

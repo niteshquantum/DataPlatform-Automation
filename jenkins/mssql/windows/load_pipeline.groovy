@@ -215,7 +215,20 @@ pipeline {
 
                         bat 'scripts\\batch\\mssql\\setup\\deploy_mssql_gdrive.bat'
 
-                        bat 'scripts\\batch\\mssql\\setup\\configure_mssql.bat'
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            bat 'scripts\\batch\\mssql\\setup\\configure_mssql.bat'
+
+                        } else {
+
+                            echo 'Administrator privileges not available. Skipping configuration.'
+
+                        }
 
                     } else if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED') {
 
@@ -482,13 +495,12 @@ pipeline {
         Execute through dedicated assessment/reporting entry point.
         ============================================================
         */
-
-
-        stage('Database Assessment') {
+        stage('Assessment & Reconciliation') {
 
             when {
 
                 expression {
+
                     return params.RUN_ASSESSMENT == 'true'
                 }
             }
@@ -498,21 +510,22 @@ pipeline {
                 script {
 
                     runTrackedStage(
-                        'Database Assessment'
+                        'Assessment & Reconciliation'
                     ) {
 
-                        bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat all'
+                        bat 'scripts\\batch\\mssql\\assessment\\run_assessment_pipeline.bat'
                     }
                 }
             }
         }
 
 
-        stage('Assessment Report') {
+        stage('Discovery & Migration Reporting') {
 
             when {
 
                 expression {
+
                     return params.RUN_ASSESSMENT == 'true'
                 }
             }
@@ -522,10 +535,10 @@ pipeline {
                 script {
 
                     runTrackedStage(
-                        'Assessment Report'
+                        'Discovery & Migration Reporting'
                     ) {
 
-                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                        bat 'scripts\\batch\\mssql\\migration\\run_migration_pipeline.bat'
                     }
                 }
             }

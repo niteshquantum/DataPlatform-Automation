@@ -5,8 +5,8 @@ Last updated: 2026-07-23 18:30 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `5ecfeff`
-- **Commit message**: `fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers`
+- **HEAD**: `726f7ec`
+- **Commit message**: `chore(mssql-windows): update working state after finalization milestone`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -103,6 +103,25 @@ Created `scripts/batch/mssql/migration/run_migration_pipeline.bat` as the dedica
 - Technical report: `scripts/reporting/migration/technical_report.py --database mssql`
 - Executive report: `scripts/reporting/migration/executive_report.py --database mssql`
 
+### Local LOAD Fresh-Workspace Bootstrap Fixes
+
+`scripts/batch/mssql/mssql_load_pipeline.bat` now matches the architecture-correct fresh-workspace order and lifecycle parity:
+- **Python bootstrap order fixed**: `install_python_requirements.bat` now runs BEFORE `validate_python_requirements.bat`. Previously local LOAD validated requirements before installing them, which would always fail in a fresh workspace.
+- **NO_INSTANCE admin gating added**: `configure_mssql.bat` is now gated on administrator availability in the `NO_INSTANCE` path, matching the local SETUP pipeline and Jenkins Groovy patterns. Without admin, network configuration is skipped and the pipeline proceeds to `start_mssql.bat`.
+- **Assessment/migration wiring**: Replaced commented-out assessment/reporting stubs with calls to the new dedicated pipeline wrappers:
+  - `scripts/batch/mssql/assessment/run_assessment_pipeline.bat`
+  - `scripts/batch/mssql/migration/run_migration_pipeline.bat`
+
+### Dedicated LOAD Groovy Finalization
+
+`jenkins/mssql/windows/load_pipeline.groovy` now achieves logical parity with local LOAD:
+- **NO_INSTANCE admin gating added**: `configure_mssql.bat` is gated on `check_admin_privileges.bat` exit code. Without admin, configuration is skipped with a logged message.
+- **Assessment stages replaced**: The two existing individual assessment stages (`Database Assessment`, `Assessment Report`) have been replaced with a single call to `run_assessment_pipeline.bat`, which covers assessment, report generation, and reconciliation.
+- **Migration reporting stages added**: New `Discovery & Migration Reporting` stage calls `run_migration_pipeline.bat`, covering discovery, growth analysis, requirement analysis, migration assessment, recommendations, governance action plan, and technical/executive reports.
+- Both assessment and migration stages remain gated by `params.RUN_ASSESSMENT == 'true'`.
+- **CDC semantics preserved**: exit 0 → continue; exit 100 → `SKIP_DATA_LOAD=true`; other non-zero → fail closed.
+- **Structural validation**: 129 braces balanced, 52 parentheses balanced, 18 stages in correct order.
+
 ## Database Configuration
 
 - **Database**: MSSQL
@@ -144,6 +163,18 @@ Local `.bat` now gates `configure_mssql.bat` on administrator availability, matc
 
 Dedicated MSSQL Windows wrappers created for assessment/reconciliation and discovery/migration/reporting pipelines.
 
+### Local LOAD Python Bootstrap Order (FIXED)
+
+`mssql_load_pipeline.bat` now installs Python requirements before validating them, matching the architecture-correct fresh-workspace contract.
+
+### Local LOAD configure_mssql Gating (FIXED)
+
+`mssql_load_pipeline.bat` now gates `configure_mssql.bat` on administrator availability in the `NO_INSTANCE` path, matching local SETUP and Jenkins Groovy.
+
+### Dedicated LOAD Groovy Admin Gating (FIXED)
+
+`load_pipeline.groovy` now gates `configure_mssql.bat` on administrator availability in the `NO_INSTANCE` path. The two existing individual assessment stages have been replaced with a single call to `run_assessment_pipeline.bat`, and a new `Discovery & Migration Reporting` stage calls `run_migration_pipeline.bat`. Both remain gated by `params.RUN_ASSESSMENT == 'true'`.
+
 ## Remaining Gaps
 
 ### 1. Main Jenkinsfile Not Updated (BLOCKED)
@@ -174,6 +205,8 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 ## Relevant Commits
 
+- 726f7ec: chore(mssql-windows): update working state after finalization milestone
+- 5ecfeff: fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers
 - 240ed52: chore(mssql-windows): update working state after Groovy bootstrap parity
 - 06fdc85: fix(mssql-windows-groovy): add fresh-workspace bootstrap stages to dedicated LOAD pipeline
 - 52f9b92: fix(mssql-windows): bootstrap fresh-workspace dependencies and instance resolution in local LOAD
