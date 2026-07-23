@@ -367,187 +367,34 @@ pipeline {
         }
 
 
-        stage('Database Assessment') {
+        stage('Assessment & Reconciliation') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Database Assessment'
+                        'Assessment & Reconciliation'
                     ) {
 
-                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment.bat all'
+                        bat 'scripts\\batch\\postgresql\\assessment\\run_assessment_pipeline.bat'
                     }
                 }
             }
         }
 
 
-        stage('Assessment Report') {
+        stage('Discovery & Migration Reporting') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Assessment Report'
+                        'Discovery & Migration Reporting'
                     ) {
 
-                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
-                    }
-                }
-            }
-        }
-
-
-        stage('Reconcile Source and Target Data') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Reconcile Source and Target Data'
-                    ) {
-
-                        bat 'python scripts\\reconciliation\\reconciliation_engine.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Discover Database Environment') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Discover Database Environment'
-                    ) {
-
-                        bat 'python scripts\\discovery\\discovery_engine.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Analyze Database Growth') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Analyze Database Growth'
-                    ) {
-
-                        bat 'python scripts\\discovery\\growth_analyzer.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Analyze Migration Requirements') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Analyze Migration Requirements'
-                    ) {
-
-                        bat 'python scripts\\discovery\\requirement_analyzer.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Assess Migration') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Assess Migration'
-                    ) {
-
-                        bat 'python scripts\\assessment\\assessment_engine.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Generate Migration Recommendations') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Generate Migration Recommendations'
-                    ) {
-
-                        bat 'python scripts\\recommendation\\recommendation_engine.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Generate Governance Action Plan') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Generate Governance Action Plan'
-                    ) {
-
-                        bat 'python scripts\\governance\\action_plan_engine.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Generate Technical Migration Report') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Generate Technical Migration Report'
-                    ) {
-
-                        bat 'python scripts\\reporting\\migration\\technical_report.py --database postgresql'
-                    }
-                }
-            }
-        }
-
-
-        stage('Generate Executive Migration Report') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Generate Executive Migration Report'
-                    ) {
-
-                        bat 'python scripts\\reporting\\migration\\executive_report.py --database postgresql'
+                        bat 'scripts\\batch\\postgresql\\migration\\run_migration_pipeline.bat'
                     }
                 }
             }
