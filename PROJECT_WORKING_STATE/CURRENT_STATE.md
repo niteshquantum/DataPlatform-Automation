@@ -1,12 +1,11 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 17:22 IST
+Last updated: 2026-07-23 18:30 IST
 
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `06fdc85`
-- **Commit message**: `fix(mssql-windows-groovy): add fresh-workspace bootstrap stages to dedicated LOAD pipeline`
+- **HEAD**: `TBD`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -45,6 +44,8 @@ A foreign instance that happens to share the service name and/or port but lacks 
   - `INSTANCE_RUNNING_AND_USABLE` → reuse (start_mssql is idempotent)
 - Preserves existing CDC, load, validate, deploy, and object validation stages unchanged
 
+This makes the local .bat LOAD independently runnable in a fresh workspace without assuming SETUP already ran.
+
 ### LOAD Fresh-Workspace Bootstrap (Jenkins Groovy)
 
 `jenkins/mssql/windows/load_pipeline.groovy` now bootstraps workspace-local dependencies and safely resolves/reuses the managed MSSQL instance before data operations, mirroring the proven local .bat contract:
@@ -62,65 +63,44 @@ A foreign instance that happens to share the service name and/or port but lacks 
 
 This makes the dedicated Jenkins Groovy LOAD logically equivalent to the local .bat fresh-workspace contract.
 
-## Audit Status
+### configure_mssql Gating Alignment (local .bat)
 
-**COMPLETED** — MSSQL Windows implementation audited against PostgreSQL Windows proven reference.
+`scripts/batch/mssql/mssql_setup_pipeline.bat` now aligns with the Jenkins Groovy and PostgreSQL patterns by gating `configure_mssql.bat` on administrator availability in the `NO_INSTANCE` path:
+- `check_admin_privileges.bat` is called after deployment
+- `ADMIN_STATUS=true` → runs `configure_mssql.bat`
+- `ADMIN_STATUS=false` → skips network configuration, proceeds to start
+- Without admin, `configure_mssql.ps1` would throw an elevation error; gating prevents late-stage opaque failure
+- `RUNNING` and `STOPPED` paths are unaffected (no configure call)
 
-## Implemented Fixes
+### Liquibase Bootstrap Config Path Fix
 
-### CDC Exit-100 Propagation (LOAD Groovy)
+`scripts/powershell/download_liquibase.ps1` was reading `config/windows/mysql.conf` instead of `config/windows/mssql.conf` to obtain `LIQUIBASE_VERSION`. This was a copy-paste defect that would prevent Liquibase from being installed for MSSQL if the MySQL config were missing or different. Fixed to read `mssql.conf`.
 
-`jenkins/mssql/windows/load_pipeline.groovy` CDC stage changed from `runTrackedStage` to explicit `bat(returnStatus: true)` with manual logging:
-- exit 0 → log SUCCESS, continue pipeline
-- exit 100 → log SUCCESS, set `env.SKIP_DATA_LOAD = 'true'`, continue pipeline
-- other non-zero → log FAILURE, call `set-error`, `error` to fail stage
-- `Load Data` and `Validate Loaded Data` stages now have `when { env.SKIP_DATA_LOAD != 'true' }` guards
+### Schema Liquibase Missing-Registry Resilience
 
-### Instance Ownership Verification (check_instance.py)
+`scripts/python/mssql/setup/generate_liquibase_xml.py` now handles a missing `metadata/mssql/schema_registry.json` gracefully:
+- If the registry does not exist, it writes `schema_status.json` with `schema_changed: false` and `reason: no_schema_registry`, then exits 0
+- Previously this crashed with `FileNotFoundError`, blocking `load_data.bat` in fresh workspaces where `schema_detector.py` found no incoming files
+- The existing `load_data.bat` already wires `schema_detector.py` → `generate_liquibase_xml.py` → `update_master_xml.py` → `run_liquibase.bat`; this fix ensures that flow does not fail when there are no schema changes to evolve
 
-`scripts/python/mssql/setup/check_instance.py` now verifies project-managed instance identity before trusting service/port state:
-- Queries service `ImagePath` via `sc.exe qc` to confirm binary is `sqlservr.exe`
-- Enumerates `HKLM\SOFTWARE\Microsoft\Microsoft SQL Server` registry subkeys to find a `Setup\InstanceName` matching the configured instance
-- Verifies registry `ImagePath` also points to `sqlservr.exe`
+### Assessment & Reconciliation Pipeline Wrapper
 
-A foreign instance that happens to share the service name and/or port but lacks matching registry provenance is classified as `NO_INSTANCE`. A legitimately managed instance (running or stopped) is recognized by its registry entry.
+Created `scripts/batch/mssql/assessment/run_assessment_pipeline.bat` as the dedicated MSSQL assessment entry point:
+- Runs `scripts/batch/mssql/assessment/run_assessment.bat all`
+- Generates unified assessment report via `scripts/batch/common/generate_assessment_report.bat`
+- Runs reconciliation via `scripts/reconciliation/reconciliation_engine.py --database mssql`
 
-### LOAD Fresh-Workspace Bootstrap (local .bat)
+### Discovery & Migration Reporting Pipeline Wrapper
 
-`scripts/batch/mssql/mssql_load_pipeline.bat` now bootstraps workspace-local dependencies and safely resolves/reuses the managed MSSQL instance before data operations:
-- Installs Python requirements (`install_python_requirements.bat`) after runtime validation
-- Validates Java runtime (`validate_java_runtime.bat`)
-- Installs tools (`install_tools.bat`) — Liquibase, sqlcmd, MSSQL JDBC driver
-- Checks instance state (`check_instance.bat`) and handles:
-  - `NO_INSTANCE` → `deploy_mssql_gdrive.bat` + `configure_mssql.bat` + start
-  - `INSTANCE_INSTALLED_BUT_STOPPED` → start
-  - `INSTANCE_RUNNING_AND_USABLE` → reuse (start_mssql is idempotent)
-- Preserves existing CDC, load, validate, deploy, and object validation stages unchanged
-
-This makes the local .bat LOAD independently runnable in a fresh workspace without assuming SETUP already ran.
-
-## Audit Status
-
-**COMPLETED** — MSSQL Windows implementation audited against PostgreSQL Windows proven reference.
-
-## Implemented Fixes
-
-### CDC Exit-100 Propagation (LOAD Groovy)
-
-`jenkins/mssql/windows/load_pipeline.groovy` CDC stage changed from `runTrackedStage` to explicit `bat(returnStatus: true)` with manual logging:
-- exit 0 → log SUCCESS, continue pipeline
-- exit 100 → log SUCCESS, set `env.SKIP_DATA_LOAD = 'true'`, continue pipeline
-- other non-zero → log FAILURE, call `set-error`, `error` to fail stage
-- `Load Data` and `Validate Loaded Data` stages now have `when { env.SKIP_DATA_LOAD != 'true' }` guards
-
-### Instance Ownership Verification (check_instance.py)
-
-`scripts/python/mssql/setup/check_instance.py` now verifies project-managed instance identity before trusting service/port state:
-- Queries service `ImagePath` via `sc.exe qc` to confirm binary is `sqlservr.exe`
-- Enumerates `HKLM\SOFTWARE\Microsoft\Microsoft SQL Server` registry subkeys to find a `Setup\InstanceName` matching the configured instance
-- Verifies registry `ImagePath` also points to `sqlservr.exe`
-
-A foreign instance that happens to share the service name and/or port but lacks matching registry provenance is classified as `NO_INSTANCE`. A legitimately managed instance (running or stopped) is recognized by its registry entry.
+Created `scripts/batch/mssql/migration/run_migration_pipeline.bat` as the dedicated MSSQL migration/reporting entry point:
+- Discovery: `scripts/discovery/discovery_engine.py --database mssql`
+- Growth analysis: `scripts/discovery/growth_analyzer.py --database mssql`
+- Requirement analysis: `scripts/discovery/requirement_analyzer.py --database mssql`
+- Migration assessment: `scripts/assessment/assessment_engine.py --database mssql`
+- Recommendations: `scripts/recommendation/recommendation_engine.py --database mssql`
+- Governance action plan: `scripts/governance/action_plan_engine.py --database mssql`
+- Technical report: `scripts/reporting/migration/technical_report.py --database mssql`
+- Executive report: `scripts/reporting/migration/executive_report.py --database mssql`
 
 ## Database Configuration
 
@@ -143,37 +123,31 @@ A foreign instance that happens to share the service name and/or port but lacks 
 - **Discovery engine**: `scripts/discovery/discovery_engine.py` has MSSQL-specific discovery logic.
 - **CDC engine**: `scripts/cdc/cdc_engine.py` works with MSSQL data files.
 - **Configuration-driven**: All connections, ports, instance names come from `config/windows/mssql.conf`.
+- **Schema Liquibase wiring**: `load_data.bat` already invokes `schema_detector.py` → `generate_liquibase_xml.py` → `update_master_xml.py` → `run_liquibase.bat` as part of the data load stage.
 
-## Proven Gaps
+## Resolved Gaps
 
-### 1. SETUP Configure Gating Difference (NOT YET FIXED)
+### configure_mssql Gating (FIXED)
 
-Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groovy only runs it when `admin_status.txt == true`. Without admin, Groovy may leave MSSQL unconfigured.
+Local `.bat` now gates `configure_mssql.bat` on administrator availability, matching Jenkins Groovy and PostgreSQL Windows patterns.
 
-### 2. Missing Assessment/Migration Wrappers (NOT YET FIXED)
+### Liquibase Config Path (FIXED)
 
-Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groovy only runs it when `admin_status.txt == true`. Without admin, Groovy may leave MSSQL unconfigured.
+`download_liquibase.ps1` now reads `config/windows/mssql.conf` instead of `config/windows/mysql.conf`.
 
-### 3. Missing Assessment/Migration Wrappers (NOT YET FIXED)
+### Schema Liquibase Resilience (FIXED)
 
-- No `scripts/batch/mssql/assessment/run_assessment_pipeline.bat` (PostgreSQL has it)
-- No `scripts/batch/mssql/migration/` folder entirely
-- Groovy LOAD has conditional assessment stages but underlying wrappers are absent
+`generate_liquibase_xml.py` now handles missing `schema_registry.json` gracefully without crashing.
 
-### 6. Schema Liquibase Evolution Not Wired (NOT YET FIXED)
+### Assessment/Migration Wrappers (FIXED)
 
-`generate_liquibase_xml.py` and `update_master_xml.py` exist but are **never called** from any `.bat` or Groovy pipeline. `run_liquibase.bat` exists but is not invoked for schema evolution in the current LOAD flow.
+Dedicated MSSQL Windows wrappers created for assessment/reconciliation and discovery/migration/reporting pipelines.
 
-### 7. Main Jenkinsfile Not Updated (NOT YET FIXED)
+## Remaining Gaps
 
-`jenkins/Jenkinsfile` DATABASE parameter only includes `MYSQL` and `POSTGRESQL`. No MSSQL stage.
+### 1. Main Jenkinsfile Not Updated (BLOCKED)
 
-## Pending Implementation
-
-- Align configure_mssql gating between .bat and Groovy
-- Add missing `run_assessment_pipeline.bat` and `run_migration_pipeline.bat` for MSSQL
-- Wire schema Liquibase evolution into LOAD flow
-- Add MSSQL stages to master Jenkinsfile
+`jenkins/Jenkinsfile` DATABASE parameter only includes `MYSQL` and `POSTGRESQL`. No MSSQL stage. This is out of scope for this bounded milestone.
 
 ## Do Not Repeat
 
@@ -186,15 +160,23 @@ Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groov
 
 ## Next Actions
 
-1. Align configure_mssql gating between .bat and Groovy
-2. Add missing assessment/migration pipeline wrappers
-3. Wire schema Liquibase evolution into LOAD flow
-4. Update master Jenkinsfile for MSSQL
+1. Runtime-prove the full LOAD pipeline when a suitable environment is available
+2. Re-prove Jenkins Groovy runtime behavior against a real Jenkins agent
+3. Consider main Jenkinsfile MSSQL integration (separate milestone)
+
+## Runtime Blockers (Current Machine)
+
+- Jenkins runtime is NOT available on this workstation
+- Machine state is `NO_INSTANCE` for the project-managed DMSQL instance; existing foreign MSSQL on port 1533 is correctly rejected
+- No destructive MSSQL deployment was attempted
+- No foreign service was modified
 
 ## Relevant Commits
 
+- 240ed52: chore(mssql-windows): update working state after Groovy bootstrap parity
+- 06fdc85: fix(mssql-windows-groovy): add fresh-workspace bootstrap stages to dedicated LOAD pipeline
 - 52f9b92: fix(mssql-windows): bootstrap fresh-workspace dependencies and instance resolution in local LOAD
-- f4aefd3: fix(mssql-windows-groovy): handle CDC exit-100 skip without failing stage
 - 19806e1: fix(mssql-windows): verify managed instance ownership via registry/service path
+- f4aefd3: fix(mssql-windows-groovy): handle CDC exit-100 skip without failing stage
 - 963840e: chore(mssql-windows): initialize final development workspace
 - e7c403d: refactor(main-jenkins): reduce to 4 proven flows and fix MySQL instance-state parsing
