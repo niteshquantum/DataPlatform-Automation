@@ -196,6 +196,18 @@ if errorlevel 1 (
 
 
 REM =====================================
+REM PROFILE SOURCE DATA
+REM =====================================
+
+python scripts\profiling\data_profiler.py --database mssql
+
+if errorlevel 1 (
+    echo ERROR: DATA PROFILING FAILED
+    exit /b 1
+)
+
+
+REM =====================================
 REM CDC CHECK
 REM =====================================
 

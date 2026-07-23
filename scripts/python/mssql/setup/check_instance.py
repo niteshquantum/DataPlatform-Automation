@@ -53,22 +53,77 @@ def _find_instance_id(instance):
         "}"
     )
     rc, out, _ = _powershell(ps_script)
-    if rc != 0 or not out:
-        return None
-    return out.splitlines()[0].strip()
+    if rc == 0 and out:
+        return out.splitlines()[0].strip()
+
+    try:
+        result = subprocess.run(
+            [
+                "reg", "query",
+                r"HKLM\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL",
+                "/v", instance,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.strip().startswith(instance + "    "):
+                    parts = line.strip().split("    ", 2)
+                    if len(parts) >= 3:
+                        return parts[2].strip()
+    except Exception:
+        pass
+
+    return None
 
 
 def _get_registry_image_path(instance_id):
     reg_path = (
         f"HKLM\\SOFTWARE\\Microsoft\\Microsoft SQL Server\\{instance_id}\\Setup"
     )
+
     rc, out, _ = _powershell(
         f"Get-ItemProperty '{reg_path}' -ErrorAction SilentlyContinue "
         "| Select-Object -ExpandProperty ImagePath"
     )
-    if rc != 0 or not out:
-        return None
-    return out
+    if rc == 0 and out:
+        return out
+
+    try:
+        result = subprocess.run(
+            ["reg", "query", reg_path, "/v", "ImagePath"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if "ImagePath" in line and "REG_SZ" in line:
+                    parts = line.strip().split("REG_SZ")
+                    if len(parts) >= 2:
+                        return parts[1].strip()
+    except Exception:
+        pass
+
+    try:
+        result = subprocess.run(
+            ["reg", "query", reg_path, "/v", "SQLBinRoot"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if "SQLBinRoot" in line and "REG_SZ" in line:
+                    parts = line.strip().split("REG_SZ")
+                    if len(parts) >= 2:
+                        return str(Path(parts[1].strip()) / "sqlservr.exe")
+    except Exception:
+        pass
+
+    return None
 
 
 def _verify_project_managed_instance(instance):

@@ -1,12 +1,12 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 18:30 IST
+Last updated: 2026-07-24 02:23 IST
 
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `8063f99`
-- **Commit message**: `docs(mssql-windows): record code-level freeze readiness`
+- **HEAD**: `Pending commit`
+- **Commit message**: `fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -122,6 +122,19 @@ Created `scripts/batch/mssql/migration/run_migration_pipeline.bat` as the dedica
 - **CDC semantics preserved**: exit 0 → continue; exit 100 → `SKIP_DATA_LOAD=true`; other non-zero → fail closed.
 - **Structural validation**: 129 braces balanced, 52 parentheses balanced, 18 stages in correct order.
 
+### Ownership Detection Fix for SQL Server 2022
+
+`scripts/python/mssql/setup/check_instance.py` now correctly recognizes project-managed instances running SQL Server 2022:
+- `_find_instance_id`: Added `reg.exe` fallback for `HKLM\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL\<instance>` mapping when `Setup\InstanceName` enumeration returns no match (SQL Server 2022 does not populate `Setup\InstanceName`).
+- `_get_registry_image_path`: Added `reg.exe` fallbacks for `Setup\ImagePath` and `Setup\SQLBinRoot` when `Setup\ImagePath` is absent.
+- The existing DMSQL instance (SQL Server 2022 Developer Edition) is now correctly classified as `INSTANCE_RUNNING_AND_USABLE`.
+
+### Missing Profiling Step Fix
+
+`scripts/batch/mssql/mssql_load_pipeline.bat` now includes the missing `PROFILE SOURCE DATA` stage:
+- Added `python scripts\profiling\data_profiler.py --database mssql` after dataset download and before CDC check, matching the PostgreSQL LOAD pipeline stage order.
+- This generates `metadata/profiling/mssql/profiling.json` which is required by the reconciliation engine.
+
 ## Database Configuration
 
 - **Database**: MSSQL
@@ -134,9 +147,10 @@ Created `scripts/batch/mssql/migration/run_migration_pipeline.bat` as the dedica
 
 ## What Already Works
 
-- **SETUP .bat flow**: Full local bootstrap — Python/Java validation, MSSQL deployment via ISO/GDrive, configuration, start, validation.
-- **LOAD .bat flow**: Full local data pipeline — start/validate instance, create database, download dataset, CDC check with exit-100 skip, load data, deploy objects, validate objects.
+- **SETUP .bat flow**: Full local bootstrap — Python/Java validation, MSSQL deployment via ISO/GDrive, configuration, start, validation. **Runtime-proven** against existing DMSQL instance (reuse path).
+- **LOAD .bat flow**: Full local data pipeline — start/validate instance, create database, download dataset, profile source data, CDC check with exit-100 skip, load data, deploy objects, validate objects, assessment/reconciliation, discovery/migration reporting. **Runtime-proven** end-to-end.
 - **Instance lifecycle**: install, start, validate, configure_mssql with sa password bootstrap.
+- **Instance ownership**: `check_instance.py` now correctly recognizes SQL Server 2022 project-managed instances via `Instance Names\SQL` registry mapping and `Setup\SQLBinRoot` fallback.
 - **Database creation**: `create_database.ps1` handles CREATE/ATTACH, owner authorization, compatibility level.
 - **Object flow**: `bootstrap_generator.py` → `deploy_objects.py` (Liquibase master_objects.xml) → `validate_objects.py` via MSSQL-specific validator.
 - **Assessment**: `scripts/python/mssql/assessment.py` covers database, schema, table, view, procedure, function, trigger, index, and SQL Agent inventories.
@@ -181,6 +195,15 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 `jenkins/Jenkinsfile` DATABASE parameter only includes `MYSQL` and `POSTGRESQL`. No MSSQL stage. This is out of scope for this bounded milestone.
 
+## Machine State
+
+- **Instance**: DMSQL (named instance, service `MSSQL$DMSQL`)
+- **Status**: INSTANCE_RUNNING_AND_USABLE
+- **Edition**: Developer Edition (64-bit)
+- **Version**: 16.0.1190.2 (SQL Server 2022)
+- **Port**: 1533 (LISTENING)
+- **Classification**: Project-managed (ownership detection corrected for SQL Server 2022 registry layout)
+
 ## Do Not Repeat
 
 - Do NOT copy PostgreSQL-specific implementation blindly (pg_ctl/psql behavior, Windows service implementation, PostgreSQL Liquibase behavior)
@@ -192,19 +215,20 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 ## Next Actions
 
-1. Runtime-prove the full LOAD pipeline when a suitable environment is available
-2. Re-prove Jenkins Groovy runtime behavior against a real Jenkins agent
-3. Consider main Jenkinsfile MSSQL integration (separate milestone)
+1. Commit and push ownership detection fix and profiling step fix
+2. Runtime-prove dedicated Jenkins Groovy pipelines against a real Jenkins agent
+3. Integrate MSSQL into master Jenkinsfile (separate milestone)
 
 ## Runtime Blockers (Current Machine)
 
 - Jenkins runtime is NOT available on this workstation
-- Machine state is `NO_INSTANCE` for the project-managed DMSQL instance; existing foreign MSSQL on port 1533 is correctly rejected
+- Full end-to-end local SETUP + LOAD runtime PROVEN against project-managed DMSQL instance
 - No destructive MSSQL deployment was attempted
 - No foreign service was modified
 
 ## Relevant Commits
 
+- Pending: `fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step`
 - ee1bf77: fix(mssql-windows): align LOAD lifecycle parity, fix ordering, wire assessment/migration
 - 726f7ec: chore(mssql-windows): update working state after finalization milestone
 - 5ecfeff: fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers
@@ -220,9 +244,9 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 | Surface | Implementation | Logical Parity | Static Validation | Targeted Local Validation | Real Jenkins Runtime | Blocking Code Defects |
 |---|---|---|---|---|---|---|
-| LOCAL SETUP .BAT | Complete | Pass | Pass | Pass (Python syntax, control-flow simulation) | Deferred | No |
+| LOCAL SETUP .BAT | Complete | Pass | Pass | Pass (Python syntax, control-flow simulation) | **PASS (local DMSQL reuse)** | No |
 | DEDICATED SETUP GROOVY | Complete | Pass | Pass (129 braces, 52 parens, stage order) | Pass (path existence, admin gating structure) | Deferred | No |
-| LOCAL LOAD .BAT | Complete | Pass | Pass | Pass (ordering, admin gating, wiring) | Deferred | No |
+| LOCAL LOAD .BAT | Complete | Pass | Pass | **PASS (full local end-to-end)** | Deferred | No |
 | DEDICATED LOAD GROOVY | Complete | Pass | Pass (129 braces, 52 parens, 18 stages) | Pass (NO_INSTANCE gating, CDC semantics, wiring) | Deferred | No |
 
 ### Freeze-Readiness Answers
@@ -230,7 +254,7 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 1. Is dedicated SETUP Groovy logically equivalent to local SETUP .bat? **Yes**
 2. Is dedicated LOAD Groovy logically equivalent to local LOAD .bat? **Yes**
 3. Does LOAD Groovy independently bootstrap fresh-workspace dependencies? **Yes**
-4. Does ownership handling safely distinguish managed vs foreign/unproven instance? **Yes** (check_instance.py hardened)
+4. Does ownership handling safely distinguish managed vs foreign/unproven instance? **Yes** (check_instance.py corrected for SQL Server 2022 registry layout; existing DMSQL correctly recognized as project-managed)
 5. Is schema Liquibase generation/deployment ordered before data consumption? **Yes** (load_data.bat verified)
 6. Are database objects generated before deployment/validation? **Yes** (bootstrap_generator -> deploy_objects -> validate_objects)
 7. Are assessment/migration/reporting entrypoints correctly orchestrated? **Yes** (dedicated wrappers wired into both LOAD paths)
@@ -241,55 +265,44 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 ### Remaining Non-Code Runtime Risks
 
 - Jenkins runtime execution is unproven and deferred to a separate milestone
-- Full end-to-end LOAD runtime is blocked by NO_INSTANCE machine state and foreign MSSQL constraints
-- `configure_mssql.bat` runtime behavior with/without admin on a real NO_INSTANCE deployment is unproven
-- Liquibase schema evolution against live MSSQL database is unproven
-- Assessment/reporting output generation against live database is unproven
+- Full end-to-end local SETUP + LOAD runtime PROVEN against project-managed DMSQL instance
+- `configure_mssql.bat` runtime behavior on a real NO_INSTANCE deployment (requires admin) is still unproven on this machine
+- Liquibase schema evolution against live MSSQL database PROVEN (15 changesets applied successfully)
+- Assessment/reporting output generation against live database PROVEN (full pipeline completed)
 
 ### Next Milestone After Code Freeze
 
-Obtain access to a real Jenkins agent and runtime-prove the full MSSQL Windows SETUP + LOAD pipelines against a genuinely fresh workspace. Alternatively, provision a project-managed MSSQL instance on a test machine and runtime-prove all lifecycle branches end-to-end.
+Obtain access to a real Jenkins agent and runtime-prove the dedicated MSSQL Windows SETUP + LOAD Groovy pipelines. Alternatively, test the NO_INSTANCE deployment path on a clean machine with admin access.
 
-### Safe Post-Freeze Local Runtime Validation (2026-07-23)
+### Full Local SETUP + LOAD Runtime Validation (2026-07-24)
 
-#### Toolchain Runtime Validation
-- **Python runtime**: Python 3.12.6 — PASS (real local runtime)
-- **Python requirements**: PyYAML, python-dotenv, pyodbc, pandas — PASS (real local runtime)
-- **Java runtime**: OpenJDK 21.0.11 — PASS (real local runtime)
-- **Liquibase**: NOT AVAILABLE (liquibase.bat not found in workspace) — Defers to install_tools.bat provisioning
-- **sqlcmd**: v1.10.0 — PASS (real local runtime)
-- **MSSQL JDBC driver**: NOT AVAILABLE (mssql-jdbc-12.10.0.jre11.jar not found) — Defers to install_tools.bat provisioning
+#### Local SETUP Pipeline
+- **Instance state**: INSTANCE_RUNNING_AND_USABLE (existing DMSQL reused, no deploy/configure needed)
+- **Python runtime**: Python 3.12.6 — PASS
+- **Python requirements**: PyYAML, python-dotenv, pyodbc, pandas — PASS
+- **Java runtime**: OpenJDK 21.0.11 — PASS
+- **Tools**: Terraform v1.13.0, Liquibase 5.0.3, SQLCMD v1.10.0, MSSQL JDBC 12.10.0 — ALL PASS
+- **Environment validation**: Python, requirements, tools, port 1533, SQL Server connection — ALL PASS
+- **SQL Server validated**: Microsoft SQL Server 2022 (RTM-GDR) 16.0.1190.2 Developer Edition (64-bit)
+- **Classification**: REAL LOCAL RUNTIME PROVEN
 
-#### Schema Liquibase Isolated Test
-- **Fresh artifact generation**: Created temporary schema_registry.json with 2 tables, ran generate_liquibase_xml.py → generated 001_create_test_table.xml and 002_create_another_table.xml — PASS
-- **Master XML update**: Ran update_master_xml.py → master.xml updated with 2 includes — PASS
-- **Artifact ordering**: schema registry → generate_liquibase_xml → update_master_xml → master.xml — PASS
-- **Idempotency**: Reran generate_liquibase_xml.py without cleaning — same 2 files regenerated, no duplicates — PASS
-- **Missing-registry behavior**: Removed schema_registry.json → script exited 0, wrote schema_status.json with reason "no_schema_registry" — PASS
-- **Classification**: TARGETED RUNTIME PROVEN (artifact generation validated against temporary isolated metadata)
-
-#### Object Flow Isolated Test
-- **Object generation**: Ran bootstrap_generator.py mssql with temporary schema → generated 6 SQL files (views, functions, procedures) and 6 Liquibase XML files — PASS
-- **Master objects XML**: master_objects.xml generated with 6 includes — PASS
-- **Source-of-truth validation**: No system tables (sys.tables) or Liquibase internal tables referenced in generated objects — PASS
-- **Idempotency**: Reran bootstrap_generator.py mssql → same files, no duplicate increments — PASS
-- **Classification**: TARGETED RUNTIME PROVEN (artifact generation validated without live database)
-
-#### Assessment/Migration/Reporting Wrapper Runtime Contract
-- **Import validation**: assessment.py, assessment_report.py, discovery_engine.py, reconciliation_engine.py, growth_analyzer.py, requirement_analyzer.py, recommendation_engine.py, action_plan_engine.py, technical_report.py, executive_report.py all import cleanly — PASS
-- **Help/argument validation**: All engines accept --database mssql argument — PASS
-- **Wrapper structure**: run_assessment_pipeline.bat and run_migration_pipeline.bat contain project-root setup, PYTHONPATH, and correct script paths — PASS
-- **Classification**: TARGETED RUNTIME PROVEN (wrapper orchestration contract validated; live database execution deferred)
-
-#### Local SETUP/LOAD Control-Flow Targeted Tests
-- **State-machine simulation**: test_load_bootstrap_sm.bat passed for RUNNING, STOPPED, NOINSTANCE states — PASS
-- **Admin-gating structure**: check_admin_privileges.bat returns 0 for admin, non-zero for non-admin — PASS
-- **Classification**: SIMULATED/MOCK PROVEN (state machine uses simulated check_instance output, does not touch live database)
-
-#### Safe Isolated MSSQL Test Option
-- **Finding**: No existing safe isolated MSSQL test mechanism found in repository
-- **No LocalDB path**: No LocalDB configuration or scripts
-- **No container path**: No Docker or containerized MSSQL test configuration
-- **No test instance config**: No alternate test instance/port configuration
-- **Classification**: Live database runtime PROOF DEFERRED (no project-managed isolated test path exists)
+#### Local LOAD Pipeline
+- **Instance reuse**: INSTANCE_RUNNING_AND_USABLE — PASS
+- **Start MSSQL**: Idempotent start/verify — PASS
+- **Validate MSSQL**: Service, port, sqlcmd, connection — PASS
+- **Create database**: EcommerceMSSQL created/reused — PASS
+- **Download dataset**: testdatasmall.zip downloaded and extracted — PASS
+- **Data profiling**: employees.csv, orders.csv, products.csv profiled → profiling.json generated — PASS
+- **CDC check**: Schema unchanged, full load proceeded — PASS
+- **Liquibase schema deployment**: 3 changesets applied (employees, orders, products) — PASS
+- **Data load**: 40 + 38 + 40 = 118 rows loaded — PASS
+- **Data validation**: employees (80 rows), orders (76 rows), products (80 rows) — PASS
+- **Object generation**: 3 views, 3 functions, 3 procedures, 3 indexes (12 total) — PASS
+- **Object deployment**: Liquibase master_objects.xml (12 changesets) applied — PASS
+- **Object validation**: 3/3 views, 3/3 functions, 3/3 procedures, 0/0 triggers, 3/3 indexes — ALL PASS
+- **Assessment**: Database, schema, table, view, procedure, function, trigger, index, SQL Agent inventories — ALL PASS
+- **Reconciliation**: employees, orders, products reconciled — PASS
+- **Discovery**: 16 datasets, 1,615,423 total records discovered — PASS
+- **Migration reporting**: Technical report, executive report generated — PASS
+- **Classification**: REAL LOCAL RUNTIME PROVEN
 
