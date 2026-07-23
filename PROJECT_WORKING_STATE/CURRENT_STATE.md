@@ -1,86 +1,127 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 15:05 IST
+Last updated: 2026-07-23 16:23 IST
 
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
-- **Commit message**: `refactor(main-jenkins): reduce to 4 proven flows and fix MySQL instance-state parsing`
+- **HEAD**: `963840e` (dirty — uncommitted CDC fix)
+- **Commit message**: `chore(mssql-windows): initialize final development workspace`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
+
+## Audit Status
+
+**COMPLETED** — MSSQL Windows implementation audited against PostgreSQL Windows proven reference.
+**FIX IN PROGRESS** — CDC exit-100 propagation bug being fixed.
+
+## Implemented Fixes
+
+### CDC Exit-100 Propagation (LOAD Groovy)
+
+`jenkins/mssql/windows/load_pipeline.groovy` CDC stage changed from `runTrackedStage` to explicit `bat(returnStatus: true)` with manual logging:
+- exit 0 → log SUCCESS, continue pipeline
+- exit 100 → log SUCCESS, set `env.SKIP_DATA_LOAD = 'true'`, continue pipeline
+- other non-zero → log FAILURE, call `set-error`, `error` to fail stage
+- `Load Data` and `Validate Loaded Data` stages now have `when { env.SKIP_DATA_LOAD != 'true' }` guards
+
+Matches proven local .bat semantics and PostgreSQL Groovy pattern.
 
 ## Database Configuration
 
 - **Database**: MSSQL
 - **OS**: Windows
+- **Instance**: DMSQL (named instance, service `MSSQL$DMSQL`)
+- **Port**: 1533
 - **Workspace**: F:\Quantumatrix\Projects\DataEng\datarefernce\FinalMssql1
 - **Branch**: mssql-windows-final-v1
 - **Upstream**: origin/mssql-windows-final-v1
 
-## Development Status
+## What Already Works
 
-NOT STARTED — BOOTSTRAP ONLY
+- **SETUP .bat flow**: Full local bootstrap — Python/Java validation, MSSQL deployment via ISO/GDrive, configuration, start, validation.
+- **LOAD .bat flow**: Full local data pipeline — start/validate instance, create database, download dataset, CDC check with exit-100 skip, load data, deploy objects, validate objects.
+- **Instance lifecycle**: install, start, validate, configure_mssql with sa password bootstrap.
+- **Database creation**: `create_database.ps1` handles CREATE/ATTACH, owner authorization, compatibility level.
+- **Object flow**: `bootstrap_generator.py` → `deploy_objects.py` (Liquibase master_objects.xml) → `validate_objects.py` via MSSQL-specific validator.
+- **Assessment**: `scripts/python/mssql/assessment.py` covers database, schema, table, view, procedure, function, trigger, index, and SQL Agent inventories.
+- **Discovery engine**: `scripts/discovery/discovery_engine.py` has MSSQL-specific discovery logic.
+- **CDC engine**: `scripts/cdc/cdc_engine.py` works with MSSQL data files.
+- **Configuration-driven**: All connections, ports, instance names come from `config/windows/mssql.conf`.
 
-No database-specific implementation has been started yet. This workspace is at the exact baseline of the proven PostgreSQL Windows integration branch.
+## Proven Gaps
 
-## Proven Reference Architecture
+### 1. Instance Ownership Verification (CRITICAL — NOT YET FIXED)
 
-PostgreSQL Windows is the proven architectural reference for this workspace. Key proven behaviors to adapt:
+`scripts/python/mssql/setup/check_instance.py` only checks:
+- Windows service existence (`MSSQL$DMSQL`)
+- TCP port 1533 listening
 
-1. **PORT OPEN != CURRENT PROJECT INSTANCE OWNERSHIP**
-   - A reachable database on configured host:port does NOT automatically mean it is the current workspace-managed deployment.
-   - Must verify instance ownership/reuse per MSSQL lifecycle.
+It does **NOT** verify:
+- Project-managed binary path
+- Project-managed data directory
+- Instance-specific installation provenance
+- Service executable identity
 
-2. **Fresh workspace compatibility**
-   - SETUP and LOAD may run in different Jenkins workspaces.
-   - LOAD must not assume SETUP workspace-local binaries/tools exist.
+**Risk**: Old/foreign SQL Server on port 1533 passes as `INSTANCE_RUNNING_AND_USABLE`. `PORT OPEN != MANAGED INSTANCE OWNERSHIP`.
 
-3. **Runtime-generated artifacts**
-   - Generated Liquibase/object XML files must be regenerated when required.
-   - Gitignored artifacts are expected; do not require them to exist before runtime generation.
+### 2. Fresh Workspace Safety in Groovy LOAD (CRITICAL — NOT YET FIXED)
 
-4. **Dedicated pipeline alignment**
-   - Dedicated Groovy and local wrapper behavior must remain logically aligned.
-   - Main Jenkins should delegate to proven wrappers, not inline implementation.
+Local `.bat` LOAD validates/installs Python requirements, tools, starts MSSQL, and validates MSSQL before data operations. The dedicated Jenkins Groovy LOAD pipeline (`jenkins/mssql/windows/load_pipeline.groovy`) **skips all these steps**.
 
-5. **SETUP/LOAD/CLEANUP boundaries**
-   - Must remain explicit and database-specific.
+If SETUP and LOAD execute in different Jenkins workspaces, LOAD will fail because:
+- Python requirements not installed
+- Tools/liquibase/JDBC driver not installed
+- MSSQL instance not started/validated
+
+### 3. SETUP Configure Gating Difference (NOT YET FIXED)
+
+Local `.bat` runs `configure_mssql.bat` for `NO_INSTANCE` unconditionally. Groovy only runs it when `admin_status.txt == true`. Without admin, Groovy may leave MSSQL unconfigured.
+
+### 4. CDC Fix (COMPLETED)
+
+Exit-100 propagation bug fixed in `jenkins/mssql/windows/load_pipeline.groovy`.
+
+### 5. Missing Assessment/Migration Wrappers (NOT YET FIXED)
+
+- No `scripts/batch/mssql/assessment/run_assessment_pipeline.bat` (PostgreSQL has it)
+- No `scripts/batch/mssql/migration/` folder entirely
+- Groovy LOAD has conditional assessment stages but underlying wrappers are absent
+
+### 6. Schema Liquibase Evolution Not Wired (NOT YET FIXED)
+
+`generate_liquibase_xml.py` and `update_master_xml.py` exist but are **never called** from any `.bat` or Groovy pipeline. `run_liquibase.bat` exists but is not invoked for schema evolution in the current LOAD flow.
+
+### 7. Main Jenkinsfile Not Updated (NOT YET FIXED)
+
+`jenkins/Jenkinsfile` DATABASE parameter only includes `MYSQL` and `POSTGRESQL`. No MSSQL stage.
 
 ## Pending Implementation
 
-- MSSQL Windows SETUP pipeline (instance deployment, tool installation, validation)
-- MSSQL Windows LOAD pipeline (schema deployment, data loading, object generation/deployment, assessment/reconciliation/discovery/reporting)
-- MSSQL instance-state management (install/start/reuse/validate)
-- MSSQL-specific Liquibase configuration
-- MSSQL-specific object generation (views, functions, procedures, indexes, triggers)
-- CDC behavior adaptation for MSSQL
-- Assessment/reconciliation/discovery/migration reporting adaptation
+- Fix `check_instance.py` to verify project instance ownership
+- Add fresh-workspace bootstrap to MSSQL Groovy LOAD (validate Python, install tools, start/validate MSSQL)
+- Align configure_mssql gating between .bat and Groovy
+- Add missing `run_assessment_pipeline.bat` and `run_migration_pipeline.bat` for MSSQL
+- Wire schema Liquibase evolution into LOAD flow
+- Add MSSQL stages to master Jenkinsfile
 
 ## Do Not Repeat
 
 - Do NOT copy PostgreSQL-specific implementation blindly (pg_ctl/psql behavior, Windows service implementation, PostgreSQL Liquibase behavior)
-- Do NOT move CREATE DATABASE back to SETUP
 - Do NOT bypass instance ownership checks
 - Do NOT assume SETUP workspace tools exist in LOAD workspace
 - Do NOT regenerate artifacts without understanding database-specific requirements
 
 ## Next Actions
 
-1. Study PostgreSQL Windows reference implementation
-2. Design MSSQL Windows instance lifecycle
-3. Implement MSSQL Windows SETUP pipeline
-4. Implement MSSQL Windows LOAD pipeline
-5. Validate in dedicated Groovy first
-6. Integrate into main Jenkins after proven
+1. Add fresh-workspace bootstrap to MSSQL Groovy LOAD
+2. Implement MSSQL instance ownership verification in check_instance.py
+3. Align configure_mssql gating between .bat and Groovy
+4. Add missing assessment/migration pipeline wrappers
+5. Wire schema Liquibase evolution into LOAD
+6. Update master Jenkinsfile for MSSQL
 
-## Relevant Commits (from baseline)
+## Relevant Commits
 
-- febdf7f: cross-workspace PostgreSQLAutomation service reuse
-- 7fd3d7d: fresh LOAD workspace tool provisioning
-- 215a533: safe post/archive behavior
-- 1182c25: master_objects.xml excluded from master.xml
-- 88064ed: final PostgreSQL validation/schema evolution/debug cleanup
-- eb7d353: reporting/assessment tail consolidated
-- 5260234: migration wrapper PROJECT_ROOT bootstrap corrected
-- e7c403d: main Jenkins reduced to 4 flows, MySQL instance-state fix
+- 963840e: chore(mssql-windows): initialize final development workspace
+- e7c403d: refactor(main-jenkins): reduce to 4 proven flows and fix MySQL instance-state parsing

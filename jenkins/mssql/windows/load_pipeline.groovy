@@ -114,11 +114,59 @@ pipeline {
 
                 script {
 
-                    runTrackedStage(
-                        'Run CDC'
-                    ) {
+                    bat """
+                        python scripts\\logging\\logger.py stage-start ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Run CDC"
+                    """
 
-                        bat 'scripts\\batch\\mssql\\load\\run_cdc.bat'
+                    def cdcResult = bat(
+                        script: 'scripts\\batch\\mssql\\load\\run_cdc.bat',
+                        returnStatus: true
+                    )
+
+                    if (cdcResult == 0 || cdcResult == 100) {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status SUCCESS
+                        """
+
+                        if (cdcResult == 100) {
+
+                            echo 'CDC: No changes detected — skipping data load.'
+                            env.SKIP_DATA_LOAD = 'true'
+
+                        }
+
+                    } else {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Run CDC" ^
+                            --message "CDC execution failed with exit code ${cdcResult}"
+                        """
+
+                        error "CDC execution failed with exit code ${cdcResult}"
+
                     }
                 }
             }
@@ -126,6 +174,12 @@ pipeline {
 
 
         stage('Load Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
@@ -143,6 +197,12 @@ pipeline {
 
 
         stage('Validate Loaded Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
