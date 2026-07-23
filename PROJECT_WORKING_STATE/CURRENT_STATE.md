@@ -1,6 +1,6 @@
 # CURRENT STATE
 
-Last updated: 2026-07-23 21:05 IST
+Last updated: 2026-07-23 21:27 IST
 
 ## Repository Baseline
 
@@ -20,9 +20,9 @@ Last updated: 2026-07-23 21:05 IST
 
 ## Development Status
 
-MILESTONE 2 IN PROGRESS — RUNTIME PROOF + CDC CHECKPOINT + SERVICE-ANCHOR FIX
+MILESTONE 2 COMPLETE — LOCAL RUNTIME PROVEN + JENKINS MANUAL BOUNDARY IDENTIFIED
 
-Local MongoDB Windows lifecycle is runtime-proven end-to-end on real managed MongoDBAutomation instance. Cross-workspace ownership detection fixed with PID fallback. CDC/idempotency validated. Dedicated Jenkins runtime blocked by 403 auth; exact manual action identified.
+Local MongoDB Windows lifecycle is fully runtime-proven end-to-end on real managed MongoDBAutomation instance. Cross-workspace ownership detection fixed with PID fallback. CDC/idempotency validated. Dedicated Jenkins runtime ready but blocked by auth/branch configuration requiring manual UI action.
 
 ## Current Implementation State
 
@@ -162,9 +162,11 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 3. ~~ALIGN fresh workspace safety: LOAD preflight + stopped service start~~ DONE HANDOFF 000005
 4. ~~Close dedicated Groovy LOAD parity with local .bat~~ DONE HANDOFF 000006
 5. ~~Runtime-prove managed instance and CDC/idempotency~~ DONE HANDOFF 000007
-6. Implement MongoDB object deployment/validation pipeline
-7. Implement migration/discovery/reporting pipeline
-8. Integrate MongoDB into main Jenkinsfile after proven
+6. ~~Document exact Jenkins runtime manual boundary~~ DONE HANDOFF 000008
+7. Manual: Configure and run Jenkins job `mongodb20` with branch `mongodb-windows-final-v1` and parameters
+8. Implement MongoDB object deployment/validation pipeline
+9. Implement migration/discovery/reporting pipeline
+10. Integrate MongoDB into main Jenkinsfile after proven
 
 ## Relevant Commits (from baseline)
 
