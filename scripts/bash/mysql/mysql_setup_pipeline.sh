@@ -24,7 +24,7 @@ echo
 echo "====================================="
 echo "CHECKING MYSQL INSTANCE STATE"
 echo "====================================="
-echo.
+echo
 
 INSTANCE_STATE_OUTPUT=$(bash "$PROJECT_ROOT/scripts/bash/mysql/setup/check_instance.sh" || true)
 
