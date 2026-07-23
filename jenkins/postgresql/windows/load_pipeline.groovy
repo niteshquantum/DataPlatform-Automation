@@ -608,11 +608,21 @@ pipeline {
             }
 
 
-            archiveArtifacts(
-                artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, reports/migration/postgresql/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json, metadata/profiling/postgresql/**, metadata/reconciliation/postgresql/**, metadata/discovery/postgresql/**, metadata/assessment/postgresql/**, metadata/recommendation/postgresql/**, metadata/governance/postgresql/**",
-                fingerprint: true,
-                allowEmptyArchive: true
-            )
+            script {
+
+                try {
+
+                    archiveArtifacts(
+                        artifacts: "logs/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/postgresql/load/build_${env.BUILD_NUMBER}/**, reports/history/**, reports/migration/postgresql/**, outputs/assessments/postgresql/**, outputs/assessments/assessment_report.json, metadata/profiling/postgresql/**, metadata/reconciliation/postgresql/**, metadata/discovery/postgresql/**, metadata/assessment/postgresql/**, metadata/recommendation/postgresql/**, metadata/governance/postgresql/**",
+                        fingerprint: true,
+                        allowEmptyArchive: true
+                    )
+
+                } catch (Exception e) {
+
+                    echo "Skipping archiveArtifacts: ${e.getMessage()}"
+                }
+            }
 
             echo 'POSTGRESQL LOAD PIPELINE COMPLETED'
         }
