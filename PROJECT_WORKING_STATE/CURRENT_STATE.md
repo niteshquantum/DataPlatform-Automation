@@ -5,8 +5,8 @@ Last updated: 2026-07-23 17:22 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `52f9b92` (dirty — uncommitted Groovy parity fix)
-- **Commit message**: `fix(mssql-windows): bootstrap fresh-workspace dependencies and instance resolution in local LOAD`
+- **HEAD**: `06fdc85`
+- **Commit message**: `fix(mssql-windows-groovy): add fresh-workspace bootstrap stages to dedicated LOAD pipeline`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
