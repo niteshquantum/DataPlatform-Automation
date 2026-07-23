@@ -5,7 +5,8 @@ Last updated: 2026-07-23 18:30 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `TBD`
+- **HEAD**: `5ecfeff`
+- **Commit message**: `fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
