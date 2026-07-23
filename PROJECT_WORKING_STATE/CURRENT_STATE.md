@@ -5,8 +5,8 @@ Last updated: 2026-07-23 18:30 IST
 ## Repository Baseline
 
 - **Branch**: mssql-windows-final-v1
-- **HEAD**: `726f7ec`
-- **Commit message**: `chore(mssql-windows): update working state after finalization milestone`
+- **HEAD**: `ee1bf77`
+- **Commit message**: `fix(mssql-windows): align LOAD lifecycle parity, fix ordering, wire assessment/migration`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -205,6 +205,7 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 
 ## Relevant Commits
 
+- ee1bf77: fix(mssql-windows): align LOAD lifecycle parity, fix ordering, wire assessment/migration
 - 726f7ec: chore(mssql-windows): update working state after finalization milestone
 - 5ecfeff: fix(mssql-windows): align configure gating, fix Liquibase config, add missing wrappers
 - 240ed52: chore(mssql-windows): update working state after Groovy bootstrap parity
@@ -214,3 +215,37 @@ Dedicated MSSQL Windows wrappers created for assessment/reconciliation and disco
 - f4aefd3: fix(mssql-windows-groovy): handle CDC exit-100 skip without failing stage
 - 963840e: chore(mssql-windows): initialize final development workspace
 - e7c403d: refactor(main-jenkins): reduce to 4 proven flows and fix MySQL instance-state parsing
+
+## Code-Level Freeze Readiness Matrix
+
+| Surface | Implementation | Logical Parity | Static Validation | Targeted Local Validation | Real Jenkins Runtime | Blocking Code Defects |
+|---|---|---|---|---|---|---|
+| LOCAL SETUP .BAT | Complete | Pass | Pass | Pass (Python syntax, control-flow simulation) | Deferred | No |
+| DEDICATED SETUP GROOVY | Complete | Pass | Pass (129 braces, 52 parens, stage order) | Pass (path existence, admin gating structure) | Deferred | No |
+| LOCAL LOAD .BAT | Complete | Pass | Pass | Pass (ordering, admin gating, wiring) | Deferred | No |
+| DEDICATED LOAD GROOVY | Complete | Pass | Pass (129 braces, 52 parens, 18 stages) | Pass (NO_INSTANCE gating, CDC semantics, wiring) | Deferred | No |
+
+### Freeze-Readiness Answers
+
+1. Is dedicated SETUP Groovy logically equivalent to local SETUP .bat? **Yes**
+2. Is dedicated LOAD Groovy logically equivalent to local LOAD .bat? **Yes**
+3. Does LOAD Groovy independently bootstrap fresh-workspace dependencies? **Yes**
+4. Does ownership handling safely distinguish managed vs foreign/unproven instance? **Yes** (check_instance.py hardened)
+5. Is schema Liquibase generation/deployment ordered before data consumption? **Yes** (load_data.bat verified)
+6. Are database objects generated before deployment/validation? **Yes** (bootstrap_generator -> deploy_objects -> validate_objects)
+7. Are assessment/migration/reporting entrypoints correctly orchestrated? **Yes** (dedicated wrappers wired into both LOAD paths)
+8. Are CDC 0/100/error semantics preserved? **Yes** (SKIP_DATA_LOAD guards intact)
+9. Are there any remaining CODE-LEVEL blockers in dedicated SETUP/LOAD Groovy? **No**
+10. Can dedicated MSSQL Windows SETUP + LOAD Groovy now be frozen pending later real Jenkins runtime testing? **Yes**
+
+### Remaining Non-Code Runtime Risks
+
+- Jenkins runtime execution is unproven and deferred to a separate milestone
+- Full end-to-end LOAD runtime is blocked by NO_INSTANCE machine state and foreign MSSQL constraints
+- `configure_mssql.bat` runtime behavior with/without admin on a real NO_INSTANCE deployment is unproven
+- Liquibase schema evolution against live MSSQL database is unproven
+- Assessment/reporting output generation against live database is unproven
+
+### Next Milestone After Code Freeze
+
+Obtain access to a real Jenkins agent and runtime-prove the full MSSQL Windows SETUP + LOAD pipelines against a genuinely fresh workspace. Alternatively, provision a project-managed MSSQL instance on a test machine and runtime-prove all lifecycle branches end-to-end.
