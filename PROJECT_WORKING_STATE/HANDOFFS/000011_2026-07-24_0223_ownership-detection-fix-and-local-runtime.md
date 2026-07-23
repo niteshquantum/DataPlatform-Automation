@@ -19,7 +19,7 @@ mssql-windows-final-v1
 `8063f99` — `docs(mssql-windows): record code-level freeze readiness`
 
 ## ENDING_HEAD
-Pending commit — ownership detection fixed, local SETUP + LOAD runtime proven
+`9103b9b` — `fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step`
 
 ## GOAL
 Resolve why the existing DMSQL instance was classified NO_INSTANCE by check_instance.py, determine whether it is genuinely foreign or project-managed, fix any ownership-resolution defects, and runtime-prove the full local SETUP + LOAD pipelines end-to-end.
@@ -181,10 +181,11 @@ Yes — CURRENT_STATE.md updated with:
 `PROJECT_WORKING_STATE/HANDOFFS/000011_2026-07-24_0223_ownership-detection-fix-and-local-runtime.md`
 
 ## COMMITS
-Pending — ready to commit after user review.
+- `9103b9b`: fix(mssql-windows): correct ownership detection for SQL Server 2022 registry layout and add missing profiling step
+- `e66ee5e`: docs(mssql-windows): update working state after ownership detection fix and local runtime validation
 
 ## PUSH_STATUS
-Pending push to origin/mssql-windows-final-v1
+- Pending push to origin/mssql-windows-final-v1
 
 ## NEXT_CONTINUATION_POINT
 No further manual action required. The local SETUP and LOAD pipelines are fully runtime-proven against the project-managed DMSQL instance on this machine. Next steps:
