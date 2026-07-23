@@ -50,6 +50,17 @@ pipeline {
 
     agent any
 
+    parameters {
+        choice(
+            name: 'RUN_ASSESSMENT',
+            choices: [
+                'false',
+                'true'
+            ],
+            description: 'Run database assessment after load'
+        )
+    }
+
     options {
         disableConcurrentBuilds()
     }
@@ -110,16 +121,20 @@ pipeline {
                         def instanceState = 'UNKNOWN'
                         def instanceError = ''
 
-                        output.eachLine { line ->
-                            if (line.startsWith('INSTANCE_STATE=')) {
-                                instanceState = line.split('=', 2)[1].trim()
-                            }
-                            if (line.startsWith('ERROR=')) {
-                                instanceError = line.split('=', 2)[1].trim()
+                        if (output) {
+                            def lines = output.split('\r?\n')
+                            for (int i = 0; i < lines.size(); i++) {
+                                def line = lines[i].trim()
+                                if (line.startsWith('INSTANCE_STATE=')) {
+                                    instanceState = line.split('=', 2)[1].trim()
+                                }
+                                if (line.startsWith('ERROR=')) {
+                                    instanceError = line.split('=', 2)[1].trim()
+                                }
                             }
                         }
 
-                        if (!output || !output.contains('INSTANCE_STATE=')) {
+                        if (!output || instanceState == 'UNKNOWN') {
                             throw new Exception("check_instance.bat produced no valid instance state output. ${output ? 'Partial output: ' + output : 'Empty output'}")
                         }
 
