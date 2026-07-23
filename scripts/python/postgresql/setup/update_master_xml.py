@@ -35,10 +35,12 @@ root = tree.getroot()
 for include_elem in root.findall(f"{{{NS}}}include"):
     root.remove(include_elem)
 
-# Scan all XML files except master.xml
+# Scan all XML files except master.xml and master_objects.xml
+# master_objects.xml is deployed separately by Deploy Database Objects
+# and must not be included here to avoid duplicate execution.
 xml_files = sorted(
     f for f in postgresql_dir.glob("*.xml")
-    if f.name != "master.xml"
+    if f.name not in ("master.xml", "master_objects.xml")
 )
 
 for xml_file in xml_files:
