@@ -5,7 +5,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
-CONFIG_FILE="$PROJECT_ROOT/config/linux/mysql.conf"
+CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mysql.conf"
+
+echo "SCRIPT_DIR   : $SCRIPT_DIR"
+echo "PROJECT_ROOT : $PROJECT_ROOT"
+echo "CONFIG_FILE  : $CONFIG_FILE"
 
 echo
 echo "====================================="
