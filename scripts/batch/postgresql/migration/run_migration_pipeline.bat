@@ -5,7 +5,7 @@ REM =====================================
 REM PROJECT ROOT
 REM =====================================
 
-call "%~dp0..\common\set_project_root.bat"
+call "%~dp0..\..\common\set_project_root.bat"
 
 if errorlevel 1 (
     echo ERROR: PROJECT ROOT SETUP FAILED
