@@ -122,6 +122,11 @@ if "%CHANGELOG%"=="" (
     set "CHANGELOG=liquibase\postgresql\master.xml"
 )
 
+set "LB_COMMAND=%~2"
+if "%LB_COMMAND%"=="" (
+    set "LB_COMMAND=update"
+)
+
 if not exist "%CHANGELOG%" (
     echo ERROR: CHANGELOG NOT FOUND
     echo Expected: %ROOT%\%CHANGELOG%
@@ -203,7 +208,7 @@ call "%LB_BAT%" ^
 --url="jdbc:postgresql://%POSTGRESQL_HOST%:%POSTGRESQL_PORT%/%POSTGRESQL_DB%" ^
 --username=%POSTGRESQL_USER% ^
 %PASSWORD_OPTION% ^
-update
+%LB_COMMAND%
 
 set "LIQUIBASE_RC=%ERRORLEVEL%"
 

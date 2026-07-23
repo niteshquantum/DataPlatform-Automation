@@ -51,6 +51,16 @@ echo DEPLOYING DATABASE OBJECTS
 echo -------------------------------------
 echo.
 
+REM Clear checksums so regenerated object changelogs do not trigger
+REM ValidationFailedException when they were already deployed earlier
+REM via master.xml (which includes master_objects.xml).
+call "%ROOT%\scripts\batch\postgresql\setup\run_liquibase.bat" "liquibase\postgresql\master_objects.xml" clearCheckSums
+
+if errorlevel 1 (
+    echo ERROR: LIQUIBASE CHECKSUM CLEAR FAILED
+    exit /b 1
+)
+
 python scripts\python\common\objects\deploy_objects.py postgresql
 
 if errorlevel 1 (
