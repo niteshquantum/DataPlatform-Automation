@@ -8,6 +8,7 @@ source "$SCRIPT_DIR/../../common/set_project_root.sh"
 CONFIG_FILE="$PROJECT_ROOT/config/ubuntu/mongodb.conf"
 
 MONGODB_PORT=$(grep "^MONGODB_PORT=" "$CONFIG_FILE" | cut -d'=' -f2)
+MONGODB_AUTHORIZATION_ENABLED=$(grep "^MONGODB_AUTHORIZATION_ENABLED=" "$CONFIG_FILE" | cut -d'=' -f2 || true)
 
 MONGODB_HOME="$PROJECT_ROOT/databases/mongodb/server"
 
@@ -39,11 +40,17 @@ fi
 mkdir -p "$DATA_DIR"
 mkdir -p "$LOG_DIR"
 
+MONGOD_AUTH_ARGS=()
+if [ "${MONGODB_AUTHORIZATION_ENABLED,,}" = "true" ]; then
+    MONGOD_AUTH_ARGS=(--auth)
+fi
+
 "$MONGODB_HOME/bin/mongod" \
     --dbpath "$DATA_DIR" \
     --logpath "$LOG_FILE" \
     --fork \
-    --port "$MONGODB_PORT"
+    --port "$MONGODB_PORT" \
+    "${MONGOD_AUTH_ARGS[@]}"
 
 sleep 5
 

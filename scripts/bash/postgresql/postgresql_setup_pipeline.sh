@@ -22,6 +22,8 @@ bash "$PROJECT_ROOT/scripts/bash/postgresql/setup/validate_postgresql.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/postgresql/setup/create_database.sh"
 
+bash "$PROJECT_ROOT/scripts/bash/postgresql/rbac/configure_database_rbac.sh"
+
 bash "$PROJECT_ROOT/scripts/bash/postgresql/setup/run_liquibase.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/postgresql/setup/validate_environment.sh"

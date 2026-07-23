@@ -68,6 +68,12 @@ if defined INST_ERROR echo %INST_ERROR%
 exit /b 1
 
 :validate_environment
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\create_database.bat"
+if errorlevel 1 exit /b 1
+call "%PROJECT_ROOT%\scripts\batch\mssql\rbac\configure_database_rbac.bat"
+if errorlevel 1 exit /b 1
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\run_liquibase.bat"
+if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

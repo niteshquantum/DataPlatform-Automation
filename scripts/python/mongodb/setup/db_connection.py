@@ -11,14 +11,14 @@ config = load_config()
 
 
 def get_client():
-
-    uri = (
-        f"mongodb://"
-        f"{config['MONGODB_HOST']}:"
-        f"{config['MONGODB_PORT']}"
-    )
-
-    return MongoClient(uri)
+    options = {}
+    if config.get("MONGODB_AUTHORIZATION_ENABLED", "false").lower() == "true":
+        options = {
+            "username": config["RBAC_ADMIN_USERNAME"],
+            "password": config["RBAC_ADMIN_PASSWORD"],
+            "authSource": "admin",
+        }
+    return MongoClient(config["MONGODB_HOST"], int(config["MONGODB_PORT"]), **options)
 
 def get_db():
 

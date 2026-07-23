@@ -62,6 +62,10 @@ else
 
 fi
 
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/create_database.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/rbac/configure_database_rbac.sh"
+bash "$PROJECT_ROOT/scripts/bash/mysql/setup/run_liquibase.sh"
+
 bash "$PROJECT_ROOT/scripts/bash/mysql/setup/validate_environment.sh"
 
 echo

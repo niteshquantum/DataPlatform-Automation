@@ -426,6 +426,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' } } }
+        }
+
         stage('Validate MongoDB Instance') {
 
             steps {

@@ -334,6 +334,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mysql\\setup\\create_database.bat'; bat 'scripts\\batch\\mysql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat' } } }
+        }
+
         stage('Validate Environment') {
 
             steps {

@@ -51,6 +51,10 @@ else
 
 fi
 
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/create_database.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/rbac/configure_database_rbac.sh"
+bash "$PROJECT_ROOT/scripts/bash/mssql/setup/run_liquibase.sh"
+
 bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_mssql.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mssql/setup/validate_environment.sh"

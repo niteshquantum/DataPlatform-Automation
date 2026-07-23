@@ -358,6 +358,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mssql\\setup\\create_database.bat'; bat 'scripts\\batch\\mssql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\mssql\\setup\\run_liquibase.bat' } } }
+        }
+
         stage('Validate Environment') {
 
             steps {

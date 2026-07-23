@@ -74,6 +74,9 @@ if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_mongodb.bat"
 if errorlevel 1 exit /b 1
 
+call "%PROJECT_ROOT%\scripts\batch\mongodb\rbac\configure_database_rbac.bat"
+if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

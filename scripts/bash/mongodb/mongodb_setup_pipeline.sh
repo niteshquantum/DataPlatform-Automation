@@ -24,6 +24,8 @@ bash "$PROJECT_ROOT/scripts/bash/mongodb/setup/start_mongodb.sh"
 
 bash "$PROJECT_ROOT/scripts/bash/mongodb/setup/validate_mongodb.sh"
 
+bash "$PROJECT_ROOT/scripts/bash/mongodb/rbac/configure_database_rbac.sh"
+
 echo
 echo "====================================="
 echo "MONGODB SETUP SUCCESSFUL"

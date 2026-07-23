@@ -47,6 +47,7 @@ Get-Content $ConfigFile | ForEach-Object {
 
 $MongoHost = $Config["MONGODB_HOST"]
 $MongoPort = $Config["MONGODB_PORT"]
+$MongoAuthEnabled = $Config["MONGODB_AUTHORIZATION_ENABLED"] -eq "true"
 
 if (-not $MongoPort) {
     throw "MONGODB_PORT not found in mongodb.conf"
@@ -96,14 +97,17 @@ if (!(Test-Path $LogDir)) {
 # START MONGODB
 # =====================================
 
+$MongoArguments = @(
+    "--dbpath", $DataPath,
+    "--logpath", $LogPath,
+    "--bind_ip", $MongoHost,
+    "--port", $MongoPort
+)
+if ($MongoAuthEnabled) { $MongoArguments += "--auth" }
+
 Start-Process `
     -FilePath $MongodExe `
-    -ArgumentList @(
-        "--dbpath", $DataPath,
-        "--logpath", $LogPath,
-        "--bind_ip", $MongoHost,
-        "--port", $MongoPort
-    ) `
+    -ArgumentList $MongoArguments `
     -WindowStyle Hidden
 
 # =====================================

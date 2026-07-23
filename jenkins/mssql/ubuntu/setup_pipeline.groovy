@@ -299,6 +299,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mssql/setup/create_database.sh'; sh './scripts/bash/mssql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mssql/setup/run_liquibase.sh' } } }
+        }
+
         stage('Validate Environment') {
 
             steps {

@@ -104,6 +104,12 @@ if defined INST_ERROR echo %INST_ERROR%
 exit /b 1
 
 :validate_environment
+call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\create_database.bat"
+if errorlevel 1 exit /b 1
+call "%PROJECT_ROOT%\scripts\batch\postgresql\rbac\configure_database_rbac.bat"
+if errorlevel 1 exit /b 1
+call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\run_liquibase.bat"
+if errorlevel 1 exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\postgresql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 

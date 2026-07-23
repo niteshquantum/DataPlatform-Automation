@@ -68,9 +68,14 @@ exit /b 1
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\validate_mysql.bat"
 if errorlevel 1 exit /b 1
 
-@REM Database creation is LOAD responsibility.
-@REM call "%PROJECT_ROOT%\scripts\batch\mysql\setup\create_database.bat"
-@REM if errorlevel 1 exit /b 1
+call "%PROJECT_ROOT%\scripts\batch\mysql\setup\create_database.bat"
+if errorlevel 1 exit /b 1
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\rbac\configure_database_rbac.bat"
+if errorlevel 1 exit /b 1
+
+call "%PROJECT_ROOT%\scripts\batch\mysql\setup\run_liquibase.bat"
+if errorlevel 1 exit /b 1
 
 @REM call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_global_mysql.bat"
 @REM if errorlevel 1 exit /b 1

@@ -314,6 +314,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { sh './scripts/bash/postgresql/setup/create_database.sh'; sh './scripts/bash/postgresql/rbac/configure_database_rbac.sh'; sh './scripts/bash/postgresql/setup/run_liquibase.sh' } } }
+        }
+
         stage('Validate Environment') {
 
             steps {
