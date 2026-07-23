@@ -312,7 +312,21 @@ pipeline {
                 }
             }
         }
-
+        stage('Configure MySQL User') {
+        
+            steps {
+        
+                script {
+        
+                    runTrackedStage(
+                        'Configure MySQL User'
+                    ) {
+        
+                        sh './scripts/bash/mysql/setup/configure_mysql_user.sh'
+                    }
+                }
+            }
+        }
 
         stage('Validate Environment') {
 
