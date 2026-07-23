@@ -34,13 +34,11 @@ echo "Configured User : $MYSQL_USER"
 
 echo
 echo "Checking whether user exists..."
-
-USER_EXISTS=$(sudo mysql -N -B -e "
+USER_EXISTS=$(sudo /usr/bin/mysql -N -B -e "
 SELECT COUNT(*)
 FROM mysql.user
 WHERE user='${MYSQL_USER}';
 ")
-
 if [ "$USER_EXISTS" -gt 0 ]; then
 
     echo "User '$MYSQL_USER' already exists."
@@ -50,7 +48,7 @@ else
 
     echo "Creating user '$MYSQL_USER'..."
 
-    sudo mysql <<EOF
+    sudo /usr/bin/mysql <<EOF
 CREATE USER '${MYSQL_USER}'@'localhost'
 IDENTIFIED BY '${MYSQL_PASSWORD}';
 
