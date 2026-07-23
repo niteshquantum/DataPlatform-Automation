@@ -24,9 +24,17 @@ echo
 echo "====================================="
 echo "CHECKING MYSQL INSTANCE STATE"
 echo "====================================="
-echo
+echo.
 
-INSTANCE_STATE=$(bash "$PROJECT_ROOT/scripts/bash/mysql/setup/check_instance.sh" || true)
+INSTANCE_STATE_OUTPUT=$(bash "$PROJECT_ROOT/scripts/bash/mysql/setup/check_instance.sh" || true)
+
+INSTANCE_STATE=$(printf '%s' "$INSTANCE_STATE_OUTPUT" | grep '^INSTANCE_STATE=' | cut -d'=' -f2- | head -n1 || true)
+
+if [ -z "$INSTANCE_STATE" ]; then
+
+    INSTANCE_STATE=UNKNOWN
+
+fi
 
 echo "Instance State: $INSTANCE_STATE"
 
