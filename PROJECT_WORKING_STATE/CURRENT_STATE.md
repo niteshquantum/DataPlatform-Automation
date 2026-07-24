@@ -20,9 +20,15 @@ Last updated: 2026-07-23 21:27 IST
 
 ## Development Status
 
-MILESTONE 4 COMPLETE — MAIN JENKINS INTEGRATION IMPLEMENTED + STATICALLY VALIDATED
+MILESTONE 5 COMPLETE — FINAL FREEZE REVIEW + READY FOR USER MAIN JENKINS TEST
 
-MongoDB Windows is integrated into main `jenkins/Jenkinsfile` orchestration. `DATABASE=MONGODB` routing added for both `SETUP` and `LOAD` actions on `windows-node`. Integration uses proven local `.bat` pipelines through the standard `executePipeline()` wrapper. Dedicated Jenkins job `mongodb20` remains preserved with its runtime-proof configuration. Main pipeline runtime validation is pending valid RBAC credentials for pipeline parameters.
+MongoDB Windows finalization is complete. All directly related gaps have been fixed:
+- Dedicated SETUP Groovy now has `validate_environment` stage (parity with local .bat)
+- Main Jenkinsfile has `DATABASE=MONGODB` routing for SETUP and LOAD on `windows-node`
+- Dedicated LOAD runtime proven (build #5 SUCCESS)
+- Main routing statically validated (correct paths, agent labels, error propagation)
+
+Remaining main pipeline runtime proof is the user's manual test with valid RBAC credentials.
 
 ## Current Implementation State
 
@@ -152,9 +158,10 @@ MongoDB Windows is integrated into main `jenkins/Jenkinsfile` orchestration. `DA
 6. ~~Document exact Jenkins runtime manual boundary~~ DONE HANDOFF 000008
 7. ~~Runtime-prove dedicated Jenkins LOAD pipeline~~ DONE HANDOFF 000009
 8. ~~Integrate MongoDB stages into main `jenkins/Jenkinsfile`~~ DONE HANDOFF 000010
-9. Obtain RBAC credentials and runtime-prove main pipeline MongoDB SETUP/LOAD
-10. Implement MongoDB object deployment/validation pipeline
-11. Implement migration/discovery/reporting pipeline
+9. ~~Add validate_environment to dedicated SETUP Groovy~~ DONE HANDOFF 000011
+10. User manually runtime-tests main Jenkins pipeline with RBAC credentials
+11. Implement MongoDB object deployment/validation pipeline
+12. Implement migration/discovery/reporting pipeline
 
 ## Relevant Commits (from baseline)
 
@@ -166,6 +173,8 @@ MongoDB Windows is integrated into main `jenkins/Jenkinsfile` orchestration. `DA
 - eb7d353: reporting/assessment tail consolidated
 - 5260234: migration wrapper PROJECT_ROOT bootstrap corrected
 - e7c403d: main Jenkins reduced to 4 flows, MySQL instance-state fix
+- 24d6035: main Jenkinsfile integrates MongoDB SETUP/LOAD routing for windows-node
+- 248a6b9: fix(mongodb-windows): add validate_environment stage to dedicated SETUP Groovy
 - 24d6035: main Jenkinsfile integrates MongoDB SETUP/LOAD routing for windows-node
 
 ## Current Implementation State
@@ -339,9 +348,10 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 6. ~~Document exact Jenkins runtime manual boundary~~ DONE HANDOFF 000008
 7. ~~Runtime-prove dedicated Jenkins LOAD pipeline~~ DONE HANDOFF 000009
 8. ~~Integrate MongoDB stages into main `jenkins/Jenkinsfile`~~ DONE HANDOFF 000010
-9. Obtain RBAC credentials and runtime-prove main pipeline MongoDB SETUP/LOAD
-10. Implement MongoDB object deployment/validation pipeline
-11. Implement migration/discovery/reporting pipeline
+9. ~~Add validate_environment to dedicated SETUP Groovy~~ DONE HANDOFF 000011
+10. User manually runtime-tests main Jenkins pipeline with RBAC credentials
+11. Implement MongoDB object deployment/validation pipeline
+12. Implement migration/discovery/reporting pipeline
 
 ## Relevant Commits (from baseline)
 
@@ -354,4 +364,8 @@ PostgreSQL Windows is the proven reference. Key proven behaviors verified in Mon
 - 5260234: migration wrapper PROJECT_ROOT bootstrap corrected
 - e7c403d: main Jenkins reduced to 4 flows, MySQL instance-state fix
 - 24d6035: main Jenkinsfile integrates MongoDB SETUP/LOAD routing for windows-node
+- 248a6b9: fix(mongodb-windows): add validate_environment stage to dedicated SETUP Groovy
+- 24d6035: main Jenkinsfile integrates MongoDB SETUP/LOAD routing for windows-node
+
+
 
