@@ -173,13 +173,11 @@ pipeline {
                         --stage-name "Check Instance"
                     """
 
-                    def checkResult = bat(
+                    def output = bat(
                         script: 'scripts\\batch\\mssql\\setup\\check_instance.bat',
-                        returnStatus: true,
                         returnStdout: true
-                    )
+                    ).trim()
 
-                    def output = checkResult[1]
                     def instanceStateLine = output.readLines().find { line ->
                         line.startsWith('INSTANCE_STATE=')
                     }
