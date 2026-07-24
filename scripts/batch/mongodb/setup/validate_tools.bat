@@ -16,8 +16,10 @@ REM TERRAFORM
 REM =====================================
 
 if not exist "%ROOT%\tools\terraform\terraform.exe" (
-    echo ERROR: TERRAFORM NOT FOUND
-    exit /b 1
+    echo WARNING: TERRAFORM NOT FOUND
+    echo Terraform is required only for NO_INSTANCE deployment.
+    echo Skipping Terraform validation.
+    goto :tools_done
 )
 
 echo Checking Terraform...
@@ -25,9 +27,11 @@ echo Checking Terraform...
 
 echo TERRAFORM VALIDATED
 
+:tools_done
+
 echo.
 echo =====================================
-echo TOOLS VALIDATED SUCCESSFULLY
+echo TOOLS VALIDATION COMPLETED
 echo =====================================
 echo.
 
