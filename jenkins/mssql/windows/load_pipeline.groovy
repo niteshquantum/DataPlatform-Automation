@@ -326,6 +326,23 @@ pipeline {
         }
 
 
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'python scripts\\profiling\\data_profiler.py --database mssql'
+                    }
+                }
+            }
+        }
+
+
         stage('Create Database') {
 
             steps {
