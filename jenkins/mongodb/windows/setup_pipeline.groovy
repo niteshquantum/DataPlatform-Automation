@@ -441,6 +441,23 @@ pipeline {
                 }
             }
         }
+
+
+        stage('Validate Environment') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Environment'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\setup\\validate_environment.bat'
+                    }
+                }
+            }
+        }
     }
 
 
