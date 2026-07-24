@@ -503,22 +503,7 @@ pipeline {
         }
 
 
-        /*
-        ============================================================
-        OPTIONAL POST-PROCESSING
-        Assessment/reporting is intentionally not part of CORE LOAD.
-        Execute through dedicated assessment/reporting entry point.
-        ============================================================
-        */
         stage('Assessment & Reconciliation') {
-
-            when {
-
-                expression {
-
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
 
             steps {
 
@@ -536,14 +521,6 @@ pipeline {
 
 
         stage('Discovery & Migration Reporting') {
-
-            when {
-
-                expression {
-
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
 
             steps {
 
