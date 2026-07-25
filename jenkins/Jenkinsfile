@@ -310,7 +310,8 @@ pipeline {
             name: 'DATABASE',
             choices: [
                 'MYSQL',
-                'POSTGRESQL'
+                'POSTGRESQL',
+                'MONGODB'
             ],
             description: 'Select Database'
         )
@@ -589,6 +590,96 @@ if (currentBuild.number == 1) {
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\postgresql_load_pipeline.bat'
+                    }
+                }
+            }
+        }
+
+        /*
+        ============================================================
+        MONGODB SETUP
+        WINDOWS
+        ============================================================
+        */
+
+        stage('MongoDB Setup') {
+
+            agent {
+                label 'windows-node'
+            }
+
+            when {
+
+                allOf {
+					expression { currentBuild.number > 1 }
+                    expression {
+                        params.DATABASE == 'MONGODB'
+                    }
+
+                    expression {
+                        params.ACTION == 'SETUP'
+                    }
+                }
+            }
+
+            steps {
+
+                checkout scm
+
+                script {
+
+                    executePipeline(
+                        'mongodb',
+                        'setup',
+                        'windows'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\mongodb_setup_pipeline.bat'
+                    }
+                }
+            }
+        }
+
+        /*
+        ============================================================
+        MONGODB LOAD
+        WINDOWS
+        ============================================================
+        */
+
+        stage('MongoDB Load') {
+
+            agent {
+                label 'windows-node'
+            }
+
+            when {
+
+                allOf {
+					expression { currentBuild.number > 1 }
+                    expression {
+                        params.DATABASE == 'MONGODB'
+                    }
+
+                    expression {
+                        params.ACTION == 'LOAD'
+                    }
+                }
+            }
+
+            steps {
+
+                checkout scm
+
+                script {
+
+                    executePipeline(
+                        'mongodb',
+                        'load',
+                        'windows'
+                    ) {
+
+                        bat 'scripts\\batch\\mongodb\\mongodb_load_pipeline.bat'
                     }
                 }
             }

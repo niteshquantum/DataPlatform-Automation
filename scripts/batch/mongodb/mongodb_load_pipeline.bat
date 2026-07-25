@@ -46,21 +46,64 @@ if errorlevel 1 (
 
 
 REM =====================================
-REM START MONGODB
+REM INSTANCE PREFLIGHT
 REM =====================================
 
-call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\start_mongodb.bat"
+echo.
+echo =====================================
+echo CHECKING MONGODB INSTANCE STATE
+echo =====================================
+echo.
 
-if errorlevel 1 (
-    echo ERROR: MONGODB START FAILED
+set "INST_INSTANCE_STATE="
+
+for /f "tokens=1* delims==" %%A in ('"%PROJECT_ROOT%\scripts\batch\mongodb\setup\check_instance.bat"') do (
+    set "INST_%%A=%%B"
+)
+
+if not defined INST_INSTANCE_STATE (
+    echo ERROR: Failed to determine instance state.
     exit /b 1
 )
+
+echo Instance State: %INST_INSTANCE_STATE%
+
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_RUNNING_AND_USABLE" (
+    echo Reusing existing managed MongoDB instance.
+    goto :validate_mongodb
+)
+
+if /I "%INST_INSTANCE_STATE%"=="INSTANCE_INSTALLED_BUT_STOPPED" (
+    echo Starting managed MongoDB instance.
+    call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\start_mongodb.bat"
+    if errorlevel 1 exit /b 1
+    goto :validate_mongodb
+)
+
+if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
+    echo ERROR: No managed MongoDB instance found.
+    echo        Run SETUP first to deploy and configure MongoDB.
+    if defined INST_ERROR echo        Details: !INST_ERROR!
+    exit /b 1
+)
+
+if /I "%INST_INSTANCE_STATE%"=="PORT_OCCUPIED_BY_NON_MONGODB" (
+    echo ERROR: Foreign process detected on MongoDB port %INST_PORT%.
+    if defined INST_ERROR echo        Details: !INST_ERROR!
+    echo        Aborting LOAD to avoid deploying over or reusing an unmanaged listener.
+    exit /b 1
+)
+
+echo ERROR: Unexpected instance state: %INST_INSTANCE_STATE%
+if defined INST_ERROR echo !INST_ERROR!
+exit /b 1
 
 
 REM =====================================
 REM VALIDATE MONGODB
 REM =====================================
 
+:validate_mongodb
 call "%PROJECT_ROOT%\scripts\batch\mongodb\setup\validate_mongodb.bat"
 
 if errorlevel 1 (
@@ -127,4 +170,4 @@ echo MONGODB AUTOMATION PIPELINE SUCCESSFUL
 echo =====================================
 echo.
 
-exit /b 0
+exit /b 0
