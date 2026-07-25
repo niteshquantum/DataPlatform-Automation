@@ -66,6 +66,23 @@ MySQL must adapt the proven architecture to its own specific capabilities:
 - Different metadata queries than PostgreSQL
 - Must preserve same output structure where possible
 
+## PWS Directory Organization
+
+Working state files are organized by database and operating system:
+
+```
+PROJECT_WORKING_STATE/
+    mysql/
+        windows/
+            README.md
+            CURRENT_STATE.md
+            ARCHITECTURE.md
+            HANDOFFS/
+            ERRORS/
+            TESTS/
+            DECISIONS/
+```
+
 ## What Must NOT Be Copied
 
 - PostgreSQL Windows service implementation (pg_ctl, postgresql.conf)
@@ -80,12 +97,21 @@ MySQL must adapt the proven architecture to its own specific capabilities:
 FinalMysql1/
 ├── PROJECT_WORKING_STATE/
 │   ├── README.md
-│   ├── CURRENT_STATE.md
-│   ├── ARCHITECTURE.md
-│   ├── HANDOFFS/
-│   ├── ERRORS/
-│   ├── TESTS/
-│   └── DECISIONS/
+│   ├── mysql/
+│   │   └── windows/
+│   │       ├── README.md
+│   │       ├── CURRENT_STATE.md
+│   │       ├── ARCHITECTURE.md
+│   │       ├── HANDOFFS/
+│   │       ├── ERRORS/
+│   │       ├── TESTS/
+│   │       └── DECISIONS/
+│   ├── mssql/
+│   │   └── windows/
+│   ├── mongodb/
+│   │   └── windows/
+│   └── postgresql/
+│       └── windows/
 ├── jenkins/mysql/windows/
 │   ├── setup_pipeline.groovy
 │   ├── load_pipeline.groovy
