@@ -74,6 +74,239 @@ pipeline {
         }
 
 
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Check Instance') {
+
+            steps {
+
+                script {
+
+                    bat """
+                        python scripts\\logging\\logger.py stage-start ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Check Instance"
+                    """
+
+                    def output = bat(
+                        script: 'scripts\\batch\\mssql\\setup\\check_instance.bat',
+                        returnStdout: true
+                    ).trim()
+
+                    def instanceStateLine = output.readLines().find { line ->
+                        line.startsWith('INSTANCE_STATE=')
+                    }
+                    def instanceState = instanceStateLine?.split('=', 2)[1]?.trim()
+
+                    if (!instanceState) {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Check Instance" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Check Instance" ^
+                            --message "Unable to determine MSSQL instance state"
+                        """
+
+                        error "Unable to determine MSSQL instance state from check_instance output"
+
+                    }
+
+                    if (instanceState == 'NO_INSTANCE') {
+
+                        echo 'Deploying project-local MSSQL instance.'
+
+                        bat 'scripts\\batch\\mssql\\setup\\deploy_mssql_gdrive.bat'
+
+                        def adminStatus = bat(
+                            script: 'scripts\\batch\\common\\check_admin_privileges.bat',
+                            returnStatus: true
+                        )
+
+                        if (adminStatus == 0) {
+
+                            bat 'scripts\\batch\\mssql\\setup\\configure_mssql.bat'
+
+                        } else {
+
+                            echo 'Administrator privileges not available. Skipping configuration.'
+
+                        }
+
+                    } else if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED') {
+
+                        echo 'Starting existing managed MSSQL instance.'
+
+                    } else if (instanceState == 'INSTANCE_RUNNING_AND_USABLE') {
+
+                        echo 'Reusing existing managed MSSQL instance.'
+
+                    } else {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Check Instance" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Check Instance" ^
+                            --message "Unexpected instance state: ${instanceState}"
+                        """
+
+                        error "Unexpected MSSQL instance state: ${instanceState}"
+
+                    }
+
+                    bat """
+                        python scripts\\logging\\logger.py stage-end ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Check Instance" ^
+                        --status SUCCESS
+                    """
+                }
+            }
+        }
+
+
+        stage('Start SQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\start_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate SQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate SQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\validate_mssql.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Download Dataset') {
 
             steps {
@@ -85,6 +318,23 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'python scripts\\profiling\\data_profiler.py --database mssql'
                     }
                 }
             }
@@ -114,11 +364,59 @@ pipeline {
 
                 script {
 
-                    runTrackedStage(
-                        'Run CDC'
-                    ) {
+                    bat """
+                        python scripts\\logging\\logger.py stage-start ^
+                        --database mssql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --stage-name "Run CDC"
+                    """
 
-                        bat 'scripts\\batch\\mssql\\load\\run_cdc.bat'
+                    def cdcResult = bat(
+                        script: 'scripts\\batch\\mssql\\load\\run_cdc.bat',
+                        returnStatus: true
+                    )
+
+                    if (cdcResult == 0 || cdcResult == 100) {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status SUCCESS
+                        """
+
+                        if (cdcResult == 100) {
+
+                            echo 'CDC: No changes detected — skipping data load.'
+                            env.SKIP_DATA_LOAD = 'true'
+
+                        }
+
+                    } else {
+
+                        bat """
+                            python scripts\\logging\\logger.py stage-end ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --stage-name "Run CDC" ^
+                            --status FAILURE
+                        """
+
+                        bat """
+                            python scripts\\logging\\logger.py set-error ^
+                            --database mssql ^
+                            --action load ^
+                            --build-number "${env.BUILD_NUMBER}" ^
+                            --failed-stage "Run CDC" ^
+                            --message "CDC execution failed with exit code ${cdcResult}"
+                        """
+
+                        error "CDC execution failed with exit code ${cdcResult}"
+
                     }
                 }
             }
@@ -126,6 +424,12 @@ pipeline {
 
 
         stage('Load Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
@@ -143,6 +447,12 @@ pipeline {
 
 
         stage('Validate Loaded Data') {
+
+            when {
+                expression {
+                    return env.SKIP_DATA_LOAD != 'true'
+                }
+            }
 
             steps {
 
@@ -193,57 +503,34 @@ pipeline {
         }
 
 
-        /*
-        ============================================================
-        OPTIONAL POST-PROCESSING
-        Assessment/reporting is intentionally not part of CORE LOAD.
-        Execute through dedicated assessment/reporting entry point.
-        ============================================================
-        */
-
-
-        stage('Database Assessment') {
-
-            when {
-
-                expression {
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
+        stage('Assessment & Reconciliation') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Database Assessment'
+                        'Assessment & Reconciliation'
                     ) {
 
-                        bat 'scripts\\batch\\mssql\\assessment\\run_assessment.bat all'
+                        bat 'scripts\\batch\\mssql\\assessment\\run_assessment_pipeline.bat'
                     }
                 }
             }
         }
 
 
-        stage('Assessment Report') {
-
-            when {
-
-                expression {
-                    return params.RUN_ASSESSMENT == 'true'
-                }
-            }
+        stage('Discovery & Migration Reporting') {
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Assessment Report'
+                        'Discovery & Migration Reporting'
                     ) {
 
-                        bat 'scripts\\batch\\common\\generate_assessment_report.bat'
+                        bat 'scripts\\batch\\mssql\\migration\\run_migration_pipeline.bat'
                     }
                 }
             }

@@ -54,8 +54,35 @@ if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
     call "%PROJECT_ROOT%\scripts\batch\mssql\setup\deploy_mssql_gdrive.bat"
     if errorlevel 1 exit /b 1
 
-    call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
-    if errorlevel 1 exit /b 1
+    echo.
+    echo =====================================
+    echo CHECKING ADMINISTRATOR PRIVILEGES FOR CONFIGURATION
+    echo =====================================
+    echo.
+
+    set "ADMIN_STATUS="
+
+    call "%PROJECT_ROOT%\scripts\batch\common\check_admin_privileges.bat"
+    if errorlevel 1 (
+        set "ADMIN_STATUS=false"
+    ) else (
+        set "ADMIN_STATUS=true"
+    )
+
+    echo Administrator Status: %ADMIN_STATUS%
+
+    if /I "%ADMIN_STATUS%"=="true" (
+        echo.
+        echo =====================================
+        echo CONFIGURING SQL SERVER
+        echo =====================================
+        echo.
+        call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql.bat"
+        if errorlevel 1 exit /b 1
+    ) else (
+        echo Administrator privileges not available.
+        echo SQL Server network configuration will be skipped.
+    )
 
     echo Starting MSSQL instance.
     call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"

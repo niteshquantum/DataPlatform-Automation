@@ -5,7 +5,7 @@ $ProjectRoot = Split-Path $PSScriptRoot -Parent
 $ProjectRoot = Split-Path $ProjectRoot -Parent
 
 # Read config
-$ConfigFile = Join-Path $ProjectRoot "config\windows\mysql.conf"
+$ConfigFile = Join-Path $ProjectRoot "config\windows\mssql.conf"
 
 if (!(Test-Path $ConfigFile)) {
 Write-Error "Config file not found: $ConfigFile"

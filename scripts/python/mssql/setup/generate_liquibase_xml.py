@@ -8,7 +8,34 @@ schema_file = ROOT / "metadata" / "mssql" / "schema_registry.json"
 liquibase_dir = ROOT / "liquibase" / "mssql"
  
 liquibase_dir.mkdir(parents=True, exist_ok=True)
- 
+
+if not schema_file.exists():
+
+    print("No schema registry found. Nothing to generate.")
+    print(f"Expected: {schema_file}")
+    print("Run schema_detector.py first or create schema_registry.json manually.")
+    schema_changed = False
+
+    from pathlib import Path
+
+    status_file = ROOT / "metadata" / "mssql" / "schema_status.json"
+
+    status_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(status_file, "w", encoding="utf-8") as f:
+        import json
+
+        json.dump(
+            {
+                "schema_changed": False,
+                "reason": "no_schema_registry",
+            },
+            f,
+            indent=4,
+        )
+
+    exit(0)
+
 with open(schema_file, "r", encoding="utf-8") as f:
     schema_registry = json.load(f)
  
@@ -153,7 +180,7 @@ for table_name, columns in schema_registry.items():
  
 if not generated_any:
     print("No schema changes detected. Nothing to generate.")
- 
+
 from pathlib import Path
 
 status_file = ROOT / "metadata" / "mssql" / "schema_status.json"
