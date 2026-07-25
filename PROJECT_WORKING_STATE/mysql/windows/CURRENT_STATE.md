@@ -1,6 +1,6 @@
 # CURRENT STATE
 
-Last updated: 2026-07-25 22:44 IST
+Last updated: 2026-07-25 23:45 IST
 
 ## Repository Baseline
 
@@ -26,38 +26,47 @@ Last updated: 2026-07-25 22:44 IST
 
 ## Development Status
 
-NOT STARTED — BOOTSTRAP ONLY
+IN PROGRESS — SETUP PIPELINE IMPLEMENTED
 
-No database-specific implementation has been started yet. This workspace is at the exact baseline of the proven PostgreSQL Windows integration branch.
+MySQL Windows SETUP pipeline has been implemented following the proven PostgreSQL Windows architecture. Batch and Groovy wrappers are finalized and ready for Jenkins validation.
 
 ## Proven Reference Architecture
 
-PostgreSQL Windows is the proven architectural reference for this workspace. Key proven behaviors to adapt:
+PostgreSQL Windows is the proven architectural reference for this workspace. Key proven behaviors adapted:
 
 1. **PORT OPEN != CURRENT PROJECT INSTANCE OWNERSHIP**
    - A reachable database on configured host:port does NOT automatically mean it is the current workspace-managed deployment.
-   - Must verify instance ownership/reuse per MySQL lifecycle.
+   - Instance state must be checked before reuse decision.
 
 2. **Fresh workspace compatibility**
-   - SETUP and LOAD may run in different Jenkins workspaces.
-   - LOAD must not assume SETUP workspace-local binaries/tools exist.
+   - SETUP and LOAD may execute in different Jenkins workspaces.
+   - LOAD must provision its own tools without assuming SETUP workspace binaries exist.
 
 3. **Runtime-generated artifacts**
    - Generated Liquibase/object XML files must be regenerated when required.
    - Gitignored artifacts are expected; do not require them to exist before runtime generation.
 
 4. **Dedicated pipeline alignment**
-   - Dedicated Groovy and local wrapper behavior must remain logically aligned.
-   - Main Jenkins should delegate to proven wrappers, not inline implementation.
+   - Dedicated Groovy and local wrapper behavior remain logically aligned.
+   - Main Jenkins delegates to proven wrappers, not inline implementation.
 
 5. **SETUP/LOAD/CLEANUP boundaries**
    - Must remain explicit and database-specific.
 
+## Implemented SETUP Architecture
+
+- `scripts/batch/mysql/mysql_setup_pipeline.bat` — finalized local wrapper
+- `jenkins/mysql/windows/setup_pipeline.groovy` — finalized dedicated Groovy pipeline
+- Administrator privilege detection and conditional service/global-mysql configuration
+- Instance-state lifecycle: CHECK → DEPLOY/REUSE → START → VALIDATE → CONFIGURE SERVICE → CONFIGURE GLOBAL → VALIDATE ENVIRONMENT
+- Logging flow: init → stage-start/end/set-error → finalize + generate_report + generate_history
+- Port ownership checks: PORT_OCCUPIED_BY_NON_MYSQL and UNKNOWN rejected before setup proceeds
+
 ## Pending Implementation
 
-- MySQL Windows SETUP pipeline (instance deployment, tool installation, validation)
 - MySQL Windows LOAD pipeline (schema deployment, data loading, object generation/deployment, assessment/reconciliation/discovery/reporting)
-- MySQL instance-state management (install/start/reuse/validate)
+- MySQL Windows CLEANUP pipeline
+- MySQL instance-state management validation in Jenkins runtime
 - MySQL-specific Liquibase configuration
 - MySQL-specific object generation (views, functions, procedures, indexes, triggers)
 - CDC behavior adaptation for MySQL
@@ -70,15 +79,15 @@ PostgreSQL Windows is the proven architectural reference for this workspace. Key
 - Do NOT bypass instance ownership checks
 - Do NOT assume SETUP workspace tools exist in LOAD workspace
 - Do NOT regenerate artifacts without understanding database-specific requirements
+- Do NOT compare PostgreSQL, MSSQL or MongoDB again
 
 ## Next Actions
 
-1. Study PostgreSQL Windows reference implementation
-2. Design MySQL Windows instance lifecycle
-3. Implement MySQL Windows SETUP pipeline
-4. Implement MySQL Windows LOAD pipeline
-5. Validate in dedicated Groovy first
-6. Integrate into main Jenkins after proven
+1. Validate MySQL Windows SETUP pipeline in dedicated Jenkins runtime
+2. Implement MySQL Windows LOAD pipeline
+3. Implement MySQL Windows CLEANUP pipeline
+4. Integrate proven SETUP flow into main Jenkins
+5. Validate end-to-end in Jenkins
 
 ## Relevant Commits (from baseline)
 

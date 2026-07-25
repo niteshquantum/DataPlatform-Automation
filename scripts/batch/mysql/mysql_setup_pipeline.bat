@@ -2,6 +2,7 @@
 setlocal
 
 call "%~dp0..\common\set_project_root.bat"
+if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\common\validate_python_runtime.bat"
 if errorlevel 1 exit /b 1
@@ -17,6 +18,44 @@ if errorlevel 1 exit /b 1
 
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\install_tools.bat"
 if errorlevel 1 exit /b 1
+
+echo.
+echo =====================================
+echo CHECKING ADMINISTRATOR PRIVILEGES
+echo =====================================
+echo.
+
+set "ADMIN_STATUS="
+
+call "%PROJECT_ROOT%\scripts\batch\common\check_admin_privileges.bat"
+if errorlevel 1 (
+    set "ADMIN_STATUS=false"
+) else (
+    set "ADMIN_STATUS=true"
+)
+
+echo Administrator Status: %ADMIN_STATUS%
+
+if /I "%ADMIN_STATUS%"=="true" (
+    echo.
+    echo =====================================
+    echo CONFIGURING MYSQL WINDOWS SERVICE
+    echo =====================================
+    echo.
+    call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_mysql_service.bat"
+    if errorlevel 1 exit /b 1
+
+    echo.
+    echo =====================================
+    echo CONFIGURING GLOBAL MYSQL COMMAND
+    echo =====================================
+    echo.
+    call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_global_mysql.bat"
+    if errorlevel 1 exit /b 1
+) else (
+    echo Administrator privileges not available.
+    echo MySQL Service and Global MySQL configuration will be skipped.
+)
 
 echo.
 echo =====================================

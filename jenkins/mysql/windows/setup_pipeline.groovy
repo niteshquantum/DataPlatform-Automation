@@ -55,11 +55,11 @@ def getInstanceState() {
 
     def state = 'UNKNOWN'
 
-    def lines = output.split('\n')
+    def lines = output.split(/\r?\n/)
 
     for (int i = 0; i < lines.size(); i++) {
 
-        def line = lines[i]
+        def line = lines[i].trim()
 
         if (line.startsWith('INSTANCE_STATE=')) {
 
@@ -88,15 +88,20 @@ pipeline {
 
             steps {
 
-                bat """
-                    python scripts\\logging\\logger.py init ^
-                    --database mysql ^
-                    --action setup ^
-                    --os windows ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --job-name "${env.JOB_NAME}" ^
-                    --build-url "${env.BUILD_URL}"
-                """
+                script {
+
+                    bat """
+                        python scripts\\logging\\logger.py init ^
+                        --database mysql ^
+                        --action setup ^
+                        --os windows ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --job-name "${env.JOB_NAME}" ^
+                        --build-url "${env.BUILD_URL}"
+                    """
+
+                    env.MYSQL_SETUP_LOGGING_INITIALIZED = 'true'
+                }
             }
         }
 
@@ -254,7 +259,19 @@ pipeline {
 
                         def instanceState = getInstanceState()
 
+                        env.MYSQL_INITIAL_INSTANCE_STATE = instanceState
+
                         echo "Instance State: ${instanceState}"
+
+                        if (instanceState == 'PORT_OCCUPIED_BY_NON_MYSQL') {
+
+                            error "Port conflict: configured MySQL port is occupied by a non-MySQL process. Aborting setup."
+                        }
+
+                        if (instanceState == 'UNKNOWN') {
+
+                            error "Unknown MySQL instance state detected. Aborting setup."
+                        }
                     }
                 }
             }
@@ -334,6 +351,63 @@ pipeline {
         }
 
 
+        stage('Configure MySQL Service') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure MySQL Service'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\configure_mysql_service.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure Global MySQL') {
+
+            when {
+
+                expression {
+
+                    return readFile(
+                        'admin_status.txt'
+                    ).trim() == 'true'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure Global MySQL'
+                    ) {
+
+                        echo 'Administrator privileges available.'
+                        echo 'Configuring Global MySQL command...'
+
+                        bat 'scripts\\batch\\mysql\\setup\\configure_global_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Validate Environment') {
 
             steps {
@@ -390,29 +464,36 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult
+                def finalStatus = currentBuild.currentResult ?: 'FAILURE'
 
-                bat """
-                    python scripts\\logging\\logger.py finalize ^
-                    --database mysql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --status "${finalStatus}"
-                """
+                if (env.MYSQL_SETUP_LOGGING_INITIALIZED == 'true') {
 
-                bat """
-                    python scripts\\reporting\\generate_report.py ^
-                    --database mysql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\logging\\logger.py finalize ^
+                        --database mysql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --status "${finalStatus}"
+                    """
 
-                bat """
-                    python scripts\\reporting\\generate_history.py ^
-                    --database mysql ^
-                    --action setup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\reporting\\generate_report.py ^
+                        --database mysql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    bat """
+                        python scripts\\reporting\\generate_history.py ^
+                        --database mysql ^
+                        --action setup ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
 
