@@ -44,14 +44,24 @@ def runTrackedStage(String stageName, Closure stageBody) {
         throw error
     }
 }
-
-
+ 
+ 
 pipeline {
 
     agent any
 
     options {
         disableConcurrentBuilds()
+    }
+
+
+    parameters {
+
+        booleanParam(
+            name: 'RUN_ASSESSMENT',
+            defaultValue: true,
+            description: 'Run database assessment after successful load.'
+        )
     }
 
 
@@ -367,14 +377,22 @@ pipeline {
         }
 
 
-        stage('Assessment & Reconciliation') {
+        stage('Database Assessment') {
+
+            when {
+
+                expression {
+
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Assessment & Reconciliation'
+                        'Database Assessment'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\assessment\\run_assessment_pipeline.bat'
@@ -384,14 +402,22 @@ pipeline {
         }
 
 
-        stage('Discovery & Migration Reporting') {
+        stage('Assessment Report') {
+
+            when {
+
+                expression {
+
+                    return params.RUN_ASSESSMENT == 'true'
+                }
+            }
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Discovery & Migration Reporting'
+                        'Assessment Report'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\migration\\run_migration_pipeline.bat'
