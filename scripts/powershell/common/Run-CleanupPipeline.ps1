@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..\..").Path
+$PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
 function Write-Log {
     param([string]$Message)

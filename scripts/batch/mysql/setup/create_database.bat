@@ -87,10 +87,10 @@ REM =====================================
 REM BUILD PASSWORD OPTION
 REM =====================================
 
-set "MYSQL_PASSWORD_OPTION=
+set "MYSQL_PASSWORD_OPTION="
 
 if defined MYSQL_PASSWORD (
-set "MYSQL_PASSWORD_OPTION=-p%MYSQL_PASSWORD%
+set "MYSQL_PASSWORD_OPTION=-p%MYSQL_PASSWORD%"
 )
 
 REM =====================================
