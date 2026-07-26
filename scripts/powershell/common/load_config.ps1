@@ -12,12 +12,12 @@ function Load-Config {
 
     $Config = @{}
 
-    Get-Content $ConfigFile | ForEach-Object {
+    foreach ($Line in Get-Content $ConfigFile) {
 
-        $Line = $_.Trim()
+        $Line = $Line.Trim()
 
         if ($Line -eq "" -or $Line.StartsWith("#")) {
-            return
+            continue
         }
 
         $Parts = $Line.Split("=", 2)
