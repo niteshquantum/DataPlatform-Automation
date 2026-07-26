@@ -383,7 +383,7 @@ pipeline {
 
                 expression {
 
-                    return params.RUN_ASSESSMENT == 'true'
+                    return params.RUN_ASSESSMENT == true
                 }
             }
 
@@ -408,7 +408,7 @@ pipeline {
 
                 expression {
 
-                    return params.RUN_ASSESSMENT == 'true'
+                    return params.RUN_ASSESSMENT == true
                 }
             }
 

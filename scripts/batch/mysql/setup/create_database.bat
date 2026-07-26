@@ -68,13 +68,14 @@ REM =====================================
 REM MYSQL CLIENT
 REM =====================================
 
-set "MYSQL_EXE=%ROOT%\databases\mysql\server\bin\mysql.exe"
-
-if not exist "%MYSQL_EXE%" (
-echo ERROR: MYSQL CLIENT NOT FOUND
-echo Expected: %MYSQL_EXE%
-exit /b 1
+where mysql >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: MYSQL CLIENT NOT FOUND
+    echo Expected: mysql (on System PATH)
+    exit /b 1
 )
+
+set "MYSQL_EXE=mysql"
 
 echo Host     : %MYSQL_HOST%
 echo Port     : %MYSQL_PORT%
@@ -86,10 +87,10 @@ REM =====================================
 REM BUILD PASSWORD OPTION
 REM =====================================
 
-set "MYSQL_PASSWORD_OPTION="
+set "MYSQL_PASSWORD_OPTION=
 
 if defined MYSQL_PASSWORD (
-set "MYSQL_PASSWORD_OPTION=-p%MYSQL_PASSWORD%"
+set "MYSQL_PASSWORD_OPTION=-p%MYSQL_PASSWORD%
 )
 
 REM =====================================
