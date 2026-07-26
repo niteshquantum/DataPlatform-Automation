@@ -207,22 +207,26 @@ EOT
   }
 }
 
-resource "null_resource" "install_mysql_linux" {
+#################################################
+# LINUX (Enable during Ubuntu migration)
+#################################################
 
-  provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
-
-    command = "../../scripts/bash/mysql/setup/install_mysql.sh"
-  }
-}
-
-resource "null_resource" "start_mysql_linux" {
-
-  depends_on = [null_resource.install_mysql_linux]
-
-  provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
-
-    command = "../../scripts/bash/mysql/setup/start_mysql.sh"
-  }
-}
+# resource "null_resource" "install_mysql_linux" {
+#
+#   provisioner "local-exec" {
+#     interpreter = ["/bin/bash", "-c"]
+#     command = "../../scripts/bash/mysql/setup/install_mysql.sh"
+#   }
+# }
+#
+# resource "null_resource" "start_mysql_linux" {
+#
+#   depends_on = [
+#     null_resource.install_mysql_linux
+#   ]
+#
+#   provisioner "local-exec" {
+#     interpreter = ["/bin/bash", "-c"]
+#     command = "../../scripts/bash/mysql/setup/start_mysql.sh"
+#   }
+# }

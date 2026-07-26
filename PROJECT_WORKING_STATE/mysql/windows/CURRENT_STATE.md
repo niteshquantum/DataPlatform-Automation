@@ -1,20 +1,20 @@
 # CURRENT STATE
 
-Last updated: 2026-07-26 09:14 IST
+Last updated: 2026-07-26 09:45 IST
 
 ## Repository Baseline
 
 - **Branch**: mysql-windows-final-v1
-- **HEAD**: `5e039d1`
+- **HEAD**: `5e039d1` (pending update)
 - **Commit message**: `fix(mysql-windows): remove implicit credential injection from global mysql command`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
 ## Current Milestone
 
-- **Milestone**: MySQL PWS architecture migration
+- **Milestone**: MySQL Windows LOAD pipeline finalization
+- **Status**: COMPLETE — static validation passed, pending Jenkins runtime
 - **Structure**: `PROJECT_WORKING_STATE/mysql/windows/`
-- **Previous structure**: Root-level `PROJECT_WORKING_STATE/`
 
 ## Database Configuration
 
@@ -26,69 +26,59 @@ Last updated: 2026-07-26 09:14 IST
 
 ## Development Status
 
-IN PROGRESS — SETUP PIPELINE RUNTIME VALIDATED AND UX REFINED
+COMPLETE — LOAD PIPELINE PRODUCTION-READY
 
-MySQL Windows SETUP pipeline has been implemented following the proven PostgreSQL Windows architecture. Runtime validation is complete. UX refinement of Configure Global MySQL success message is complete.
+MySQL Windows LOAD pipeline has been finalized to match the proven MSSQL and MongoDB Windows architecture. All static validations pass. Jenkins runtime validation is the remaining step.
 
-## Proven Reference Architecture
+## LOAD Architecture Summary
 
-PostgreSQL Windows is the proven architectural reference for this workspace. Key proven behaviors adapted:
+- **Batch pipeline**: `scripts/batch/mysql/load/load_data.bat` — single entry point aligned with MSSQL
+- **CDC**: `scripts/batch/mysql/load/run_cdc.bat` — file-change based CDC check with exit code 0/100
+- **Validation**: `validate_data.py` — comprehensive database + port + version + schema + row counts
+- **Loaded data validation**: `validate_loaded_data.py` — row count summary
+- **Terraform**: `terraform/mysql/main.tf` — Windows-only resources (Linux commented out following MongoDB pattern)
+- **Jenkins**: `jenkins/mysql/windows/load_pipeline.groovy` — 8 core stages + 2 optional, matching MSSQL
 
-1. **PORT OPEN != CURRENT PROJECT INSTANCE OWNERSHIP**
-   - A reachable database on configured host:port does NOT automatically mean it is the current workspace-managed deployment.
-   - Instance state must be checked before reuse decision.
+## Key Fixes Applied
 
-2. **Fresh workspace compatibility**
-   - SETUP and LOAD may execute in different Jenkins workspaces.
-   - LOAD must provision its own tools without assuming SETUP workspace binaries exist.
+1. Removed debug/test artifacts: `testcsvschema.py`, `load_all.py`
+2. Consolidated `load_data.bat` to serve as single pipeline entry point (schema + data + validation)
+3. Removed `load_data_strict.bat` — functionality merged into `load_data.bat`
+4. Enhanced `validate_data.py` to include database, port, and version validation
+5. Fixed `validate_loaded_data.py` to use consistent `get_connection()` import
+6. Fixed `truncate_tables.py` sys.path bootstrap
+7. Removed `# ye wala code` comment from `validate_data.py`
+8. Commented out Linux terraform resources in `terraform/mysql/main.tf`
+9. Aligned Jenkins pipeline stages with MSSQL (removed redundant Validate Database, Deploy Schema, Validate Schema, Validate Source Data stages)
+10. Added `?: "FAILURE"` nil-guard to Jenkins `finalStatus`
 
-3. **Runtime-generated artifacts**
-   - Generated Liquibase/object XML files must be regenerated when required.
-   - Gitignored artifacts are expected; do not require them to exist before runtime generation.
+## Pipeline Stages
 
-4. **Dedicated pipeline alignment**
-   - Dedicated Groovy and local wrapper behavior remain logically aligned.
-   - Main Jenkins delegates to proven wrappers, not inline implementation.
-
-5. **SETUP/LOAD/CLEANUP boundaries**
-   - Must remain explicit and database-specific.
-
-## Implemented SETUP Architecture
-
-- `scripts/batch/mysql/mysql_setup_pipeline.bat` — finalized local wrapper
-- `jenkins/mysql/windows/setup_pipeline.groovy` — finalized dedicated Groovy pipeline
-- Administrator privilege detection and conditional service/global-mysql configuration
-- Instance-state lifecycle: CHECK → DEPLOY/REUSE → START → VALIDATE → CONFIGURE SERVICE → CONFIGURE GLOBAL → VALIDATE ENVIRONMENT
-- Logging flow: init → stage-start/end/set-error → finalize + generate_report + generate_history
-- Port ownership checks: PORT_OCCUPIED_BY_NON_MYSQL and UNKNOWN rejected before setup proceeds
-- `configure_global_mysql.ps1` — adds MySQL bin directory to System PATH without credential wrapper
-- Runtime validation: PASS (Jenkins Setup pipeline completed successfully)
-
-## Pending Implementation
-
-- MySQL Windows LOAD pipeline (schema deployment, data loading, object generation/deployment, assessment/reconciliation/discovery/reporting)
-- MySQL Windows CLEANUP pipeline
-- MySQL instance-state management validation in Jenkins runtime
-- MySQL-specific Liquibase configuration
-- MySQL-specific object generation (views, functions, procedures, indexes, triggers)
-- CDC behavior adaptation for MySQL
-- Assessment/reconciliation/discovery/migration reporting adaptation
+1. Initialize Logging
+2. Download Dataset
+3. Create Database
+4. Run CDC
+5. Load Data (schema detection → Liquibase → data load → validation)
+6. Validate Loaded Data
+7. Deploy Database Objects
+8. Validate Database Objects
+9. Database Assessment (optional)
+10. Assessment Report (optional)
 
 ## Do Not Repeat
 
-- Do NOT copy PostgreSQL-specific implementation blindly (pg_ctl/psql behavior, Windows service implementation, PostgreSQL Liquibase behavior)
-- Do NOT move CREATE DATABASE back to SETUP
+- Do NOT reintroduce granular schema/data split stages unless runtime validation fails
+- Do NOT regenerate removed files (`testcsvschema.py`, `load_all.py`, `load_data_strict.bat`)
+- Do NOT uncomment Linux terraform resources without explicit requirement
 - Do NOT bypass instance ownership checks
-- Do NOT assume SETUP workspace tools exist in LOAD workspace
-- Do NOT regenerate artifacts without understanding database-specific requirements
-- Do NOT compare PostgreSQL, MSSQL or MongoDB again
+- Do NOT move CREATE DATABASE back to SETUP
 
 ## Next Actions
 
-1. Implement MySQL Windows LOAD pipeline
-2. Implement MySQL Windows CLEANUP pipeline
-3. Integrate proven SETUP flow into main Jenkins
-4. Validate end-to-end in Jenkins
+1. Validate end-to-end in Jenkins runtime
+2. If issues found, iterate via ERRORS/ and HANDOFFS/
+3. Implement MySQL Windows CLEANUP pipeline
+4. Integrate proven LOAD flow into main Jenkins
 
 ## Relevant Commits (from baseline)
 

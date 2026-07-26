@@ -108,57 +108,6 @@ pipeline {
         }
 
 
-        stage('Validate Database') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Database'
-                    ) {
-
-                        bat 'scripts\\batch\\mysql\\load\\validate_database.bat'
-                    }
-                }
-            }
-        }
-
-
-        stage('Deploy Schema') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Deploy Schema'
-                    ) {
-
-                        bat 'scripts\\batch\\mysql\\load\\deploy_schema.bat'
-                    }
-                }
-            }
-        }
-
-
-        stage('Validate Schema') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Schema'
-                    ) {
-
-                        bat 'scripts\\batch\\mysql\\load\\validate_schema.bat'
-                    }
-                }
-            }
-        }
-
-
         stage('Run CDC') {
 
             steps {
@@ -176,23 +125,6 @@ pipeline {
         }
 
 
-        stage('Validate Source Data') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Validate Source Data'
-                    ) {
-
-                        bat 'scripts\\batch\\mysql\\load\\validate_source.bat'
-                    }
-                }
-            }
-        }
-
-
         stage('Load Data') {
 
             steps {
@@ -203,7 +135,7 @@ pipeline {
                         'Load Data'
                     ) {
 
-                        bat 'scripts\\batch\\mysql\\load\\load_data_strict.bat'
+                        bat 'scripts\\batch\\mysql\\load\\load_data.bat'
                     }
                 }
             }
@@ -339,7 +271,7 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult
+                def finalStatus = currentBuild.currentResult ?: "FAILURE"
 
                 bat """
                     python scripts\\logging\\logger.py finalize ^

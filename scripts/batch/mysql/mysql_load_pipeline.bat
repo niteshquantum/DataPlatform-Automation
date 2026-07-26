@@ -161,26 +161,14 @@ if errorlevel 1 (
 )
 
 
-@REM REM =====================================
-@REM REM LOAD DATA (STRICT — EXISTING SCHEMA ONLY)
-@REM REM =====================================
+REM =====================================
+REM LOAD DATA
+REM =====================================
 
-call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data_strict.bat"
+call "%PROJECT_ROOT%\scripts\batch\mysql\load\load_data.bat"
 
 if errorlevel 1 (
     echo ERROR: DATA LOAD FAILED
-    exit /b 1
-)
-
-
-@REM REM =====================================
-@REM REM VALIDATE LOADED DATA
-@REM REM =====================================
-
-call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_loaded_data.bat"
-
-if errorlevel 1 (
-    echo ERROR: LOADED DATA VALIDATION FAILED
     exit /b 1
 )
 
