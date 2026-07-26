@@ -46,6 +46,33 @@ def runTrackedStage(String stageName, Closure stageBody) {
 }
 
 
+def getInstanceState() {
+
+    def output = bat(
+        script: 'scripts\\batch\\mysql\\setup\\check_instance.bat',
+        returnStdout: true
+    ).trim()
+
+    def state = 'UNKNOWN'
+
+    def lines = output.split(/\r?\n/)
+
+    for (int i = 0; i < lines.size(); i++) {
+
+        def line = lines[i].trim()
+
+        if (line.startsWith('INSTANCE_STATE=')) {
+
+            state = line.split('=', 2)[1]
+
+            break
+        }
+    }
+
+    return state
+}
+
+
 pipeline {
 
     agent any
@@ -70,6 +97,158 @@ pipeline {
                     --job-name "${env.JOB_NAME}" ^
                     --build-url "${env.BUILD_URL}"
                 """
+
+                script {
+                    env.MYSQL_LOAD_LOGGING_INITIALIZED = 'true'
+                }
+            }
+        }
+
+
+        stage('Validate Python Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Python Requirements') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Python Requirements'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_python_requirements.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate Java Runtime') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate Java Runtime'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\validate_java_runtime.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Install Tools') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Install Tools'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\install_tools.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Check MySQL Instance') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Check MySQL Instance'
+                    ) {
+
+                        def instanceState = getInstanceState()
+
+                        echo "Instance State: ${instanceState}"
+                    }
+                }
+            }
+        }
+
+
+        stage('Start MySQL Server') {
+
+            when {
+
+                expression {
+
+                    def instanceState = getInstanceState()
+
+                    return instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' || instanceState == 'NO_INSTANCE'
+                }
+            }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Start MySQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\start_mysql.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Validate MySQL Server') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Validate MySQL Server'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\validate_mysql.bat'
+                    }
+                }
             }
         }
 
@@ -85,6 +264,23 @@ pipeline {
                     ) {
 
                         bat 'scripts\\batch\\common\\download_dataset.bat'
+                    }
+                }
+            }
+        }
+
+
+        stage('Profile Source Data') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Profile Source Data'
+                    ) {
+
+                        bat 'scripts\\batch\\common\\migration\\run_data_profiling.bat mysql'
                     }
                 }
             }
@@ -271,29 +467,36 @@ pipeline {
 
             script {
 
-                def finalStatus = currentBuild.currentResult ?: "FAILURE"
+                def finalStatus = currentBuild.currentResult
 
-                bat """
-                    python scripts\\logging\\logger.py finalize ^
-                    --database mysql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --status "${finalStatus}"
-                """
+                if (env.MYSQL_LOAD_LOGGING_INITIALIZED == 'true') {
 
-                bat """
-                    python scripts\\reporting\\generate_report.py ^
-                    --database mysql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\logging\\logger.py finalize ^
+                        --database mysql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}" ^
+                        --status "${finalStatus}"
+                    """
 
-                bat """
-                    python scripts\\reporting\\generate_history.py ^
-                    --database mysql ^
-                    --action load ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
+                    bat """
+                        python scripts\\reporting\\generate_report.py ^
+                        --database mysql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                    bat """
+                        python scripts\\reporting\\generate_history.py ^
+                        --database mysql ^
+                        --action load ^
+                        --build-number "${env.BUILD_NUMBER}"
+                    """
+
+                } else {
+
+                    echo 'SKIPPING FINALIZE/REPORT: logging was not initialized'
+                }
             }
 
 
