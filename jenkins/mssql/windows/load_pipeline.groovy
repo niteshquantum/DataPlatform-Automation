@@ -513,14 +513,22 @@ pipeline {
         }
 
 
-        stage('Assessment & Reconciliation') {
+        stage('Database Assessment') {
+
+            when {
+
+                expression {
+
+                    return params.RUN_ASSESSMENT == true
+                }
+            }
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Assessment & Reconciliation'
+                        'Database Assessment'
                     ) {
 
                         bat 'scripts\\batch\\mssql\\assessment\\run_assessment_pipeline.bat'
@@ -530,14 +538,22 @@ pipeline {
         }
 
 
-        stage('Discovery & Migration Reporting') {
+        stage('Assessment Report') {
+
+            when {
+
+                expression {
+
+                    return params.RUN_ASSESSMENT == true
+                }
+            }
 
             steps {
 
                 script {
 
                     runTrackedStage(
-                        'Discovery & Migration Reporting'
+                        'Assessment Report'
                     ) {
 
                         bat 'scripts\\batch\\mssql\\migration\\run_migration_pipeline.bat'

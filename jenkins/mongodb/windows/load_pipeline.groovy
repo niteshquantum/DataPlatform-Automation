@@ -51,28 +51,17 @@ pipeline {
     agent any
 
     parameters {
-        choice(
-            name: 'RUN_ASSESSMENT',
-            choices: [
-                'false',
-                'true'
-            ],
-            description: 'Run database assessment after load'
-        )
-    }
-
-    options {
-        disableConcurrentBuilds()
-    }
-
-
-    parameters {
 
         booleanParam(
             name: 'RUN_ASSESSMENT',
             defaultValue: true,
             description: 'Run database assessment after successful load.'
         )
+    }
+
+
+    options {
+        disableConcurrentBuilds()
     }
 
 
@@ -253,7 +242,7 @@ pipeline {
             when {
 
                 expression {
-                    return params.RUN_ASSESSMENT == 'true'
+                    return params.RUN_ASSESSMENT == true
                 }
             }
 
@@ -277,7 +266,7 @@ pipeline {
             when {
 
                 expression {
-                    return params.RUN_ASSESSMENT == 'true'
+                    return params.RUN_ASSESSMENT == true
                 }
             }
 
