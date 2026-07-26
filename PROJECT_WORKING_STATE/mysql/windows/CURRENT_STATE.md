@@ -1,12 +1,12 @@
 # CURRENT STATE
 
-Last updated: 2026-07-25 23:45 IST
+Last updated: 2026-07-26 09:14 IST
 
 ## Repository Baseline
 
 - **Branch**: mysql-windows-final-v1
-- **HEAD**: `5b04472`
-- **Commit message**: `chore(mysql-windows): initialize final development workspace`
+- **HEAD**: `5e039d1`
+- **Commit message**: `fix(mysql-windows): remove implicit credential injection from global mysql command`
 - **Baseline branch**: windows-pipeline-integration-v1
 - **Baseline SHA**: `e7c403d9791b4f8aab16f1fe9ed17a37540ff1db`
 
@@ -26,9 +26,9 @@ Last updated: 2026-07-25 23:45 IST
 
 ## Development Status
 
-IN PROGRESS — SETUP PIPELINE IMPLEMENTED
+IN PROGRESS — SETUP PIPELINE RUNTIME VALIDATED AND UX REFINED
 
-MySQL Windows SETUP pipeline has been implemented following the proven PostgreSQL Windows architecture. Batch and Groovy wrappers are finalized and ready for Jenkins validation.
+MySQL Windows SETUP pipeline has been implemented following the proven PostgreSQL Windows architecture. Runtime validation is complete. UX refinement of Configure Global MySQL success message is complete.
 
 ## Proven Reference Architecture
 
@@ -61,6 +61,8 @@ PostgreSQL Windows is the proven architectural reference for this workspace. Key
 - Instance-state lifecycle: CHECK → DEPLOY/REUSE → START → VALIDATE → CONFIGURE SERVICE → CONFIGURE GLOBAL → VALIDATE ENVIRONMENT
 - Logging flow: init → stage-start/end/set-error → finalize + generate_report + generate_history
 - Port ownership checks: PORT_OCCUPIED_BY_NON_MYSQL and UNKNOWN rejected before setup proceeds
+- `configure_global_mysql.ps1` — adds MySQL bin directory to System PATH without credential wrapper
+- Runtime validation: PASS (Jenkins Setup pipeline completed successfully)
 
 ## Pending Implementation
 
@@ -83,11 +85,10 @@ PostgreSQL Windows is the proven architectural reference for this workspace. Key
 
 ## Next Actions
 
-1. Validate MySQL Windows SETUP pipeline in dedicated Jenkins runtime
-2. Implement MySQL Windows LOAD pipeline
-3. Implement MySQL Windows CLEANUP pipeline
-4. Integrate proven SETUP flow into main Jenkins
-5. Validate end-to-end in Jenkins
+1. Implement MySQL Windows LOAD pipeline
+2. Implement MySQL Windows CLEANUP pipeline
+3. Integrate proven SETUP flow into main Jenkins
+4. Validate end-to-end in Jenkins
 
 ## Relevant Commits (from baseline)
 
@@ -99,3 +100,5 @@ PostgreSQL Windows is the proven architectural reference for this workspace. Key
 - eb7d353: reporting/assessment tail consolidated
 - 5260234: migration wrapper PROJECT_ROOT bootstrap corrected
 - e7c403d: main Jenkins reduced to 4 flows, MySQL instance-state fix
+- 4d04aa4: feat(mysql-windows): implement SETUP pipeline matching PostgreSQL Windows architecture
+- 5e039d1: fix(mysql-windows): remove implicit credential injection from global mysql command
