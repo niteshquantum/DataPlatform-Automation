@@ -310,8 +310,9 @@ pipeline {
             name: 'DATABASE',
             choices: [
                 'MYSQL',
-                'POSTGRESQL',
-                'MONGODB'
+                'MSSQL',
+                'MONGODB',
+                'POSTGRESQL'
             ],
             description: 'Select Database'
         )
@@ -320,9 +321,19 @@ pipeline {
             name: 'ACTION',
             choices: [
                 'SETUP',
-                'LOAD'
+                'LOAD',
+                'CLEANUP'
             ],
             description: 'Select Action'
+        )
+
+        choice(
+            name: 'CLEANUP_MODE',
+            choices: [
+                'PRESERVE_DATA',
+                'DELETE_DATA'
+            ],
+            description: 'Select Cleanup Mode'
         )
 
         string(
@@ -346,55 +357,9 @@ pipeline {
         ============================================================
         */
 
-stage('Validate Selection') {
+        stage('Validate Selection') {
 
-    agent any
-
-    steps {
-
-        script {
-
-if (currentBuild.number == 1) {
-
-    currentBuild.description = "Parameters Registered"
-
-if (currentBuild.number == 1) {
-    echo "First build detected. Parameters will be available after this build."
-}
-}
-
-    echo "============================================"
-    echo "MASTER DATABASE PIPELINE"
-    echo "============================================"
-    echo "DATABASE     : ${params.DATABASE}"
-    echo "ACTION       : ${params.ACTION}"
-
-    echo "============================================"
-
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        MYSQL SETUP
-        UBUNTU
-        ============================================================
-        */
-
-        stage('MySQL Setup') {
-
-            agent {
-                label 'ubuntu-node'
-            }
-
-		when {
-		    allOf {
-		        expression { currentBuild.number > 1 }
-		        expression { params.DATABASE == 'MYSQL' }
-		        expression { params.ACTION == 'SETUP' }
-		    }
-		}
+            agent any
 
             steps {
 
@@ -402,294 +367,80 @@ if (currentBuild.number == 1) {
 
                 script {
 
-                    executePipeline(
-                        'mysql',
-                        'setup',
-                        'ubuntu'
-                    ) {
+                    def pipelineConfig = load 'jenkins/pipeline_config.groovy'
+                    pipelineConfig.validate(params)
 
-                        withEnv([
-                            "PATH+=/usr/bin:/bin:${env.PATH}"
-                        ]) {
+                    if (currentBuild.number == 1) {
+                        currentBuild.description = "Parameters Registered"
+                    }
 
-                            sh 'bash ./scripts/bash/mysql/mysql_setup_pipeline.sh'
+                    if (currentBuild.number == 1) {
+                        echo "First build detected. Parameters will be available after this build."
+                    }
+
+                    echo "============================================"
+                    echo "MASTER DATABASE PIPELINE"
+                    echo "============================================"
+                    echo "DATABASE     : ${params.DATABASE}"
+                    echo "ACTION       : ${params.ACTION}"
+                    echo "CLEANUP_MODE : ${params.CLEANUP_MODE}"
+                    echo "============================================"
+                }
+            }
+        }
+
+        /*
+        ============================================================
+        ROUTE PIPELINE
+        ============================================================
+        */
+
+        stage('Execute Pipeline') {
+
+            agent any
+
+            when {
+                expression { currentBuild.number > 1 }
+            }
+
+            steps {
+
+                script {
+
+                    checkout scm
+
+                    def pipelineConfig = load 'jenkins/pipeline_config.groovy'
+                    def config = pipelineConfig.resolve(params.DATABASE, params.ACTION)
+
+                    node(config.nodeLabel) {
+
+                        def envOverrides = []
+
+                        if (params.ACTION == 'CLEANUP') {
+                            envOverrides << "CLEANUP_MODE=${params.CLEANUP_MODE}"
+                        }
+
+                        if (config.executable == 'sh') {
+                            envOverrides << "PATH+=/usr/bin:/bin:${env.PATH}"
+                        }
+
+                        executePipeline(
+                            config.database,
+                            config.action,
+                            config.os
+                        ) {
+                            withEnv(envOverrides) {
+                                if (config.executable == 'sh') {
+                                    sh config.scriptPath
+                                } else {
+                                    bat config.scriptPath
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
-        /*
-        ============================================================
-        MYSQL LOAD
-        UBUNTU
-        ============================================================
-        */
-
-        stage('MySQL Load') {
-
-            agent {
-                label 'ubuntu-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'MYSQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'LOAD'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'mysql',
-                        'load',
-                        'ubuntu'
-                    ) {
-
-                        withEnv([
-                            "PATH+=/usr/bin:/bin:${env.PATH}"
-                        ]) {
-
-                            sh 'bash ./scripts/bash/mysql/mysql_load_pipeline.sh'
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        POSTGRESQL SETUP
-        WINDOWS
-        ============================================================
-        */
-
-        stage('PostgreSQL Setup') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'POSTGRESQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'SETUP'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'postgresql',
-                        'setup',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\postgresql\\postgresql_setup_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        POSTGRESQL LOAD
-        WINDOWS
-        ============================================================
-        */
-
-        stage('PostgreSQL Load') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'POSTGRESQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'LOAD'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'postgresql',
-                        'load',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\postgresql\\postgresql_load_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        MONGODB SETUP
-        WINDOWS
-        ============================================================
-        */
-
-        stage('MongoDB Setup') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'MONGODB'
-                    }
-
-                    expression {
-                        params.ACTION == 'SETUP'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'mongodb',
-                        'setup',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\mongodb\\mongodb_setup_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        MONGODB LOAD
-        WINDOWS
-        ============================================================
-        */
-
-        stage('MongoDB Load') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'MONGODB'
-                    }
-
-                    expression {
-                        params.ACTION == 'LOAD'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'mongodb',
-                        'load',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\mongodb\\mongodb_load_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
 
     }
 
