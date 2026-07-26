@@ -24,10 +24,23 @@ try:
     cursor.execute("SELECT @@port")
     port = cursor.fetchone()[0]
 
+    expected_port = int(config["MYSQL_PORT"])
+
+    if port != expected_port:
+        raise Exception(
+            f"Expected port {expected_port} but connected to {port}"
+        )
+
     cursor.execute("SELECT VERSION()")
     version = cursor.fetchone()[0]
 
-# ye wala code 
+    expected_version = config["MYSQL_VERSION"]
+
+    if not version.startswith(expected_version):
+        raise Exception(
+            f"Expected MySQL {expected_version} but found {version}"
+        )
+
     schema_file = (
         ROOT
         / "metadata"

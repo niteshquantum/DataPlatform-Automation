@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT))
+
 from scripts.python.mysql.setup.db_connection import get_connection
 
 conn = get_connection()
@@ -19,7 +25,7 @@ for table in tables:
     if table.lower() in skip_tables:
         continue
 
-    cursor.execute(f"TRUNCATE TABLE {table}")
+    cursor.execute(f"TRUNCATE TABLE `{table}`")
 
     print(f"Truncated {table}")
 

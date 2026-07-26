@@ -1,22 +1,12 @@
 from pathlib import Path
 import sys
-import mysql.connector
 
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT))
 
-from scripts.python.common.config_loader import load_database_config
+from scripts.python.mysql.setup.db_connection import get_connection
 
-config = load_database_config("mysql")
-
-conn = mysql.connector.connect(
-    host=config["MYSQL_HOST"],
-    port=int(config["MYSQL_PORT"]),
-    user=config["MYSQL_USER"],
-    password=config["MYSQL_PASSWORD"],
-    database=config["MYSQL_DB"]
-)
-
+conn = get_connection()
 cursor = conn.cursor()
 
 cursor.execute("""

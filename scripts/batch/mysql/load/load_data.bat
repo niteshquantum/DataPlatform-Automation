@@ -2,12 +2,14 @@
 setlocal
 
 call "%~dp0..\..\common\set_project_root.bat"
+if errorlevel 1 exit /b 1
 
 cd /d "%PROJECT_ROOT%"
 
 set "PYTHONPATH=%PROJECT_ROOT%;%PYTHONPATH%"
 set "LOAD_MODE=%LOAD_MODE%"
 if "%LOAD_MODE%"=="" set "LOAD_MODE=skip"
+set "STRICT_SCHEMA=true"
 
 echo.
 echo =====================================
@@ -50,7 +52,7 @@ echo RUNNING LIQUIBASE
 echo -------------------------------------
 echo.
 
-call scripts\batch\mysql\setup\run_liquibase.bat
+call scripts\batch\mysql\setup\run_liquibase.bat liquibase\mysql\master.xml
 if errorlevel 1 exit /b 1
 
 echo.
@@ -60,8 +62,6 @@ echo -------------------------------------
 echo.
 
 echo LOAD MODE : %LOAD_MODE%
-
-set "STRICT_SCHEMA=true"
 
 python scripts\data_loader.py mysql
 if errorlevel 1 exit /b 1

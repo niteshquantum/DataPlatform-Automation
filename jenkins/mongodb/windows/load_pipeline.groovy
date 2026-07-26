@@ -66,6 +66,16 @@ pipeline {
     }
 
 
+    parameters {
+
+        booleanParam(
+            name: 'RUN_ASSESSMENT',
+            defaultValue: true,
+            description: 'Run database assessment after successful load.'
+        )
+    }
+
+
     stages {
 
         stage('Initialize Logging') {

@@ -33,9 +33,6 @@ $password = $config["MYSQL_PASSWORD"]
 
 $mysqlExe = "$ROOT\databases\mysql\server\bin\mysql.exe"
 
-$globalDirectory = "C:\ProgramData\DatabaseAutomation\mysql"
-$globalCommand   = "$globalDirectory\mysql.cmd"
-
 Write-Host ""
 Write-Host "====================================="
 Write-Host "CONFIGURING GLOBAL MYSQL COMMAND"
@@ -57,41 +54,10 @@ Write-Host "Database     : $database"
 Write-Host "User         : $user"
 
 # =====================================
-# CREATE GLOBAL DIRECTORY
+# ADD MYSQL BIN DIRECTORY TO SYSTEM PATH
 # =====================================
 
-if (!(Test-Path $globalDirectory)) {
-
-    New-Item `
-        -ItemType Directory `
-        -Path $globalDirectory `
-        -Force | Out-Null
-}
-
-# =====================================
-# CREATE MYSQL COMMAND
-# =====================================
-
-$commandContent = @"
-@echo off
-
-"$mysqlExe" ^
---host="$hostName" ^
---port="$port" ^
---user="$user" ^
---password="$password" ^
-"$database" %*
-"@
-
-Set-Content `
-    -Path $globalCommand `
-    -Value $commandContent `
-    -Encoding ASCII
-
-# =====================================
-# ADD GLOBAL DIRECTORY TO BEGINNING
-# OF SYSTEM PATH
-# =====================================
+$mysqlBinDirectory = Split-Path -Parent $mysqlExe
 
 $machinePath = [Environment]::GetEnvironmentVariable(
     "Path",
@@ -101,10 +67,10 @@ $machinePath = [Environment]::GetEnvironmentVariable(
 $pathEntries = $machinePath -split ";" |
     Where-Object {
         $_ -and
-        $_.Trim().TrimEnd("\") -ne $globalDirectory.TrimEnd("\")
+        $_.Trim().TrimEnd("\") -ne $mysqlBinDirectory.TrimEnd("\")
     }
 
-$newPath = $globalDirectory + ";" + ($pathEntries -join ";")
+$newPath = $mysqlBinDirectory + ";" + ($pathEntries -join ";")
 
 [Environment]::SetEnvironmentVariable(
     "Path",
@@ -113,14 +79,18 @@ $newPath = $globalDirectory + ";" + ($pathEntries -join ";")
 )
 
 Write-Host ""
-Write-Host "MySQL global command directory moved to beginning of System PATH"
+Write-Host "MySQL bin directory added to beginning of System PATH"
 
 # =====================================
-# VALIDATE GLOBAL COMMAND FILE
+# VALIDATE GLOBAL MYSQL COMMAND
 # =====================================
 
-if (!(Test-Path $globalCommand)) {
-    throw "Global MySQL command creation failed"
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+
+$mysqlCommand = Get-Command mysql.exe -ErrorAction SilentlyContinue
+
+if (!$mysqlCommand) {
+    throw "mysql.exe is not accessible from PATH after configuration"
 }
 
 Write-Host ""
@@ -128,10 +98,20 @@ Write-Host "====================================="
 Write-Host "GLOBAL MYSQL CONFIGURED SUCCESSFULLY"
 Write-Host "====================================="
 Write-Host ""
-Write-Host "Command:"
-Write-Host "mysql"
+Write-Host "MySQL client has been added to the System PATH."
+Write-Host ""
+Write-Host "Examples:"
+Write-Host ""
+Write-Host "    mysql -u root"
+Write-Host ""
+Write-Host "or"
+Write-Host ""
+Write-Host "    mysql -u <username>"
 Write-Host ""
 Write-Host "Open a NEW CMD window before testing."
+Write-Host ""
+Write-Host "The PATH configuration is complete."
+Write-Host "Authentication depends on the MySQL user specified."
 Write-Host ""
 
 exit 0
