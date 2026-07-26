@@ -91,10 +91,7 @@ def check():
         if conn.is_connected():
             conn.close()
 
-    if result["PROJECT_BINARIES_EXIST"] == "TRUE":
-        result["INSTANCE_STATE"] = "INSTANCE_RUNNING_AND_USABLE"
-    else:
-        result["INSTANCE_STATE"] = "PORT_OCCUPIED_BY_NON_MYSQL"
+    result["INSTANCE_STATE"] = "INSTANCE_RUNNING_AND_USABLE"
 
     return result
 

@@ -60,27 +60,8 @@ def check_instance():
         print(f"Version           : {version}")
         print()
 
-        if managed:
-            try:
-                result = subprocess.run(
-                    [str(pg_bin), "status", "-D", str(pg_data)],
-                    capture_output=True,
-                    timeout=10,
-                )
-                if result.returncode == 0:
-                    print("Managed instance verified running.")
-                    print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
-                    return "INSTANCE_RUNNING_AND_USABLE"
-            except Exception:
-                pass
-
-            print("PostgreSQL reachable but managed instance status could not be verified.")
-            print("INSTANCE_STATE=INSTANCE_INSTALLED_BUT_STOPPED")
-            return "INSTANCE_INSTALLED_BUT_STOPPED"
-
-        print("PostgreSQL is reachable but current workspace does not contain managed binaries/data.")
-        print("INSTANCE_STATE=NO_INSTANCE")
-        return "NO_INSTANCE"
+        print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
+        return "INSTANCE_RUNNING_AND_USABLE"
 
     except psycopg2.OperationalError as e:
         print(f"Instance not reachable : {e}")

@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT))
 
 from scripts.python.common.config_loader import load_database_config
+from scripts.python.mssql.setup.db_connection import get_connection
 
 
 def _powershell(script, timeout=10):
@@ -126,28 +127,6 @@ def _get_registry_image_path(instance_id):
     return None
 
 
-def _verify_project_managed_instance(instance):
-    service_name = (
-        "MSSQLSERVER"
-        if instance == "MSSQLSERVER"
-        else f"MSSQL${instance}"
-    )
-
-    image_path = _get_service_image_path(service_name)
-    if not image_path or "sqlservr.exe" not in image_path.lower():
-        return False
-
-    instance_id = _find_instance_id(instance)
-    if not instance_id:
-        return False
-
-    reg_image = _get_registry_image_path(instance_id)
-    if not reg_image or "sqlservr.exe" not in reg_image.lower():
-        return False
-
-    return True
-
-
 def check_instance():
     config = load_database_config("mssql")
 
@@ -169,6 +148,7 @@ def check_instance():
         else f"MSSQL${instance}"
     )
 
+    service_status = None
     try:
         result = subprocess.run(
             ["powershell", "-Command",
@@ -194,15 +174,6 @@ def check_instance():
         print("INSTANCE_STATE=NO_INSTANCE")
         return "NO_INSTANCE"
 
-    if not _verify_project_managed_instance(instance):
-        print(
-            f"Instance service '{service_name}' exists but does not match "
-            f"project-managed '{instance}' installation."
-        )
-        print()
-        print("INSTANCE_STATE=NO_INSTANCE")
-        return "NO_INSTANCE"
-
     if service_status != "Running":
         print(f"Service status : {service_status}")
         print()
@@ -222,8 +193,24 @@ def check_instance():
 
     print(f"Port listening     : {host}:{port}")
     print()
-    print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
-    return "INSTANCE_RUNNING_AND_USABLE"
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT @@VERSION")
+        version = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+
+        print(f"Version : {version.splitlines()[0]}")
+        print()
+        print("INSTANCE_STATE=INSTANCE_RUNNING_AND_USABLE")
+        return "INSTANCE_RUNNING_AND_USABLE"
+    except Exception as e:
+        print(f"Connection failed : {e}")
+        print()
+        print("INSTANCE_STATE=PORT_OCCUPIED_BY_NON_MSSQL")
+        return "PORT_OCCUPIED_BY_NON_MSSQL"
 
 
 if __name__ == "__main__":
