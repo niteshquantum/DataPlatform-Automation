@@ -3,10 +3,10 @@ import sys
 import tempfile
 import zipfile
 
-import gdown
-
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
+
+from scripts.python.common.downloaders import google_drive
 
 from scripts.python.common.config_loader import (
     load_common_config,
@@ -91,10 +91,10 @@ def download_dataset():
         ) as tmp:
             tmp_path = Path(tmp.name)
 
-        gdown.download(
+        google_drive.download(
             config["DATASET_URL"],
-            str(tmp_path),
-            quiet=False
+            str(tmp_path)
+            
         )
 
         validate_zip(tmp_path)
