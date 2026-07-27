@@ -284,9 +284,32 @@ pipeline {
 
                 expression {
 
-                    def instanceState = getInstanceState()
+                    def output = bat(
+                        script: 'scripts\\batch\\mysql\\setup\\check_instance.bat',
+                        returnStdout: true
+                    ).trim()
 
-                    return instanceState == 'NO_INSTANCE'
+                    def instanceState = 'UNKNOWN'
+                    def artifactsExist = false
+
+                    def lines = output.split(/\r?\n/)
+
+                    for (int i = 0; i < lines.size(); i++) {
+
+                        def line = lines[i].trim()
+
+                        if (line.startsWith('INSTANCE_STATE=')) {
+
+                            instanceState = line.split('=', 2)[1]
+                        }
+
+                        if (line.startsWith('PROJECT_BINARIES_EXIST=')) {
+
+                            artifactsExist = line.split('=', 2)[1] == 'TRUE'
+                        }
+                    }
+
+                    return instanceState == 'NO_INSTANCE' || !artifactsExist
                 }
             }
 
