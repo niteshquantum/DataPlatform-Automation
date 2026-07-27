@@ -178,36 +178,34 @@ def execute(Map context) {
         }
 
 
-        def instanceState = getInstanceState()
+    def startInstanceState = getInstanceState()
 
-        if (instanceState == 'NO_INSTANCE') {
-            stage('Deploy PostgreSQL') {
+    if (startInstanceState == 'NO_INSTANCE') {
+        stage('Deploy PostgreSQL') {
 
-                runTrackedStage(
-                    'Deploy PostgreSQL'
-                ) {
-
-                    bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
-                }
+            runTrackedStage(
+                'Deploy PostgreSQL'
+            ) {
+                bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
             }
         }
+    }
 
-        def instanceState = getInstanceState()
+    if (startInstanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
+        startInstanceState == 'NO_INSTANCE') {
 
-        if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
-            instanceState == 'NO_INSTANCE') {
-            stage('Start PostgreSQL') {
+        stage('Start PostgreSQL') {
 
-                runTrackedStage(
-                    'Start PostgreSQL'
-                ) {
+            runTrackedStage(
+                'Start PostgreSQL'
+            ) {
 
-                    echo 'Starting PostgreSQL...'
+                echo 'Starting PostgreSQL...'
 
-                    bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
-                }
+                bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
             }
-            }
+        }
+    }
 
         stage('Validate PostgreSQL Instance') {
 
