@@ -77,7 +77,7 @@ REM =====================================
 REM VALIDATE LIQUIBASE + JAVA
 REM =====================================
 
-call "%ROOT%\scripts\batch\common\validate_liquibase.bat"
+call "%ROOT%\scripts\batch\common\validate_liquibase.bat" "%ROOT%\config\windows\postgresql.conf"
 
 if errorlevel 1 (
     echo ERROR: LIQUIBASE VALIDATION FAILED

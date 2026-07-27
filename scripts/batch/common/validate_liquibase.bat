@@ -29,10 +29,11 @@ if not defined PROJECT_ROOT (
 
 set "ROOT=%PROJECT_ROOT%"
 
-set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
+set "CONFIG_FILE=%~1"
+if not defined CONFIG_FILE set "CONFIG_FILE=%ROOT%\config\windows\mysql.conf"
 
 if not exist "%CONFIG_FILE%" (
-    echo ERROR: MYSQL CONFIG NOT FOUND
+    echo ERROR: CONFIG FILE NOT FOUND
     echo Expected: %CONFIG_FILE%
     exit /b 1
 )
@@ -46,7 +47,7 @@ for /f "tokens=1,2 delims==" %%A in (%CONFIG_FILE%) do (
 )
 
 if not defined EXPECTED_VERSION (
-    echo ERROR: LIQUIBASE_VERSION NOT FOUND IN mysql.conf
+    echo ERROR: LIQUIBASE_VERSION NOT FOUND IN CONFIG
     exit /b 1
 )
 
