@@ -345,8 +345,8 @@ pipeline {
                 script {
                     def module = load env.ROUTED_PIPELINE
 
-                    if (module == null || !module.metaClass.respondsTo(module, 'execute', Map)) {
-                        error "Routed pipeline module must expose execute(Map): ${env.ROUTED_PIPELINE}"
+                    if (module == null) {
+                        error("Unable to load routed pipeline module: ${env.ROUTED_PIPELINE}")
                     }
 
                     executePipeline(
