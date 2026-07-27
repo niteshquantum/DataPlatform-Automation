@@ -1,6 +1,5 @@
 /*
  * Single source of truth for database pipeline routing.
- * DATABASE and ACTION are the only user-selectable dimensions.
  */
 
 def pipelineRoutes = [
@@ -29,18 +28,18 @@ def pipelineRoutes = [
     ]
 ]
 
-def resolve(database, action) {
+return [
+    resolve: { database, action ->
 
-    def db = database?.toUpperCase()
-    def act = action?.toUpperCase()
+        def db = database?.toUpperCase()
+        def act = action?.toUpperCase()
 
-    def route = pipelineRoutes[db]?.get(act)
+        def route = pipelineRoutes[db]?.get(act)
 
-    if (!route) {
-        error("Unsupported pipeline selection: DATABASE=${database}, ACTION=${action}")
+        if (!route) {
+            error("Unsupported pipeline selection: DATABASE=${database}, ACTION=${action}")
+        }
+
+        return route.asImmutable()
     }
-
-    return route.asImmutable()
-}
-
-return this
+]
