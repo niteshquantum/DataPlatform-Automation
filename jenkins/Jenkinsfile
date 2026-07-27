@@ -2,44 +2,150 @@ pipeline {
 
     agent none
 
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    parameters {
+
+        choice(
+            name: 'DATABASE',
+            choices: [
+                'MYSQL',
+                'POSTGRESQL',
+                'MSSQL',
+                'MONGODB'
+            ],
+            description: 'Select Database'
+        )
+
+        choice(
+            name: 'ACTION',
+            choices: [
+                'SETUP',
+                'LOAD',
+                'CLEANUP'
+            ],
+            description: 'Select Action'
+        )
+
+    }
+
     stages {
 
-        stage('Load Configuration') {
+        stage('Route Pipeline') {
+
             steps {
+
                 script {
 
-                    // Read configuration
-                    def config = load "jenkins/pipeline_config.groovy"
+                    switch (params.DATABASE) {
 
-                    // Phase-1 (Hardcoded)
-                    def database = "MYSQL"
-                    def action   = "SETUP"
+                        case 'MYSQL':
 
-                    // Get configuration
-                    def dbConfig = config[database]
+                            switch (params.ACTION) {
 
-                    if (dbConfig == null) {
-                        error("Database configuration not found : ${database}")
+                                case 'SETUP':
+                                    mysqlSetup()
+                                    break
+
+                                case 'LOAD':
+                                    mysqlLoad()
+                                    break
+
+                                case 'CLEANUP':
+                                    mysqlCleanup()
+                                    break
+
+                                default:
+                                    error "Unsupported Action"
+
+                            }
+
+                            break
+
+                        case 'POSTGRESQL':
+
+                            switch (params.ACTION) {
+
+                                case 'SETUP':
+                                    postgresSetup()
+                                    break
+
+                                case 'LOAD':
+                                    postgresLoad()
+                                    break
+
+                                case 'CLEANUP':
+                                    postgresCleanup()
+                                    break
+
+                                default:
+                                    error "Unsupported Action"
+
+                            }
+
+                            break
+
+                        case 'MSSQL'
+
+                            switch (params.ACTION) {
+
+                                case 'SETUP':
+                                    mssqlSetup()
+                                    break
+
+                                case 'LOAD':
+                                    mssqlLoad()
+                                    break
+
+                                case 'CLEANUP':
+                                    mssqlCleanup()
+                                    break
+
+                                default:
+                                    error "Unsupported Action"
+
+                            }
+
+                            break
+
+                        case 'MONGODB'
+
+                            switch (params.ACTION) {
+
+                                case 'SETUP':
+                                    mongoSetup()
+                                    break
+
+                                case 'LOAD':
+                                    mongoLoad()
+                                    break
+
+                                case 'CLEANUP':
+                                    mongoCleanup()
+                                    break
+
+                                default:
+                                    error "Unsupported Action"
+
+                            }
+
+                            break
+
+                        default:
+
+                            error "Unsupported Database"
+
                     }
 
-                    def nodeLabel   = dbConfig.node
-                    def pipelineFile = dbConfig.actions[action]
-
-                    echo "========================================="
-                    echo "Database : ${database}"
-                    echo "Action   : ${action}"
-                    echo "Node     : ${nodeLabel}"
-                    echo "Pipeline : ${pipelineFile}"
-                    echo "========================================="
-
-                    // Load selected pipeline
-                    def pipelineScript = load(pipelineFile)
-
-                    // Execute
-                    pipelineScript.run(nodeLabel)
-
                 }
+
             }
+
         }
+
     }
+
 }
