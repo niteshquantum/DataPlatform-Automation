@@ -276,15 +276,16 @@ def execute(Map context) {
         }
 
 
-        stage('Generate Executive Migration Report') {
+       stage('Generate Executive Migration Report') {
 
+    runTrackedStage(
+        'Generate Executive Migration Report'
+    ) {
 
+        sh './scripts/bash/common/generate_executive_report.sh mysql'
+    }
+}
 
-                    runTrackedStage(
-                        'Generate Executive Migration Report'
-                    ) {
-
-                        sh './scripts/bash/common/generate_executive_report.sh mysql'
 }
 
 return this
