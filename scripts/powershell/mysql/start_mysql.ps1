@@ -30,15 +30,26 @@ Write-Host ""
 # =====================================
 # VALIDATE FILES
 # =====================================
-
 if (!(Test-Path $mysqld)) {
+
+    $portCheck = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+
+    if ($portCheck) {
+
+        Write-Host ""
+        Write-Host "MySQL is already running on port $port."
+        Write-Host "Skipping project-local start."
+        Write-Host ""
+        exit 0
+    }
+
     throw "mysqld.exe not found: $mysqld"
 }
 
 if (!(Test-Path $mysqladmin)) {
+
     throw "mysqladmin.exe not found: $mysqladmin"
 }
-
 if (!(Test-Path $dataDir)) {
     throw "Data directory not found: $dataDir"
 }
