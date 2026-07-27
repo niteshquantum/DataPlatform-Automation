@@ -286,7 +286,7 @@ pipeline {
 
                     runTrackedStage('Configure PostgreSQL User') {
 
-                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                        sh './scripts/bash/postgresql/setup/configure_postgresql_user.sh'
                     }
                 }
             }

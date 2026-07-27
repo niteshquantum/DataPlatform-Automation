@@ -39,14 +39,14 @@ echo Instance State: %INST_INSTANCE_STATE%
 
 if /I "%INST_INSTANCE_STATE%"=="INSTANCE_RUNNING_AND_USABLE" (
     echo Reusing existing MSSQL instance.
-    goto :validate_environment
+    goto :configure_user
 )
 
 if /I "%INST_INSTANCE_STATE%"=="INSTANCE_INSTALLED_BUT_STOPPED" (
     echo Starting existing MSSQL instance.
     call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
     if errorlevel 1 exit /b 1
-    goto :validate_environment
+    goto :configure_user
 )
 
 if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
@@ -87,12 +87,21 @@ if /I "%INST_INSTANCE_STATE%"=="NO_INSTANCE" (
     echo Starting MSSQL instance.
     call "%PROJECT_ROOT%\scripts\batch\mssql\setup\start_mssql.bat"
     if errorlevel 1 exit /b 1
-    goto :validate_environment
+    goto :configure_user
 )
 
 echo ERROR: Unexpected instance state: %INST_INSTANCE_STATE%
 if defined INST_ERROR echo %INST_ERROR%
 exit /b 1
+
+:configure_user
+echo.
+echo =====================================
+echo CONFIGURING MSSQL USER
+echo =====================================
+echo.
+call "%PROJECT_ROOT%\scripts\batch\mssql\setup\configure_mssql_user.bat"
+if errorlevel 1 exit /b 1
 
 :validate_environment
 call "%PROJECT_ROOT%\scripts\batch\mssql\setup\validate_environment.bat"

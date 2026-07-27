@@ -408,6 +408,23 @@ pipeline {
         }
 
 
+        stage('Configure MySQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure MySQL User'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\configure_mysql_user.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Validate Environment') {
 
             steps {

@@ -299,6 +299,21 @@ pipeline {
         }
 
 
+        stage('Configure MSSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Configure MSSQL User') {
+
+                        sh './scripts/bash/mssql/setup/configure_mssql_user.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('Validate Environment') {
 
             steps {
