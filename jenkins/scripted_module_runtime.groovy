@@ -12,6 +12,18 @@ class ScriptedModuleRuntime implements Serializable {
         this.steps = steps
     }
 
+    def methodMissing(String name, args) {
+        return steps.invokeMethod(name, args)
+    }
+
+    def propertyMissing(String name) {
+        return steps.getProperty(name)
+    }
+
+    void propertyMissing(String name, value) {
+        steps.setProperty(name, value)
+    }
+
     void execute(Closure pipelineBody) {
         configure(pipelineBody)
         pipelineBody.call()
