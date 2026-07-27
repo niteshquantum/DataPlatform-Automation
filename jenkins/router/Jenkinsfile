@@ -1,0 +1,81 @@
+pipeline {
+
+    agent any
+
+    options {
+
+        disableConcurrentBuilds()
+
+        timestamps()
+
+    }
+
+    parameters {
+
+        choice(
+
+            name: 'DATABASE',
+
+            choices: [
+
+                'MYSQL',
+
+                'POSTGRESQL',
+
+                'MSSQL',
+
+                'MONGODB'
+
+            ],
+
+            description: 'Database'
+
+        )
+
+        choice(
+
+            name: 'ACTION',
+
+            choices: [
+
+                'SETUP',
+
+                'LOAD',
+
+                'CLEANUP'
+
+            ],
+
+            description: 'Action'
+
+        )
+
+    }
+
+    stages {
+
+        stage("Router") {
+
+            steps {
+
+                script {
+
+                    def router = load "jenkins/router/config/pipeline_config.groovy"
+
+                    router.route(
+
+                        params.DATABASE,
+
+                        params.ACTION
+
+                    )
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
