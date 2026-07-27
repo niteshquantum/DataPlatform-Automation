@@ -2,19 +2,14 @@
 
 def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
-    def runtime = load 'jenkins/scripted_module_runtime.groovy'
-    runtime.execute {
-        stages {
 
 
         stage('Set Permissions') {
 
-            steps {
 
                 sh '''
                     find scripts/bash -type f -name "*.sh" -exec chmod +x {} \\;
                 '''
-            }
         }
 
 
@@ -23,9 +18,7 @@ def execute(Map context) {
 
         stage('Validate Python Runtime') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Python Runtime'
@@ -33,16 +26,12 @@ def execute(Map context) {
 
                         sh './scripts/bash/common/validate_python_runtime.sh'
                     }
-                }
-            }
         }
 
 
         stage('Install Python Requirements') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Install Python Requirements'
@@ -50,16 +39,12 @@ def execute(Map context) {
 
                         sh './scripts/bash/mysql/setup/install_python_requirements.sh'
                     }
-                }
-            }
         }
 
 
         stage('Validate Python Requirements') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Python Requirements'
@@ -67,16 +52,12 @@ def execute(Map context) {
 
                         sh './scripts/bash/mysql/setup/validate_python_requirements.sh'
                     }
-                }
-            }
         }
 
 
         stage('Validate Java Runtime') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Java Runtime'
@@ -84,16 +65,12 @@ def execute(Map context) {
 
                         sh './scripts/bash/common/validate_java_runtime.sh'
                     }
-                }
-            }
         }
 
 
         stage('Install Tools') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Install Tools'
@@ -101,16 +78,12 @@ def execute(Map context) {
 
                         sh './scripts/bash/mysql/setup/install_tools.sh'
                     }
-                }
-            }
         }
 
 
         stage('Check MySQL Instance') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Check MySQL Instance'
@@ -150,107 +123,51 @@ def execute(Map context) {
                             error "Unknown MySQL instance state detected. Aborting setup."
                         }
                     }
-                }
-            }
         }
 
 
-        stage('Install MySQL') {
-
-            when {
-                expression {
-                    return env.MYSQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.MYSQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE' }()) {
+            stage('Install MySQL') {runTrackedStage(
                         'Install MySQL'
                     ) {
 
                         sh './scripts/bash/mysql/setup/install_mysql.sh'
                     }
-                }
-            }
         }
 
 
-        stage('Deploy MySQL') {
-
-            when {
-                expression {
-                    return env.MYSQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.MYSQL_INITIAL_INSTANCE_STATE == 'NO_INSTANCE' }()) {
+            stage('Deploy MySQL') {runTrackedStage(
                         'Deploy MySQL'
                     ) {
 
                         sh './scripts/bash/mysql/setup/deploy_mysql.sh'
                     }
-                }
-            }
         }
 
 
-        stage('Start MySQL') {
-
-            when {
-                expression {
-                    def state = env.MYSQL_INITIAL_INSTANCE_STATE
-                    return state == 'INSTANCE_INSTALLED_BUT_STOPPED' || state == 'NO_INSTANCE'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> def state = env.MYSQL_INITIAL_INSTANCE_STATE
+                    return state == 'INSTANCE_INSTALLED_BUT_STOPPED' || state == 'NO_INSTANCE' }()) {
+            stage('Start MySQL') {runTrackedStage(
                         'Start MySQL'
                     ) {
 
                         sh './scripts/bash/mysql/setup/start_mysql.sh'
                     }
-                }
-            }
         }
 
 
-        stage('Configure Global MySQL') {
-
-            when {
-                expression {
-                    return env.MYSQL_INITIAL_INSTANCE_STATE != 'INSTANCE_RUNNING_AND_USABLE'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.MYSQL_INITIAL_INSTANCE_STATE != 'INSTANCE_RUNNING_AND_USABLE' }()) {
+            stage('Configure Global MySQL') {runTrackedStage(
                         'Configure Global MySQL'
                     ) {
 
                         sh 'bash ./scripts/bash/mysql/setup/configure_global_mysql.sh'
                     }
-                }
-            }
         }
         stage('Configure MySQL User') {
         
-            steps {
         
-                script {
         
                     runTrackedStage(
                         'Configure MySQL User'
@@ -258,33 +175,21 @@ def execute(Map context) {
         
                         sh './scripts/bash/mysql/setup/configure_mysql_user.sh'
                     }
-                }
-            }
         }
 
         stage('Configure Database RBAC') {
-            steps { script { runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mysql/setup/create_database.sh'; sh './scripts/bash/mysql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mysql/setup/run_liquibase.sh' } } }
+runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mysql/setup/create_database.sh'; sh './scripts/bash/mysql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mysql/setup/run_liquibase.sh' }
         }
 
         stage('Validate Environment') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Environment'
                     ) {
 
                         sh './scripts/bash/mysql/setup/validate_environment.sh'
-                    }
-                }
-            }
-        }
-    
-        
-        }
-    }
 }
 
 return this

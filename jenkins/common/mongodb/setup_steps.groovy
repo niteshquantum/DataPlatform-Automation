@@ -41,9 +41,6 @@ def getInstanceState() {
 
 def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
-    def runtime = load 'jenkins/scripted_module_runtime.groovy'
-    runtime.execute {
-        stages {
 
 
         
@@ -51,9 +48,7 @@ def execute(Map context) {
 
         stage('Check Administrator Privileges') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Check Administrator Privileges'
@@ -100,8 +95,6 @@ def execute(Map context) {
                             --administrator-privileges "${adminResult}"
                         """
                     }
-                }
-            }
         }
 
 
@@ -209,9 +202,7 @@ def execute(Map context) {
 
         stage('Check MongoDB Instance') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Check MongoDB Instance'
@@ -225,54 +216,24 @@ def execute(Map context) {
                         echo "State length: ${instanceState.length()}"
                         echo "Deploy condition (NO_INSTANCE): ${instanceState == 'NO_INSTANCE'}"
                     }
-                }
-            }
         }
 
 
-        stage('Deploy MongoDB') {
-
-            when {
-
-                expression {
-
-                    return env.MONGODB_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.MONGODB_INITIAL_INSTANCE_STATE == 'NO_INSTANCE' }()) {
+            stage('Deploy MongoDB') {runTrackedStage(
                         'Deploy MongoDB'
                     ) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
                     }
-                }
-            }
         }
 
 
-        stage('Configure Global Mongosh') {
-
-            when {
-
-                expression {
-
-                    return (
+        if ({ -> return (
                         readFile('admin_status.txt').trim() == 'true' &&
                         env.MONGODB_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                    )
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+                    ) }()) {
+            stage('Configure Global Mongosh') {runTrackedStage(
                         'Configure Global Mongosh'
                     ) {
 
@@ -281,29 +242,14 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
                     }
-                }
-            }
         }
 
 
-        stage('Configure MongoDB Service') {
-
-            when {
-
-                expression {
-
-                    return (
+        if ({ -> return (
                         readFile('admin_status.txt').trim() == 'true' &&
                         env.MONGODB_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                    )
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+                    ) }()) {
+            stage('Configure MongoDB Service') {runTrackedStage(
                         'Configure MongoDB Service'
                     ) {
 
@@ -312,44 +258,25 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
                     }
-                }
-            }
         }
 
 
-        stage('Start MongoDB') {
-
-            when {
-
-                expression {
-
-                    return (
+        if ({ -> return (
                         env.MONGODB_INITIAL_INSTANCE_STATE == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
                         env.MONGODB_INITIAL_INSTANCE_STATE == 'NO_INSTANCE'
-                    )
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+                    ) }()) {
+            stage('Start MongoDB') {runTrackedStage(
                         'Start MongoDB'
                     ) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate MongoDB Port') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate MongoDB Port'
@@ -357,34 +284,22 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\validate_port.bat'
                     }
-                }
-            }
         }
 
 
         stage('Configure Database RBAC') {
-            steps { script { runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' } } }
+runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' }
         }
 
         stage('Validate MongoDB Instance') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate MongoDB Instance'
                     ) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
-                    }
-                }
-            }
-        }
-    
-        
-        }
-    }
 }
 
 return this

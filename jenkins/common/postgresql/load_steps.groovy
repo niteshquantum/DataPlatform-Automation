@@ -2,9 +2,6 @@
 
 def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
-    def runtime = load 'jenkins/scripted_module_runtime.groovy'
-    runtime.execute {
-        stages {
 
 
         
@@ -12,9 +9,7 @@ def execute(Map context) {
 
         stage('Validate Python Runtime') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Python Runtime'
@@ -22,16 +17,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\validate_python_runtime.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate PostgreSQL Requirements') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate PostgreSQL Requirements'
@@ -39,16 +30,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_python_requirements.bat'
                     }
-                }
-            }
         }
 
 
         stage('Install Tools') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Install Tools'
@@ -56,16 +43,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\install_tools.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate Tools') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Tools'
@@ -73,16 +56,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_tools.bat'
                     }
-                }
-            }
         }
 
 
         stage('Start PostgreSQL') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Start PostgreSQL'
@@ -90,16 +69,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate PostgreSQL Instance') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate PostgreSQL Instance'
@@ -107,16 +82,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\validate_postgresql.bat'
                     }
-                }
-            }
         }
 
 
         stage('Download Dataset') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Download Dataset'
@@ -124,16 +95,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\download_dataset.bat'
                     }
-                }
-            }
         }
 
 
         stage('Profile Source Data') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Profile Source Data'
@@ -141,16 +108,12 @@ def execute(Map context) {
 
                         bat 'python scripts\\profiling\\data_profiler.py --database postgresql'
                     }
-                }
-            }
         }
 
 
         stage('Create Database') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Create Database'
@@ -158,16 +121,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
                     }
-                }
-            }
         }
 
 
         stage('Run CDC') {
 
-            steps {
 
-                script {
 
                     bat """
                         python scripts\\logging\\logger.py stage-start ^
@@ -213,62 +172,32 @@ def execute(Map context) {
                         """
                         error "CDC execution failed with exit code ${cdcResult}"
                     }
-                }
-            }
         }
 
 
-        stage('Load Data') {
-
-            when {
-                expression {
-                    return env.SKIP_DATA_LOAD != 'true'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.SKIP_DATA_LOAD != 'true' }()) {
+            stage('Load Data') {runTrackedStage(
                         'Load Data'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
                     }
-                }
-            }
         }
 
 
-        stage('Validate Loaded Data') {
-
-            when {
-                expression {
-                    return env.SKIP_DATA_LOAD != 'true'
-                }
-            }
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
+        if ({ -> return env.SKIP_DATA_LOAD != 'true' }()) {
+            stage('Validate Loaded Data') {runTrackedStage(
                         'Validate Loaded Data'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
                     }
-                }
-            }
         }
 
 
         stage('Deploy Database Objects') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Deploy Database Objects'
@@ -276,16 +205,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\objects\\deploy_objects.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate Database Objects') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Database Objects'
@@ -293,16 +218,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\objects\\validate_objects.bat'
                     }
-                }
-            }
         }
 
 
         stage('Assessment & Reconciliation') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Assessment & Reconciliation'
@@ -310,30 +231,18 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\assessment\\run_assessment_pipeline.bat'
                     }
-                }
-            }
         }
 
 
         stage('Discovery & Migration Reporting') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Discovery & Migration Reporting'
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\migration\\run_migration_pipeline.bat'
-                    }
-                }
-            }
-        }
-    
-        
-        }
-    }
 }
 
 return this

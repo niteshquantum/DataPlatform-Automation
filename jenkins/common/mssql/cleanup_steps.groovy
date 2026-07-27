@@ -2,16 +2,11 @@
 
 def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
-    def runtime = load 'jenkins/scripted_module_runtime.groovy'
-    runtime.execute {
-        stages {
 
 
         stage('Validate Cleanup Parameters') {
 
-            steps {
 
-                script {
                     runTrackedStage('Validate Cleanup Parameters') {
                         if (
                             params.CLEANUP_MODE != 'PRESERVE_DATA' &&
@@ -28,14 +23,10 @@ MSSQL UBUNTU CLEANUP PARAMETERS
 Cleanup Mode : ${params.CLEANUP_MODE}
 """
                     }
-                }
-            }
         }
 
         stage('Run MSSQL Cleanup') {
 
-            steps {
-                script {
                     runTrackedStage('Run MSSQL Cleanup') {
                         withEnv([
                             "CLEANUP_MODE=${params.CLEANUP_MODE}"
@@ -56,14 +47,6 @@ Cleanup Mode : ${params.CLEANUP_MODE}
                         echo
                     '''
                         }
-                    }
-                }
-            }
-        }
-    
-        
-        }
-    }
 }
 
 return this
