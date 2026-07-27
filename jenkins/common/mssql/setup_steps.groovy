@@ -151,9 +151,9 @@ def execute(Map context) {
         }
 
 
-        stage('Configure Database RBAC') {
-runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mssql/setup/create_database.sh'; sh './scripts/bash/mssql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mssql/setup/run_liquibase.sh' }
-        }
+//         stage('Configure Database RBAC') {
+// runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mssql/setup/create_database.sh'; sh './scripts/bash/mssql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mssql/setup/run_liquibase.sh' }
+//         }
 
                 stage('Validate Environment') {
                     runTrackedStage('Validate Environment') {
