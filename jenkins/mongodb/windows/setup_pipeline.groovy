@@ -3,7 +3,7 @@ pipeline {
     agent { label 'windows-node' }
     stages {
         stage('Initialize Logging') { steps { script { load('jenkins/common/standalone_pipeline_support.groovy').initialize(context) } } }
-        stage('Execute MONGODB SETUP Steps') { steps { script { def tracker = load 'jenkins/common/common_stage_tracker.groovy'; load('jenkins/common/mongodb/setup_steps.groovy').run(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }]) } } }
+        stage('Execute MONGODB SETUP Steps') { steps { script { def tracker = load 'jenkins/common/common_stage_tracker.groovy'; load('jenkins/common/mongodb/setup_steps.groovy').execute(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }]) } } }
     }
     post {
         success { echo 'WINDOWS MONGODB SETUP SUCCESSFUL' }

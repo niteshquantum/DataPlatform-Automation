@@ -345,8 +345,8 @@ pipeline {
                 script {
                     def module = load env.ROUTED_PIPELINE
 
-                    if (module == null || !module.metaClass.respondsTo(module, 'run', Map)) {
-                        error "Routed pipeline module must expose run(Map): ${env.ROUTED_PIPELINE}"
+                    if (module == null || !module.metaClass.respondsTo(module, 'execute', Map)) {
+                        error "Routed pipeline module must expose execute(Map): ${env.ROUTED_PIPELINE}"
                     }
 
                     executePipeline(
@@ -356,7 +356,7 @@ pipeline {
                     ) {
                         def tracker = load 'jenkins/common/common_stage_tracker.groovy'
                         def context = [database: env.ROUTED_DATABASE, action: env.ROUTED_ACTION, operatingSystem: env.ROUTED_OS, node: env.ROUTED_NODE, cleanupMode: params.CLEANUP_MODE]
-                        module.run(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }])
+                        module.execute(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }])
                     }
                 }
             }

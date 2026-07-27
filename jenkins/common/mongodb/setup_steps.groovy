@@ -39,7 +39,7 @@ def getInstanceState() {
     return state
 }
 
-def run(Map context = [:]) {
+def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
     def runtime = load 'jenkins/scripted_module_runtime.groovy'
     runtime.execute {
