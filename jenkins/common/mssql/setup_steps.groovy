@@ -119,6 +119,7 @@ def execute(Map context) {
 
                         sh './scripts/bash/mssql/setup/install_mssql.sh'
                     }
+                }
         }
 
 
@@ -127,6 +128,7 @@ def execute(Map context) {
 
                         sh './scripts/bash/mssql/setup/deploy_mssql.sh'
                     }
+                }
         }
 
 
@@ -136,7 +138,8 @@ def execute(Map context) {
 
                         sh './scripts/bash/mssql/setup/start_mssql.sh'
                     }
-        }
+                }
+                    }
 
 
         if ({ -> return env.MSSQL_INITIAL_INSTANCE_STATE != 'INSTANCE_RUNNING_AND_USABLE' }()) {
@@ -144,6 +147,7 @@ def execute(Map context) {
 
                         sh 'bash ./scripts/bash/mssql/setup/configure_global_mssql.sh'
                     }
+                }
         }
 
 
@@ -151,13 +155,12 @@ def execute(Map context) {
 runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mssql/setup/create_database.sh'; sh './scripts/bash/mssql/rbac/configure_database_rbac.sh'; sh './scripts/bash/mssql/setup/run_liquibase.sh' }
         }
 
-        stage('Validate Environment') {
-
-
-
+                stage('Validate Environment') {
                     runTrackedStage('Validate Environment') {
-
                         sh './scripts/bash/mssql/setup/validate_environment.sh'
-}
+                    }
+                }
 
-return this
+        }   // execute() end
+
+        return this
