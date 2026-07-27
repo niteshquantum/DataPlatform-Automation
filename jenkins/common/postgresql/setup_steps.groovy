@@ -178,31 +178,36 @@ def execute(Map context) {
         }
 
 
-        if ({ -> def instanceState = getInstanceState()
+        def instanceState = getInstanceState()
 
-                    return instanceState == 'NO_INSTANCE' }()) {
-            stage('Deploy PostgreSQL') {runTrackedStage(
-                        'Deploy PostgreSQL'
-                    ) {
+        if (instanceState == 'NO_INSTANCE') {
+            stage('Deploy PostgreSQL') {
 
-                        bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
-                    }
+                runTrackedStage(
+                    'Deploy PostgreSQL'
+                ) {
+
+                    bat 'scripts\\batch\\postgresql\\setup\\deploy_postgresql.bat'
+                }
+            }
         }
 
+        def instanceState = getInstanceState()
 
-        if ({ -> def instanceState = getInstanceState()
+        if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
+            instanceState == 'NO_INSTANCE') {
+            stage('Start PostgreSQL') {
 
-                    return instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' || instanceState == 'NO_INSTANCE' }()) {
-            stage('Start PostgreSQL') {runTrackedStage(
-                        'Start PostgreSQL'
-                    ) {
+                runTrackedStage(
+                    'Start PostgreSQL'
+                ) {
 
-                        echo 'Starting PostgreSQL...'
+                    echo 'Starting PostgreSQL...'
 
-                        bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
-                    }
-        }
-
+                    bat 'scripts\\batch\\postgresql\\setup\\start_postgresql.bat'
+                }
+            }
+            }
 
         stage('Validate PostgreSQL Instance') {
 
@@ -217,46 +222,47 @@ def execute(Map context) {
         }
 
 
-        if ({ -> return readFile(
-                        'admin_status.txt'
-                    ).trim() == 'true' }()) {
-            stage('Configure PostgreSQL Service') {runTrackedStage(
-                        'Configure PostgreSQL Service'
-                    ) {
+        if (readFile('admin_status.txt').trim() == 'true') {
+           stage('Configure PostgreSQL Service') {
 
-                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
-                    }
+                runTrackedStage(
+                    'Configure PostgreSQL Service'
+                ) {
+
+                    bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_service.bat'
+                }
+            }
+        }
+        
+        if (readFile('admin_status.txt').trim() == 'true') {
+           stage('Configure Global PSQL') {
+
+            runTrackedStage(
+                'Configure Global PSQL'
+            ) {
+
+                echo 'Administrator privileges available.'
+                echo 'Configuring Global PSQL command...'
+
+                bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
+            }
+        }
         }
 
-
-        if ({ -> return readFile(
-                        'admin_status.txt'
-                    ).trim() == 'true' }()) {
-            stage('Configure Global PSQL') {runTrackedStage(
-                        'Configure Global PSQL'
-                    ) {
-
-                        echo 'Administrator privileges available.'
-                        echo 'Configuring Global PSQL command...'
-
-                        bat 'scripts\\batch\\postgresql\\setup\\configure_global_psql.bat'
-                    }
-        }
-
-
-        stage('Configure Database RBAC') {
-runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'; bat 'scripts\\batch\\postgresql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat' }
-        }
+        // stage('Configure Database RBAC') {
+        // runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'; bat 'scripts\\batch\\postgresql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat' }
+        // }
 
         stage('Validate Environment') {
 
+    runTrackedStage(
+        'Validate Environment'
+    ) {
 
+        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+    }
+}
 
-                    runTrackedStage(
-                        'Validate Environment'
-                    ) {
-
-                        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
 }
 
 return this
