@@ -142,7 +142,7 @@ for table_name, columns in sorted(schema_registry.items()):
  
 if not generated_any:
     print("No schema changes detected. Nothing to generate.")
- 
+
 from pathlib import Path
 
 status_file = ROOT / "metadata" / "mysql" / "schema_status.json"

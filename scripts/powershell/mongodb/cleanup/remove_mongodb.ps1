@@ -113,22 +113,22 @@ if ($Service) {
 
     if (-not $IsProjectService) {
 
-        throw @"
-MongoDBAutomation service exists but is not owned by this project.
-
-Expected executable:
-$ExpectedMongodPath
-
-Actual service path:
-$($Service.PathName)
-
-Cleanup stopped for safety.
-"@
+        Write-Host ""
+        Write-Host "WARNING: MongoDBAutomation service exists but is not owned by this project."
+        Write-Host "Expected executable:"
+        Write-Host "$ExpectedMongodPath"
+        Write-Host ""
+        Write-Host "Actual service path:"
+        Write-Host "$($Service.PathName)"
+        Write-Host ""
+        Write-Host "Skipping service removal for safety."
+        Write-Host ""
     }
+    else {
 
-    # =====================================
-    # ENSURE SERVICE IS STOPPED
-    # =====================================
+        # =====================================
+        # ENSURE SERVICE IS STOPPED
+        # =====================================
 
     if ($Service.State -eq "Running") {
 
@@ -172,44 +172,45 @@ Cleanup stopped for safety.
         Write-Host ""
     }
 
-    # =====================================
-    # DELETE SERVICE
-    # =====================================
+        # =====================================
+        # DELETE SERVICE
+        # =====================================
 
-    Write-Host "Removing project-managed MongoDB service..."
+        Write-Host "Removing project-managed MongoDB service..."
 
-    & sc.exe delete $ServiceName | Out-Null
+        & sc.exe delete $ServiceName | Out-Null
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to delete project-managed MongoDB service."
-    }
-
-    # =====================================
-    # WAIT FOR SERVICE REMOVAL
-    # =====================================
-
-    $ServiceRemoved = $false
-
-    for ($i = 1; $i -le 30; $i++) {
-
-        $CurrentService = Get-CimInstance Win32_Service `
-            -Filter "Name='$ServiceName'" `
-            -ErrorAction SilentlyContinue
-
-        if ($null -eq $CurrentService) {
-
-            $ServiceRemoved = $true
-            break
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to delete project-managed MongoDB service."
         }
 
-        Start-Sleep -Seconds 1
-    }
+        # =====================================
+        # WAIT FOR SERVICE REMOVAL
+        # =====================================
 
-    if (-not $ServiceRemoved) {
-        throw "MongoDB service deletion could not be confirmed."
-    }
+        $ServiceRemoved = $false
 
-    Write-Host "Project-managed MongoDB service removed successfully."
+        for ($i = 1; $i -le 30; $i++) {
+
+            $CurrentService = Get-CimInstance Win32_Service `
+                -Filter "Name='$ServiceName'" `
+                -ErrorAction SilentlyContinue
+
+            if ($null -eq $CurrentService) {
+
+                $ServiceRemoved = $true
+                break
+            }
+
+            Start-Sleep -Seconds 1
+        }
+
+        if (-not $ServiceRemoved) {
+            throw "MongoDB service deletion could not be confirmed."
+        }
+
+        Write-Host "Project-managed MongoDB service removed successfully."
+    }
 }
 else {
 

@@ -203,6 +203,16 @@ def main():
     # Verify incoming directory exists
     if not incoming_dir.exists():
         logger.warning(f"Incoming directory not found: {incoming_dir}")
+        registry_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(registry_path, "w", encoding="utf-8") as f:
+            json.dump({}, f, indent=2)
+        cdc_status = {"tables": {}}
+        cdc_path = project_root / "metadata" / db_type / "cdc_status.json"
+        cdc_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(cdc_path, "w", encoding="utf-8") as f:
+            json.dump(cdc_status, f, indent=4)
+        logger.info(f"Initialized empty schema registry at {registry_path}")
+        logger.info(f"CDC metadata written to {cdc_path}")
         return
     
     logger.info(f"Scanning incoming directory: {incoming_dir}")

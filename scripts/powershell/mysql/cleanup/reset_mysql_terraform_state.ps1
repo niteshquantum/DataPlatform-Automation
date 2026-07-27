@@ -50,11 +50,22 @@ try {
     Write-Host "Reading current Terraform state..."
     Write-Host ""
 
-    $currentState = @(& $terraformExe state list)
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $stateListOutput = & $terraformExe state list 2>&1
+    $stateListExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($stateListExitCode -ne 0) {
+        $outputString = $stateListOutput | Out-String
+        if ($outputString -match "No state file was found") {
+            Write-Host "No Terraform state file found. Nothing to reset."
+            exit 0
+        }
         throw "Failed to read Terraform state"
     }
+
+    $currentState = $stateListOutput
 
     # =====================================
     # FIND MYSQL WINDOWS RESOURCES
@@ -104,11 +115,22 @@ try {
     Write-Host "Validating Terraform state cleanup..."
     Write-Host ""
 
-    $remainingState = @(& $terraformExe state list)
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $remainingStateOutput = & $terraformExe state list 2>&1
+    $remainingStateExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($remainingStateExitCode -ne 0) {
+        $outputString = $remainingStateOutput | Out-String
+        if ($outputString -match "No state file was found") {
+            Write-Host "No Terraform state file found after cleanup."
+            exit 0
+        }
         throw "Failed to validate Terraform state"
     }
+
+    $remainingState = $remainingStateOutput
 
     $remainingMysqlResources = @(
         $mysqlResources |

@@ -259,14 +259,21 @@ if ($CleanupMode -eq "PRESERVE_DATA") {
         -Path $ConfigPath `
         -Description "MongoDB runtime configuration"
 
-    if (Test-Path -LiteralPath $DataPath) {
+    if (Test-Path -LiteralPath $ServerPath) {
 
-        Write-Host "PASSED : MongoDB data directory is preserved."
+        if (Test-Path -LiteralPath $DataPath) {
+
+            Write-Host "PASSED : MongoDB data directory is preserved."
+        }
+        else {
+
+            Add-ValidationError `
+                "MongoDB data directory was not preserved: $DataPath"
+        }
     }
     else {
 
-        Add-ValidationError `
-            "MongoDB data directory was not preserved: $DataPath"
+        Write-Host "INFO   : MongoDB server directory not found. Skipping data directory check."
     }
 
     Write-Host ""

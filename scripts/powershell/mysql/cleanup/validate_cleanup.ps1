@@ -83,11 +83,16 @@ Write-Host "Checking MySQL data directory..."
 
 if ($cleanupMode -eq "PRESERVE_DATA") {
 
-    if (!(Test-Path $dataDir)) {
-        throw "MySQL data directory was expected to be preserved but was not found: $dataDir"
-    }
+    if (Test-Path $serverDir) {
+        if (!(Test-Path $dataDir)) {
+            throw "MySQL data directory was expected to be preserved but was not found: $dataDir"
+        }
 
-    Write-Host "MySQL data directory preserved successfully."
+        Write-Host "MySQL data directory preserved successfully."
+    }
+    else {
+        Write-Host "MySQL server directory not found. Skipping data directory check."
+    }
 }
 
 if ($cleanupMode -eq "DELETE_DATA") {

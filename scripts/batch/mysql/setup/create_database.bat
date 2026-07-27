@@ -71,7 +71,7 @@ REM =====================================
 where mysql >nul 2>&1
 if errorlevel 1 (
     echo ERROR: MYSQL CLIENT NOT FOUND
-    echo Expected: mysql (on System PATH)
+    echo Expected: mysql (on System PATH^)
     exit /b 1
 )
 

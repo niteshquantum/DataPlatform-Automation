@@ -95,6 +95,18 @@ if errorlevel 1 (
 
 
 REM =====================================
+REM DOWNLOAD DATASET
+REM =====================================
+
+call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
+
+if errorlevel 1 (
+    echo ERROR: DATASET DOWNLOAD FAILED
+    exit /b 1
+)
+
+
+REM =====================================
 REM DEPLOY SCHEMA
 REM =====================================
 
@@ -114,18 +126,6 @@ call "%PROJECT_ROOT%\scripts\batch\mysql\load\validate_schema.bat"
 
 if errorlevel 1 (
     echo ERROR: SCHEMA VALIDATION FAILED
-    exit /b 1
-)
-
-
-REM =====================================
-REM DOWNLOAD DATASET
-REM =====================================
-
-call "%PROJECT_ROOT%\scripts\batch\common\download_dataset.bat"
-
-if errorlevel 1 (
-    echo ERROR: DATASET DOWNLOAD FAILED
     exit /b 1
 )
 
