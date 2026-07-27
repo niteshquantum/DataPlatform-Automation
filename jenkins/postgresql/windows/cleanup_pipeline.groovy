@@ -1,112 +1,14 @@
+def context = [database: 'postgresql', action: 'cleanup', operatingSystem: 'windows']
 pipeline {
-
-    agent any
-
-    options {
-        disableConcurrentBuilds()
-    }
-
-
-    parameters {
-
-        choice(
-            name: 'CLEANUP_MODE',
-            choices: [
-                'PRESERVE_DATA',
-                'DELETE_DATA'
-            ],
-            description: 'Select PostgreSQL cleanup mode'
-        )
-    }
-
+    agent { label 'windows-node' }
+    parameters { choice(name: 'CLEANUP_MODE', choices: ['PRESERVE_DATA', 'DELETE_DATA'], description: 'Select cleanup mode') }
     stages {
-
-        stage('Initialize Logging') {
-
-            steps {
-
-                bat """
-                    python scripts\\logging\\logger.py init ^
-                    --database postgresql ^
-                    --action cleanup ^
-                    --os windows ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --job-name "${env.JOB_NAME}" ^
-                    --build-url "${env.BUILD_URL}"
-                """
-            }
-        }
-
-
-        stage('Run PostgreSQL Cleanup') {
-
-            steps {
-
-                withEnv([
-                    "CLEANUP_MODE=${params.CLEANUP_MODE}"
-                ]) {
-
-                    bat 'scripts\\batch\\postgresql\\cleanup\\postgresql_cleanup_pipeline.bat'
-                }
-            }
-        }
+        stage('Initialize Logging') { steps { script { load('jenkins/common/standalone_pipeline_support.groovy').initialize(context) } } }
+        stage('Execute POSTGRESQL CLEANUP Steps') { steps { script { def tracker = load 'jenkins/common/common_stage_tracker.groovy'; load('jenkins/common/postgresql/cleanup_steps.groovy').run(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }]) } } }
     }
-
-
     post {
-
-        success {
-
-            echo 'POSTGRESQL CLEANUP SUCCESSFUL'
-        }
-
-
-        failure {
-
-            echo 'POSTGRESQL CLEANUP FAILED'
-        }
-
-
-        always {
-
-            echo 'FINALIZING POSTGRESQL CLEANUP LOGGING AND REPORTING'
-
-            script {
-
-                def finalStatus = currentBuild.currentResult ?: 'FAILURE'
-
-                bat """
-                    python scripts\\logging\\logger.py finalize ^
-                    --database postgresql ^
-                    --action cleanup ^
-                    --build-number "${env.BUILD_NUMBER}" ^
-                    --status "${finalStatus}"
-                """
-
-                bat """
-                    python scripts\\reporting\\generate_report.py ^
-                    --database postgresql ^
-                    --action cleanup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
-
-                bat """
-                    python scripts\\reporting\\generate_history.py ^
-                    --database postgresql ^
-                    --action cleanup ^
-                    --build-number "${env.BUILD_NUMBER}"
-                """
-            }
-
-
-            archiveArtifacts(
-                artifacts: "logs/postgresql/cleanup/build_${env.BUILD_NUMBER}/**, reports/postgresql/cleanup/build_${env.BUILD_NUMBER}/**, reports/history/**",
-                fingerprint: true,
-                allowEmptyArchive: true
-            )
-
-            echo "Cleanup Mode: ${params.CLEANUP_MODE}"
-            echo 'POSTGRESQL CLEANUP PIPELINE COMPLETED'
-        }
+        success { echo 'WINDOWS POSTGRESQL CLEANUP SUCCESSFUL' }
+        failure { echo 'WINDOWS POSTGRESQL CLEANUP FAILED' }
+        always { script { load('jenkins/common/standalone_pipeline_support.groovy').finalize(context) }; echo 'WINDOWS POSTGRESQL CLEANUP PIPELINE COMPLETED' }
     }
 }

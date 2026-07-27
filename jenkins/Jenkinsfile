@@ -289,345 +289,88 @@ def executePipeline(
     }
 }
 
-/*
-============================================================
-MASTER DATABASE PIPELINE
-============================================================
-*/
-
 pipeline {
 
     agent none
 
     options {
-
         disableConcurrentBuilds()
     }
 
     parameters {
-
-        choice(
-            name: 'DATABASE',
-            choices: [
-                'MYSQL',
-                'POSTGRESQL'
-            ],
-            description: 'Select Database'
-        )
-
-        choice(
-            name: 'ACTION',
-            choices: [
-                'SETUP',
-                'LOAD'
-            ],
-            description: 'Select Action'
-        )
-
-        string(
-            name: 'USERNAME',
-            defaultValue: '',
-            description: 'RBAC Username'
-        )
-
-        password(
-            name: 'PASSWORD',
-            defaultValue: '',
-            description: 'RBAC Password'
-)
+        choice(name: 'DATABASE', choices: ['MYSQL', 'POSTGRESQL', 'MONGODB', 'MSSQL'], description: 'Select Database')
+        choice(name: 'ACTION', choices: ['SETUP', 'LOAD', 'CLEANUP'], description: 'Select Action')
+        choice(name: 'CLEANUP_MODE', choices: ['PRESERVE_DATA', 'DELETE_DATA'], description: 'Select cleanup mode when ACTION is CLEANUP')
+        string(name: 'USERNAME', defaultValue: '', description: 'RBAC Username')
+        password(name: 'PASSWORD', defaultValue: '', description: 'RBAC Password')
     }
 
     stages {
-
-        /*
-        ============================================================
-        VALIDATE SELECTION
-        ============================================================
-        */
-
-stage('Validate Selection') {
-
-    agent any
-
-    steps {
-
-        script {
-
-if (currentBuild.number == 1) {
-
-    currentBuild.description = "Parameters Registered"
-
-if (currentBuild.number == 1) {
-    echo "First build detected. Parameters will be available after this build."
-}
-}
-
-    echo "============================================"
-    echo "MASTER DATABASE PIPELINE"
-    echo "============================================"
-    echo "DATABASE     : ${params.DATABASE}"
-    echo "ACTION       : ${params.ACTION}"
-
-    echo "============================================"
-
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        MYSQL SETUP
-        UBUNTU
-        ============================================================
-        */
-
-        stage('MySQL Setup') {
-
-            agent {
-                label 'ubuntu-node'
-            }
-
-		when {
-		    allOf {
-		        expression { currentBuild.number > 1 }
-		        expression { params.DATABASE == 'MYSQL' }
-		        expression { params.ACTION == 'SETUP' }
-		    }
-		}
-
+        stage('Resolve Pipeline Route') {
+            agent any
             steps {
-
                 checkout scm
-
                 script {
+                    def configuration = load 'jenkins/pipeline_config.groovy'
+                    def route = configuration.resolve(params.DATABASE, params.ACTION)
 
-                    executePipeline(
-                        'mysql',
-                        'setup',
-                        'ubuntu'
-                    ) {
+                    env.ROUTED_DATABASE = params.DATABASE.toLowerCase()
+                    env.ROUTED_ACTION = params.ACTION.toLowerCase()
+                    env.ROUTED_NODE = route.node
+                    env.ROUTED_OS = route.os
+                    env.ROUTED_PIPELINE = route.path
 
-                        withEnv([
-                            "PATH+=/usr/bin:/bin:${env.PATH}"
-                        ]) {
-
-                            sh 'bash ./scripts/bash/mysql/mysql_setup_pipeline.sh'
-                        }
+                    if (!fileExists(env.ROUTED_PIPELINE)) {
+                        error "Configured pipeline module does not exist: ${env.ROUTED_PIPELINE}"
                     }
+
+                    echo "DATABASE      : ${params.DATABASE}"
+                    echo "ACTION        : ${params.ACTION}"
+                    echo "NODE          : ${env.ROUTED_NODE}"
+                    echo "OS            : ${env.ROUTED_OS}"
+                    echo "PIPELINE PATH : ${env.ROUTED_PIPELINE}"
                 }
             }
         }
 
-        /*
-        ============================================================
-        MYSQL LOAD
-        UBUNTU
-        ============================================================
-        */
-
-        stage('MySQL Load') {
-
+        stage('Execute Routed Pipeline') {
             agent {
-                label 'ubuntu-node'
+                label "${env.ROUTED_NODE}"
             }
-
             when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'MYSQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'LOAD'
-                    }
-                }
+                expression { currentBuild.number > 1 }
             }
-
             steps {
-
                 checkout scm
-
                 script {
+                    def module = load env.ROUTED_PIPELINE
+
+                    if (module == null || !module.metaClass.respondsTo(module, 'run', Map)) {
+                        error "Routed pipeline module must expose run(Map): ${env.ROUTED_PIPELINE}"
+                    }
 
                     executePipeline(
-                        'mysql',
-                        'load',
-                        'ubuntu'
+                        env.ROUTED_DATABASE,
+                        env.ROUTED_ACTION,
+                        env.ROUTED_OS
                     ) {
-
-                        withEnv([
-                            "PATH+=/usr/bin:/bin:${env.PATH}"
-                        ]) {
-
-                            sh 'bash ./scripts/bash/mysql/mysql_load_pipeline.sh'
-                        }
+                        def tracker = load 'jenkins/common/common_stage_tracker.groovy'
+                        def context = [database: env.ROUTED_DATABASE, action: env.ROUTED_ACTION, operatingSystem: env.ROUTED_OS, node: env.ROUTED_NODE, cleanupMode: params.CLEANUP_MODE]
+                        module.run(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }])
                     }
                 }
             }
         }
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        UBUNTU
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
-        /*
-        ============================================================
-        POSTGRESQL SETUP
-        WINDOWS
-        ============================================================
-        */
-
-        stage('PostgreSQL Setup') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'POSTGRESQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'SETUP'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'postgresql',
-                        'setup',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\postgresql\\postgresql_setup_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        POSTGRESQL LOAD
-        WINDOWS
-        ============================================================
-        */
-
-        stage('PostgreSQL Load') {
-
-            agent {
-                label 'windows-node'
-            }
-
-            when {
-
-                allOf {
-					expression { currentBuild.number > 1 }
-                    expression {
-                        params.DATABASE == 'POSTGRESQL'
-                    }
-
-                    expression {
-                        params.ACTION == 'LOAD'
-                    }
-                }
-            }
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    executePipeline(
-                        'postgresql',
-                        'load',
-                        'windows'
-                    ) {
-
-                        bat 'scripts\\batch\\postgresql\\postgresql_load_pipeline.bat'
-                    }
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        WINDOWS
-        ============================================================
-        */
-
     }
 
     post {
-
         success {
-
-            echo """
-            ============================================
-            MASTER DATABASE PIPELINE SUCCESSFUL
-            DATABASE : ${params.DATABASE}
-            ACTION   : ${params.ACTION}
-            ============================================
-            """
+            echo "MASTER DATABASE PIPELINE SUCCESSFUL: ${params.DATABASE} ${params.ACTION}"
         }
-
         failure {
-
-            echo """
-            ============================================
-            MASTER DATABASE PIPELINE FAILED
-            DATABASE : ${params.DATABASE}
-            ACTION   : ${params.ACTION}
-            ============================================
-            """
+            echo "MASTER DATABASE PIPELINE FAILED: ${params.DATABASE} ${params.ACTION}"
         }
-
         always {
-
             echo 'MASTER DATABASE PIPELINE COMPLETED'
         }
     }
