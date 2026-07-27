@@ -182,6 +182,7 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\load\\load_data.bat'
                     }
+            }
         }
 
 
@@ -192,6 +193,7 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\postgresql\\load\\validate_loaded_data.bat'
                     }
+                }
         }
 
 
@@ -243,6 +245,8 @@ def execute(Map context) {
                     ) {
 
                         bat 'scripts\\batch\\postgresql\\migration\\run_migration_pipeline.bat'
-}
-
+                
+                }
+        }
+    }
 return this
