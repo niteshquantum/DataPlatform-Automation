@@ -227,7 +227,7 @@ def execute(Map context) {
                         bat 'scripts\\batch\\mongodb\\setup\\run_terraform.bat'
                     }
         }
-
+        }
 
         if ({ -> return (
                         readFile('admin_status.txt').trim() == 'true' &&
@@ -242,8 +242,8 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\configure_global_mongosh.bat'
                     }
-        }
-
+            }
+                    }
 
         if ({ -> return (
                         readFile('admin_status.txt').trim() == 'true' &&
@@ -258,8 +258,8 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\configure_mongodb_service.bat'
                     }
-        }
-
+                        }
+                    }
 
         if ({ -> return (
                         env.MONGODB_INITIAL_INSTANCE_STATE == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
@@ -271,8 +271,8 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\start_mongodb.bat'
                     }
-        }
-
+            }
+                    }
 
         stage('Validate MongoDB Port') {
 
@@ -301,5 +301,7 @@ runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\
 
                         bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
 }
-
+        }
+        
+        }
 return this
