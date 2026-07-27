@@ -11,7 +11,7 @@ echo.
 call "%~dp0..\..\common\set_project_root.bat"
 
 powershell -NoProfile -ExecutionPolicy Bypass ^
-    -File "%PROJECT_ROOT%\scripts\powershell\postgresql\configure_postgresql_user.ps1"
+    -File "%PROJECT_ROOT%\scripts\powershell\postgresql\setup\configure_postgresql_user.ps1"
 
 if errorlevel 1 (
     echo.

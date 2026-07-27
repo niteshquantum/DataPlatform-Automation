@@ -11,7 +11,7 @@ echo.
 call "%~dp0..\..\common\set_project_root.bat"
 
 powershell -NoProfile -ExecutionPolicy Bypass ^
-    -File "%PROJECT_ROOT%\scripts\powershell\mssql\configure_mssql_user.ps1"
+    -File "%PROJECT_ROOT%\scripts\powershell\mssql\setup\configure_mssql_user.ps1"
 
 if errorlevel 1 (
     echo.

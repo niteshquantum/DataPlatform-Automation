@@ -6,7 +6,7 @@ Write-Host "CONFIGURING MYSQL USER"
 Write-Host "====================================="
 Write-Host ""
 
-$ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
+$ROOT = (Resolve-Path "$PSScriptRoot\..\..\..\..").Path
 $ConfigFile = "$ROOT\config\windows\mysql.conf"
 
 if (!(Test-Path $ConfigFile)) {

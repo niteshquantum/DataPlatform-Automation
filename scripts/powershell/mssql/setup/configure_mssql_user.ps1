@@ -6,7 +6,7 @@ Write-Host "CONFIGURING MSSQL USER"
 Write-Host "====================================="
 Write-Host ""
 
-$ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
+$ROOT = (Resolve-Path "$PSScriptRoot\..\..\..\..").Path
 $ConfigFile = "$ROOT\config\windows\mssql.conf"
 
 if (!(Test-Path $ConfigFile)) {
