@@ -73,7 +73,7 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
 }
-            }
+            }}
             }
 
 return this
