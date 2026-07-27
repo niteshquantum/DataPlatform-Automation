@@ -62,6 +62,7 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\assessment\\run_assessment.bat all'
                     }
+                }
         }
 
 
@@ -72,5 +73,7 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\generate_assessment_report.bat'
 }
+            }
+            }
 
 return this
