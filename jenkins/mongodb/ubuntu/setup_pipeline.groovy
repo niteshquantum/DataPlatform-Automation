@@ -210,6 +210,10 @@ pipeline {
         }
 
 
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { sh './scripts/bash/mongodb/rbac/configure_database_rbac.sh' } } }
+        }
+
         stage('Validate MongoDB') {
 
             steps {

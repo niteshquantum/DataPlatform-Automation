@@ -278,6 +278,21 @@ pipeline {
         }
 
 
+        stage('Configure PostgreSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Configure PostgreSQL User') {
+
+                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('Configure Global PSQL') {
 
             when {
@@ -299,20 +314,9 @@ pipeline {
         }
 
 
-        stage('Configure PostgreSQL User') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Configure PostgreSQL User') {
-
-                        sh './scripts/bash/postgresql/setup/configure_postgresql_user.sh'
-                    }
-                }
-            }
+        stage('Configure Database RBAC') {
+            steps { script { runTrackedStage('Configure Database RBAC') { sh './scripts/bash/postgresql/setup/create_database.sh'; sh './scripts/bash/postgresql/rbac/configure_database_rbac.sh'; sh './scripts/bash/postgresql/setup/run_liquibase.sh' } } }
         }
-
 
         stage('Validate Environment') {
 
