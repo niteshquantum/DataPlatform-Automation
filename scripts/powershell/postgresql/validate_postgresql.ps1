@@ -37,6 +37,7 @@ $ExpectedDatabase = $Config["POSTGRESQL_DB"]
 $ExpectedUser     = $Config["POSTGRESQL_USER"]
 $ExpectedPassword = $Config["POSTGRESQL_PASSWORD"]
 $ExpectedHost     = $Config["POSTGRESQL_HOST"]
+$ConfiguredBinDir = $Config["POSTGRESQL_BIN_DIR"]
 
 if ([string]::IsNullOrWhiteSpace($ExpectedHost)) {
     throw "POSTGRESQL_HOST missing."
@@ -50,12 +51,12 @@ if ([string]::IsNullOrWhiteSpace($ExpectedUser)) {
     throw "POSTGRESQL_USER missing."
 }
 
-if ([string]::IsNullOrWhiteSpace($ExpectedPort)) {
-    throw "POSTGRESQL_PORT missing."
+if ([string]::IsNullOrWhiteSpace($ExpectedPort) -or [string]::IsNullOrWhiteSpace($ConfiguredBinDir)) {
+    throw "POSTGRESQL_PORT and POSTGRESQL_BIN_DIR are required."
 }
 
 # Use project folder psql — not system PATH
-$PgBin   = Join-Path $ProjectRoot "databases\postgresql\bin"
+$PgBin   = Join-Path $ProjectRoot $ConfiguredBinDir
 $PsqlExe = Join-Path $PgBin "psql.exe"
 
 $env:PATH = "$PgBin;$env:PATH"

@@ -27,9 +27,8 @@ def check_instance():
     user = config["POSTGRESQL_USER"]
     password = config["POSTGRESQL_PASSWORD"]
 
-    root = Path(__file__).resolve().parents[4]
-    pg_bin = root / "databases" / "postgresql" / "bin" / "pg_ctl.exe"
-    pg_data = root / "databases" / "postgresql" / "data"
+    pg_bin = Path(config["POSTGRESQL_BIN_DIR"]) / "pg_ctl.exe"
+    pg_data = Path(config["POSTGRESQL_DATA_DIR"])
 
     managed = pg_bin.is_file() and pg_data.is_dir() and (pg_data / "PG_VERSION").exists()
 

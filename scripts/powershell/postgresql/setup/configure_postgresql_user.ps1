@@ -34,13 +34,15 @@ $PgPort = $Config["POSTGRESQL_PORT"]
 $PgDatabase = $Config["POSTGRESQL_DB"]
 $PgUser = $Config["POSTGRESQL_USER"]
 $PgPassword = $Config["POSTGRESQL_PASSWORD"]
+$ServiceName = $Config["POSTGRESQL_SERVICE_NAME"]
+$ConfiguredBinDir = $Config["POSTGRESQL_BIN_DIR"]
 
 if (-not $PgUser) {
     throw "POSTGRESQL_USER not found in postgresql.conf"
 }
 
-if (-not $PgPassword) {
-    throw "POSTGRESQL_PASSWORD not found in postgresql.conf"
+if (-not $PgPassword -or -not $ServiceName -or -not $ConfiguredBinDir) {
+    throw "PostgreSQL Windows service identity is incomplete in postgresql.conf"
 }
 
 Write-Host "Project Root : $ROOT"
@@ -50,14 +52,13 @@ Write-Host "Database     : $PgDatabase"
 Write-Host "User         : $PgUser"
 Write-Host ""
 
-$WorkspacePsqlExe = Join-Path $ROOT "databases\postgresql\bin\psql.exe"
+$WorkspacePsqlExe = Join-Path (Join-Path $ROOT $ConfiguredBinDir) "psql.exe"
 $PsqlExe = $null
 
 if (Test-Path -LiteralPath $WorkspacePsqlExe -PathType Leaf) {
     $PsqlExe = (Resolve-Path -LiteralPath $WorkspacePsqlExe).Path
 }
 else {
-    $ServiceName = "PostgreSQLAutomation"
     $ServiceImagePath = Get-CimInstance `
         Win32_Service `
         -Filter "Name='$ServiceName'" `

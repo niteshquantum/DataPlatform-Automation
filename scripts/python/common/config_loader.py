@@ -38,7 +38,18 @@ def load_database_config(database_name):
             f"{database_name}.conf"
         )
 
-    return load_config(config_file)
+    config = load_config(config_file)
+
+    # Windows database runtime paths are deliberately project-root relative in
+    # configuration, so a Jenkins workspace never depends on a machine path.
+    if platform.system() == "Windows":
+        for key in ("POSTGRESQL_BIN_DIR", "POSTGRESQL_DATA_DIR"):
+            value = config.get(key)
+            if value:
+                path = Path(value)
+                config[key] = str(path if path.is_absolute() else ROOT / path)
+
+    return config
 
 
 def load_common_config(config_name):

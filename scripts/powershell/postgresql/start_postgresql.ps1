@@ -93,6 +93,9 @@ $PgHost = $Config["POSTGRESQL_HOST"]
 $ExpectedPort = [int]$Config["POSTGRESQL_PORT"]
 $PgDatabase = $Config["POSTGRESQL_DB"]
 $PgUser = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_USER"])) { "postgres" } else { $Config["POSTGRESQL_USER"] }
+$ServiceName = $Config["POSTGRESQL_SERVICE_NAME"]
+$ConfiguredBinDir = $Config["POSTGRESQL_BIN_DIR"]
+$ConfiguredDataDir = $Config["POSTGRESQL_DATA_DIR"]
 
 if ([string]::IsNullOrWhiteSpace($PgHost)) {
     throw "POSTGRESQL_HOST missing."
@@ -106,17 +109,38 @@ if ($ExpectedPort -le 0) {
     throw "Invalid POSTGRESQL_PORT."
 }
 
-$ServiceName = "PostgreSQLAutomation"
+if ([string]::IsNullOrWhiteSpace($ServiceName) -or [string]::IsNullOrWhiteSpace($ConfiguredBinDir) -or [string]::IsNullOrWhiteSpace($ConfiguredDataDir)) {
+    throw "POSTGRESQL_SERVICE_NAME, POSTGRESQL_BIN_DIR, and POSTGRESQL_DATA_DIR must be configured."
+}
 
 # =====================================
 # PATHS
 # =====================================
 
-$PgBin  = Join-Path $ProjectRoot "databases\postgresql\bin"
-$PgData = Join-Path $ProjectRoot "databases\postgresql\data"
+$PgBin  = Join-Path $ProjectRoot $ConfiguredBinDir
+$PgData = Join-Path $ProjectRoot $ConfiguredDataDir
 $PgLog  = Join-Path $LogDirectory "postgresql.log"
 $PgCtl  = Join-Path $PgBin "pg_ctl.exe"
 $Psql   = Join-Path $PgBin "psql.exe"
+
+function Write-RuntimeTarget {
+    $RuntimeDirectory = Join-Path $ProjectRoot "outputs\runtime"
+    New-Item -ItemType Directory -Path $RuntimeDirectory -Force | Out-Null
+    [ordered]@{
+        host = $PgHost; port = $ExpectedPort; service_name = $ServiceName
+        data_directory = $PgData; generated_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $RuntimeDirectory "postgresql_windows_target.json") -Encoding UTF8
+}
+
+function Assert-ManagedServiceTarget {
+    param([string]$ImagePath)
+    if ([string]::IsNullOrWhiteSpace($ImagePath)) { throw "Service '$ServiceName' has no registered executable path." }
+    $ExpectedCtl = (Resolve-Path -LiteralPath $PgCtl -ErrorAction Stop).Path
+    $ExpectedData = (Resolve-Path -LiteralPath $PgData -ErrorAction Stop).Path
+    if ($ImagePath -notlike "*$ExpectedCtl*" -or $ImagePath -notlike "*$ExpectedData*" -or $ImagePath -notmatch "(?<!\d)$ExpectedPort(?!\d)") {
+        throw "Service '$ServiceName' is not registered for this configured automation target (bin, data directory, and port must match config)."
+    }
+}
 
 $ServiceImagePath = Get-ServiceImagePath -Name $ServiceName
 
@@ -143,40 +167,18 @@ Write-Log "Data Dir       : $PgData"
 Write-Log "Log File       : $PgLog"
 
 # =====================================
-# CHECK CONFIGURED CONNECTION
-# =====================================
-
-$env:PGPASSWORD = $Config["POSTGRESQL_PASSWORD"]
-
-if (Test-Path $Psql) {
-    $PreviousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    & "$Psql" --host="$PgHost" --port="$ExpectedPort" --username="$PgUser" --dbname="postgres" --command="SELECT 1;" *> $null
-    $ConfiguredConnectionExitCode = $LASTEXITCODE
-    $ErrorActionPreference = $PreviousErrorActionPreference
-} else {
-    Write-Log "psql.exe not available. Skipping configured connection check."
-    $ConfiguredConnectionExitCode = 1
-}
-
-$env:PGPASSWORD = $null
-
-if ($ConfiguredConnectionExitCode -eq 0) {
-    Write-Log "Configured PostgreSQL is already reachable."
-    exit 0
-}
-
-# =====================================
 # CHECK SERVICE
 # =====================================
 
 $ExistingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
 if ($ExistingService) {
+    Assert-ManagedServiceTarget -ImagePath $ServiceImagePath
 
     if ($ExistingService.Status -eq "Running") {
         Write-Log "Windows Service already running."
         Write-Log "Reusing existing PostgreSQL instance."
+        Write-RuntimeTarget
         exit 0
     }
 
@@ -316,6 +318,7 @@ if ($PortConnection) {
             if ($PsqlExitCode -eq 0) {
                 Write-Host ""
                 Write-Host "Configured PostgreSQL is already reachable."
+                Write-RuntimeTarget
                 exit 0
             }
         }
@@ -422,6 +425,7 @@ if (!$PostgreSQLReady) {
 }
 
 Write-Log "PostgreSQL startup completed successfully."
+Write-RuntimeTarget
 Write-Log ""
 Write-Log "======================================="
 Write-Log "POSTGRESQL START COMPLETED"

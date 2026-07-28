@@ -14,13 +14,6 @@ function Get-ProjectRoot {
 }
 
 $ProjectRoot     = Get-ProjectRoot
-$PgProjectBin    = Join-Path $ProjectRoot "databases\postgresql\bin"
-$PgProjectData   = Join-Path $ProjectRoot "databases\postgresql\data"
-$PgProjectLib    = Join-Path $ProjectRoot "databases\postgresql\lib"
-$PgProjectShare  = Join-Path $ProjectRoot "databases\postgresql\share"
-
-Write-Log "Project Root  : $ProjectRoot"
-Write-Log "Project PG Bin: $PgProjectBin"
 
 # Read config
 $ConfigFile = Join-Path $ProjectRoot "config\windows\postgresql.conf"
@@ -49,6 +42,21 @@ else {
 }
 
 $PgPassword = $Config["POSTGRESQL_PASSWORD"]
+$ConfiguredBinDir = $Config["POSTGRESQL_BIN_DIR"]
+$ConfiguredDataDir = $Config["POSTGRESQL_DATA_DIR"]
+
+if ([string]::IsNullOrWhiteSpace($ConfiguredBinDir) -or [string]::IsNullOrWhiteSpace($ConfiguredDataDir)) {
+    throw "POSTGRESQL_BIN_DIR and POSTGRESQL_DATA_DIR are missing in config."
+}
+
+$PgProjectBin    = Join-Path $ProjectRoot $ConfiguredBinDir
+$PgProjectData   = Join-Path $ProjectRoot $ConfiguredDataDir
+$PgProjectHome   = Split-Path -Parent $PgProjectBin
+$PgProjectLib    = Join-Path $PgProjectHome "lib"
+$PgProjectShare  = Join-Path $PgProjectHome "share"
+
+Write-Log "Project Root  : $ProjectRoot"
+Write-Log "Project PG Bin: $PgProjectBin"
 
 $PgVersion = if ([string]::IsNullOrWhiteSpace($Config["POSTGRESQL_VERSION"])) {
     throw "POSTGRESQL_VERSION is missing in config."

@@ -13,14 +13,11 @@ Write-Host ""
 
 $PROJECT_ROOT = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 
-$PgBin  = "$PROJECT_ROOT\databases\postgresql\bin"
-$PgData = "$PROJECT_ROOT\databases\postgresql\data"
 $PgLogDir = "$PROJECT_ROOT\outputs\logs"
 $PgLog  = "$PgLogDir\postgresql_service.log"
 
 $PgCtl = "$PgBin\pg_ctl.exe"
 
-$ServiceName = "PostgreSQLAutomation"
 
 # =====================================
 # READ CONFIG
@@ -52,6 +49,11 @@ $PgHost     = $Config["POSTGRESQL_HOST"]
 $PgPort     = $Config["POSTGRESQL_PORT"]
 $PgDatabase = $Config["POSTGRESQL_DB"]
 $PgUser     = $Config["POSTGRESQL_USER"]
+$ServiceName = $Config["POSTGRESQL_SERVICE_NAME"]
+$ConfiguredBinDir = $Config["POSTGRESQL_BIN_DIR"]
+$ConfiguredDataDir = $Config["POSTGRESQL_DATA_DIR"]
+$PgBin  = Join-Path $PROJECT_ROOT $ConfiguredBinDir
+$PgData = Join-Path $PROJECT_ROOT $ConfiguredDataDir
 
 if (-not $PgHost) {
     throw "POSTGRESQL_HOST not found in postgresql.conf"
@@ -61,8 +63,8 @@ if (-not $PgPort) {
     throw "POSTGRESQL_PORT not found in postgresql.conf"
 }
 
-if (-not $PgUser) {
-    throw "POSTGRESQL_USER not found in postgresql.conf"
+if (-not $PgUser -or -not $ServiceName -or -not $ConfiguredBinDir -or -not $ConfiguredDataDir) {
+    throw "PostgreSQL Windows service identity is incomplete in postgresql.conf"
 }
 
 Write-Host "Project Root : $PROJECT_ROOT"
