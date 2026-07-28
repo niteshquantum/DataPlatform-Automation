@@ -407,6 +407,23 @@ pipeline {
         }
 
 
+        stage('Configure PostgreSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure PostgreSQL User'
+                    ) {
+
+                        bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_user.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Validate Environment') {
 
             steps {

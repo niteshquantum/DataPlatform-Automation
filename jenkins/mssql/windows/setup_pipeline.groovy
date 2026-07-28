@@ -358,6 +358,23 @@ pipeline {
         }
 
 
+        stage('Configure MSSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure MSSQL User'
+                    ) {
+
+                        bat 'scripts\\batch\\mssql\\setup\\configure_mssql_user.bat'
+                    }
+                }
+            }
+        }
+
+
         stage('Validate Environment') {
 
             steps {

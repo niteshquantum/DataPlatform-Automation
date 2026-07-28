@@ -180,49 +180,96 @@ if ($ExistingService) {
         exit 0
     }
 
-    Write-Log "Starting existing PostgreSQL service..."
-
-    Start-Service -Name $ServiceName
-
-    $ServiceStarted = $false
-
-    for ($i = 1; $i -le 30; $i++) {
-
-        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-
-        if ($svc -and $svc.Status -eq "Running") {
-            $ServiceStarted = $true
-            break
+        $ServiceImagePathFromCim = Get-ServiceImagePath -Name $ServiceName
+        $ServiceInWorkspace = $false
+        if ($ServiceImagePathFromCim) {
+            $ServiceInWorkspace = $ServiceImagePathFromCim -like "*$ProjectRoot*"
         }
 
-        Start-Sleep -Seconds 1
-    }
+        Write-Log ""
+        Write-Log "======================================="
+        Write-Log "PRE-START SERVICE DIAGNOSTICS"
+        Write-Log "======================================="
+        Write-Log "Service Name            : $ServiceName"
+        Write-Log "Service Exists          : True"
+        Write-Log "Service Status          : $($ExistingService.Status)"
+        Write-Log "Service StartType       : $($ExistingService.StartType)"
+        Write-Log "Service Binary Path     : $ServiceImagePathFromCim"
+        Write-Log "Current Project Root    : $ProjectRoot"
+        Write-Log "Expected Bin Directory  : $PgBin"
+        Write-Log "Expected Data Directory : $PgData"
+        Write-Log "ImagePath In Workspace  : $ServiceInWorkspace"
+        Write-Log "======================================="
 
-    if (-not $ServiceStarted) {
-        throw "PostgreSQL Windows Service failed to start"
-    }
+        Write-Log "Starting existing PostgreSQL service..."
 
-    $PortStarted = $false
-
-    for ($i = 1; $i -le 30; $i++) {
-
-        $conn = Get-NetTCPConnection -LocalPort $ExpectedPort -State Listen -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-
-        if ($conn) {
-            $PortStarted = $true
-            break
+        try {
+            Start-Service -Name $ServiceName
         }
+        catch {
+            Write-Log ""
+            Write-Log "======================================="
+            Write-Log "START-SERVICE FAILURE DIAGNOSTICS"
+            Write-Log "======================================="
+            Write-Log "Exception Message       : $($_.Exception.Message)"
+            if ($_.Exception -is [System.ComponentModel.Win32Exception]) {
+                Write-Log "Win32 NativeErrorCode   : $($_.Exception.NativeErrorCode)"
+            }
+            if ($_.Exception -is [System.ServiceProcess.ServiceCommandException]) {
+                Write-Log "ServiceCommandException : True"
+            }
 
-        Start-Sleep -Seconds 1
-    }
+            $SvcAfterFailure = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+            if ($SvcAfterFailure) {
+                Write-Log "Service State After Failure : $($SvcAfterFailure.Status)"
+            }
 
-    if (-not $PortStarted) {
-        throw "PostgreSQL is not listening on port $ExpectedPort"
-    }
+            Write-Log ""
+            Write-Log "sc qc $ServiceName"
+            Write-Log ""
+            sc qc $ServiceName 2>&1 | ForEach-Object { Write-Log $_ }
 
-    Write-Log "PostgreSQL Windows Service started successfully."
-    exit 0
+            Write-Log ""
+            Write-Log "sc query $ServiceName"
+            Write-Log ""
+            sc query $ServiceName 2>&1 | ForEach-Object { Write-Log $_ }
+
+            Write-Log ""
+            Write-Log "Get-CimInstance Win32_Service -Filter `"Name='$ServiceName'`""
+            Write-Log ""
+            $CimInfo = Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
+            if ($CimInfo) {
+                $CimInfo | Format-List * | Out-String -Stream | ForEach-Object { Write-Log $_ }
+            }
+            else {
+                Write-Log "Service not found in Win32_Service CIM class."
+            }
+
+            Write-Log ""
+            Write-Log "Current PostgreSQL processes:"
+            Write-Log ""
+            Get-Process -Name "postgres" -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, Path, StartTime | Out-String -Stream | ForEach-Object { Write-Log $_ }
+
+            Write-Log ""
+            Write-Log "Port usage for PostgreSQL port $($ExpectedPort):"
+            Write-Log ""
+            $PortConnections = Get-NetTCPConnection -LocalPort $ExpectedPort -State Listen -ErrorAction SilentlyContinue
+            if ($PortConnections) {
+                $PortConnections | Format-Table LocalAddress, LocalPort, OwningProcess, State | Out-String -Stream | ForEach-Object { Write-Log $_ }
+                $PortConnections | ForEach-Object {
+                    $Proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+                    if ($Proc) {
+                        Write-Log "Process owning port: $($Proc.ProcessName) (PID: $($Proc.Id), Path: $($Proc.Path))"
+                    }
+                }
+            }
+            else {
+                Write-Log "No process listening on port $ExpectedPort."
+            }
+
+            Write-Log "======================================="
+            Write-Log "Falling back to pg_ctl start due to service start failure."
+        }
 }
 
 # =====================================

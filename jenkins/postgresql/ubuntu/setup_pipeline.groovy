@@ -278,21 +278,6 @@ pipeline {
         }
 
 
-        stage('Configure PostgreSQL User') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage('Configure PostgreSQL User') {
-
-                        sh './scripts/bash/postgresql/setup/configure_postgresql.sh'
-                    }
-                }
-            }
-        }
-
-
         stage('Configure Global PSQL') {
 
             when {
@@ -308,6 +293,21 @@ pipeline {
                     runTrackedStage('Configure Global PSQL') {
 
                         sh 'bash ./scripts/bash/postgresql/setup/configure_global_psql.sh'
+                    }
+                }
+            }
+        }
+
+
+        stage('Configure PostgreSQL User') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage('Configure PostgreSQL User') {
+
+                        sh './scripts/bash/postgresql/setup/configure_postgresql_user.sh'
                     }
                 }
             }

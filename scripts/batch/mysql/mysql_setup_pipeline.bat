@@ -114,6 +114,14 @@ if errorlevel 1 exit /b 1
 @REM call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_global_mysql.bat"
 @REM if errorlevel 1 exit /b 1
 
+echo.
+echo =====================================
+echo CONFIGURING MYSQL USER
+echo =====================================
+echo.
+call "%PROJECT_ROOT%\scripts\batch\mysql\setup\configure_mysql_user.bat"
+if errorlevel 1 exit /b 1
+
 call "%PROJECT_ROOT%\scripts\batch\mysql\setup\validate_environment.bat"
 if errorlevel 1 exit /b 1
 
