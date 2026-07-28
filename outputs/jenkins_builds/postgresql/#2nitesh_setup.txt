@@ -1,0 +1,913 @@
+Started by user Nitesh Patel
+Obtained jenkins/postgresql/windows/setup_pipeline.groovy from git https://github.com/niteshquantum/DataPlatform-Automation.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in C:\Users\Admin\.jenkins\workspace\posgre_01_final
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\Users\Admin\.jenkins\workspace\posgre_01_final\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.43.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/cleanup-architecture-v1^{commit}" # timeout=10
+Checking out Revision e1f97e3f44775bc529cb55ac8612da6ed86907d4 (refs/remotes/origin/cleanup-architecture-v1)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f e1f97e3f44775bc529cb55ac8612da6ed86907d4 # timeout=10
+Commit message: "fix(mysql): deploy when workspace artifacts are missing"
+First time build. Skipping changelog.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Initialize Logging)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py init                         --database postgresql                         --action setup                         --os windows                         --build-number "2"                         --job-name "posgre_01_final"                         --build-url "http://localhost:8080/job/posgre_01_final/2/" 
+Execution log initialized: logs\postgresql\setup\build_2\execution.json
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Check Administrator Privileges)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Check Administrator Privileges" 
+Stage started: Check Administrator Privileges
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\common\check_admin_privileges.bat
+
+=====================================
+CHECKING ADMINISTRATOR PRIVILEGES
+=====================================
+
+Administrator privileges not available.
+[Pipeline] writeFile
+[Pipeline] echo
+Administrator privileges not available.
+[Pipeline] echo
+PostgreSQL Service and Global PSQL configuration will be skipped.
+[Pipeline] echo
+PostgreSQL will run using project-local mode.
+[Pipeline] readFile
+[Pipeline] echo
+ADMIN STATUS = false
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py set-environment                             --database postgresql                             --action setup                             --build-number "2"                             --administrator-privileges "false" 
+Environment information updated: logs\postgresql\setup\build_2\execution.json
+Administrator Privileges: False
+Execution Mode: project_local
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Check Administrator Privileges"             --status SUCCESS 
+Stage completed: Check Administrator Privileges
+Stage Status: SUCCESS
+Stage Duration: 4.05 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Validate Python Runtime" 
+Stage started: Validate Python Runtime
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\common\validate_python_runtime.bat
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Using Python:
+C:\Users\Admin\AppData\Local\Programs\Python\Python312\python.exe
+Python 3.12.6
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Validate Python Runtime"             --status SUCCESS 
+Stage completed: Validate Python Runtime
+Stage Status: SUCCESS
+Stage Duration: 2.62 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Install Python Requirements" 
+Stage started: Install Python Requirements
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\install_python_requirements.bat
+
+=====================================
+PYTHON VERSION
+=====================================
+
+Using Python:
+C:\Users\Admin\AppData\Local\Programs\Python\Python312\python.exe
+Python 3.12.6
+
+=====================================
+INSTALLING PYTHON REQUIREMENTS
+=====================================
+
+Requirement already satisfied: pandas in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from -r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (2.3.1)
+Requirement already satisfied: pyyaml in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from -r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 2)) (6.0.2)
+Requirement already satisfied: python-dotenv in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from -r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 3)) (1.1.0)
+Requirement already satisfied: gdown>=5.2.0 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from -r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (6.1.0)
+Requirement already satisfied: psycopg2-binary in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from -r C:\Users\Admin\.jenkins\workspace\posgre_01_final\scripts\batch\postgresql\setup\..\..\..\..\requirements\postgresql.txt (line 3)) (2.9.12)
+Requirement already satisfied: numpy>=1.26.0 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from pandas->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (2.1.2)
+Requirement already satisfied: python-dateutil>=2.8.2 in c:\users\admin\appdata\roaming\python\python312\site-packages (from pandas->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from pandas->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from pandas->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (2025.1)
+Requirement already satisfied: beautifulsoup4 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (4.13.4)
+Requirement already satisfied: filelock in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (3.16.1)
+Requirement already satisfied: requests[socks] in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (2.32.3)
+Requirement already satisfied: tqdm in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (4.68.4)
+Requirement already satisfied: six>=1.5 in c:\users\admin\appdata\roaming\python\python312\site-packages (from python-dateutil>=2.8.2->pandas->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 1)) (1.16.0)
+Requirement already satisfied: soupsieve>1.2 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from beautifulsoup4->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (2.7)
+Requirement already satisfied: typing-extensions>=4.0.0 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from beautifulsoup4->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (4.14.1)
+Requirement already satisfied: charset-normalizer<4,>=2 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (3.4.1)
+Requirement already satisfied: idna<4,>=2.5 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (3.10)
+Requirement already satisfied: urllib3<3,>=1.21.1 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (2.5.0)
+Requirement already satisfied: certifi>=2017.4.17 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (2025.8.3)
+Requirement already satisfied: PySocks!=1.5.7,>=1.5.6 in c:\users\admin\appdata\local\programs\python\python312\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (1.7.1)
+Requirement already satisfied: colorama in c:\users\admin\appdata\roaming\python\python312\site-packages (from tqdm->gdown>=5.2.0->-r C:\Users\Admin\.jenkins\workspace\posgre_01_final\requirements\common.txt (line 4)) (0.4.6)
+
+[notice] A new release of pip is available: 25.3 -> 26.1.2
+[notice] To update, run: python.exe -m pip install --upgrade pip
+
+=====================================
+PYTHON REQUIREMENTS INSTALLED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Install Python Requirements"             --status SUCCESS 
+Stage completed: Install Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 16.02 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Validate Python Requirements" 
+Stage started: Validate Python Requirements
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\validate_python_requirements.bat
+
+=====================================
+VALIDATING PYTHON REQUIREMENTS
+=====================================
+
+Using Python:
+C:\Users\Admin\AppData\Local\Programs\Python\Python312\python.exe
+
+Python Version:
+Python 3.12.6
+
+Checking PyYAML...
+Checking python-dotenv...
+Checking psycopg2...
+Checking pandas...
+
+=====================================
+PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Validate Python Requirements"             --status SUCCESS 
+Stage completed: Validate Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 11.71 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Java Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Validate Java Runtime" 
+Stage started: Validate Java Runtime
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\common\validate_java_runtime.bat
+=====================================
+VALIDATING JAVA RUNTIME
+=====================================
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk-19
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+Checking C:\Program Files\Eclipse Adoptium
+  Found supported JDK: jdk-21.0.11.10-hotspot -> selecting version 21
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 21
+JAVA_HOME         : C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 21.0.11
+
+========================================
+Java 21 validated successfully
+========================================
+'...' is not recognized as an internal or external command,
+operable program or batch file.
+Java Path:
+C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe
+C:\Program Files\Java\jdk-19\bin\java.exe
+
+JAVA_HOME:
+C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+
+Java Version:
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+Detecting Java Version...
+Detected Java Major Version: 21
+
+Java 21 detected - Supported
+
+Recommended Java Version Detected
+
+=====================================
+JAVA RUNTIME VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Validate Java Runtime"             --status SUCCESS 
+Stage completed: Validate Java Runtime
+Stage Status: SUCCESS
+Stage Duration: 4.27 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Tools)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Install Tools" 
+Stage started: Install Tools
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\install_tools.bat
+
+=====================================
+INSTALLING POSTGRESQL TOOLS
+=====================================
+
+[1/4] Installing Terraform...
+
+=====================================
+INSTALLING TERRAFORM
+=====================================
+
+Terraform already installed.
+Skipping download...
+[2/4] Installing Liquibase...
+
+=====================================
+INSTALLING LIQUIBASE
+=====================================
+
+Liquibase already exists.
+
+LIQUIBASE INSTALLATION SUCCESSFUL
+
+[3/4] Installing PostgreSQL JDBC Driver...
+
+=====================================
+INSTALLING POSTGRESQL JDBC DRIVER
+=====================================
+
+
+=====================================
+DOWNLOADING POSTGRESQL JDBC DRIVER
+=====================================
+Version : 42.7.3
+URL     : https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+
+
+=====================================
+POSTGRESQL JDBC DRIVER INSTALLED
+=====================================
+Driver : C:\Users\Admin\.jenkins\workspace\posgre_01_final\tools\drivers\postgresql-42.7.3.jar
+=====================================
+
+POSTGRESQL JDBC DRIVER INSTALLATION SUCCESSFUL
+
+[4/4] Validating Installed Tools...
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+Checking Terraform...
+Terraform v1.13.0
+on windows_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+Checking Liquibase...
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk-19
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+Checking C:\Program Files\Eclipse Adoptium
+  Found supported JDK: jdk-21.0.11.10-hotspot -> selecting version 21
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 21
+JAVA_HOME         : C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 21.0.11
+
+========================================
+Java 21 validated successfully
+========================================
+
+=====================================
+VALIDATING LIQUIBASE
+=====================================
+
+Expected Liquibase Version : 5.0.3
+
+Java Found:
+C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe
+
+=====================================
+JAVA HOME BEFORE LIQUIBASE
+=====================================
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+Checking Liquibase Version...
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 09:02:35 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: C:\Users\Admin\.jenkins\workspace\posgre_01_final\tools\liquibase
+Java Home C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot (Version 21.0.11)
+Libraries:
+- internal\lib\commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal\lib\commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal\lib\commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal\lib\commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal\lib\h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal\lib\opencsv.jar: opencsv 5.12.0
+- internal\lib\picocli.jar: picocli 4.7.7 By Remko Popma
+- internal\lib\snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+Exit Code=0
+
+
+=====================================
+LIQUIBASE VALIDATED
+=====================================
+
+Checking PostgreSQL Driver...
+
+=====================================
+VALIDATING POSTGRESQL JDBC DRIVER
+=====================================
+
+Expected Driver Version : 42.7.3
+
+Driver Found:
+C:\Users\Admin\.jenkins\workspace\posgre_01_final\tools\drivers\postgresql-42.7.3.jar
+
+=====================================
+POSTGRESQL JDBC DRIVER VALIDATED
+=====================================
+
+TERRAFORM VALIDATED
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+
+=====================================
+POSTGRESQL TOOLS INSTALLED SUCCESSFULLY
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Install Tools"             --status SUCCESS 
+Stage completed: Install Tools
+Stage Status: SUCCESS
+Stage Duration: 16.02 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Check PostgreSQL Instance)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Check PostgreSQL Instance" 
+Stage started: Check PostgreSQL Instance
+[Pipeline] bat
+[Pipeline] echo
+Instance State: INSTANCE_RUNNING_AND_USABLE
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Check PostgreSQL Instance"             --status SUCCESS 
+Stage completed: Check PostgreSQL Instance
+Stage Status: SUCCESS
+Stage Duration: 2.58 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy PostgreSQL)
+[Pipeline] bat
+Stage "Deploy PostgreSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start PostgreSQL)
+[Pipeline] bat
+Stage "Start PostgreSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate PostgreSQL Instance)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Validate PostgreSQL Instance" 
+Stage started: Validate PostgreSQL Instance
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\validate_postgresql.bat
+
+=====================================
+VALIDATING POSTGRESQL
+=====================================
+
+============================================================
+VALIDATING POSTGRESQL INSTANCE
+============================================================
+Database : postgres
+Port     : 5432
+Version  : PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.42.34436, 64-bit
+
+PostgreSQL validation successful.
+
+=====================================
+POSTGRESQL VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Validate PostgreSQL Instance"             --status SUCCESS 
+Stage completed: Validate PostgreSQL Instance
+Stage Status: SUCCESS
+Stage Duration: 2.95 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Configure PostgreSQL Service)
+[Pipeline] readFile
+Stage "Configure PostgreSQL Service" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Configure Global PSQL)
+[Pipeline] readFile
+Stage "Configure Global PSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Configure PostgreSQL User)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Configure PostgreSQL User" 
+Stage started: Configure PostgreSQL User
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\configure_postgresql_user.bat
+
+=====================================
+CONFIGURING POSTGRESQL USER
+=====================================
+
+
+=====================================
+CONFIGURING POSTGRESQL USER
+=====================================
+
+Project Root : C:\Users\Admin\.jenkins\workspace\posgre_01_final
+Host         : 127.0.0.1
+Port         : 5432
+Database     : DataManagementDB
+User         : postgres
+
+Resolved pg_ctl.exe from service: C:\Users\Admin\.jenkins\workspace\222postgresql\databases\postgresql\bin\pg_ctl.exe
+Resolved psql.exe from service: C:\Users\Admin\.jenkins\workspace\222postgresql\databases\postgresql\bin\psql.exe
+psql.exe     : C:\Users\Admin\.jenkins\workspace\222postgresql\databases\postgresql\bin\psql.exe
+
+Checking whether user exists...
+User 'postgres' already exists.
+Skipping user creation.
+
+=====================================
+POSTGRESQL USER CONFIGURED SUCCESSFULLY
+=====================================
+
+
+=====================================
+POSTGRESQL USER CONFIGURATION SUCCESSFUL
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Configure PostgreSQL User"             --status SUCCESS 
+Stage completed: Configure PostgreSQL User
+Stage Status: SUCCESS
+Stage Duration: 6.15 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Environment)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-start         --database postgresql         --action setup         --build-number "2"         --stage-name "Validate Environment" 
+Stage started: Validate Environment
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>scripts\batch\postgresql\setup\validate_environment.bat
+
+=====================================
+VALIDATING POSTGRESQL ENVIRONMENT
+=====================================
+
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Using Python:
+C:\Users\Admin\AppData\Local\Programs\Python\Python312\python.exe
+Python 3.12.6
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING PYTHON REQUIREMENTS
+=====================================
+
+Using Python:
+C:\Users\Admin\AppData\Local\Programs\Python\Python312\python.exe
+
+Python Version:
+Python 3.12.6
+
+Checking PyYAML...
+Checking python-dotenv...
+Checking psycopg2...
+Checking pandas...
+
+=====================================
+PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+Checking Terraform...
+Terraform v1.13.0
+on windows_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+Checking Liquibase...
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk-19
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+Checking C:\Program Files\Eclipse Adoptium
+  Found supported JDK: jdk-21.0.11.10-hotspot -> selecting version 21
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 21
+JAVA_HOME         : C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 21.0.11
+
+========================================
+Java 21 validated successfully
+========================================
+
+=====================================
+VALIDATING LIQUIBASE
+=====================================
+
+Expected Liquibase Version : 5.0.3
+
+Java Found:
+C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe
+
+=====================================
+JAVA HOME BEFORE LIQUIBASE
+=====================================
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot
+
+openjdk version "21.0.11" 2026-04-21 LTS
+OpenJDK Runtime Environment Temurin-21.0.11+10 (build 21.0.11+10-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.11+10 (build 21.0.11+10-LTS, mixed mode, sharing)
+
+Checking Liquibase Version...
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 09:03:02 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: C:\Users\Admin\.jenkins\workspace\posgre_01_final\tools\liquibase
+Java Home C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot (Version 21.0.11)
+Libraries:
+- internal\lib\commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal\lib\commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal\lib\commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal\lib\commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal\lib\h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal\lib\opencsv.jar: opencsv 5.12.0
+- internal\lib\picocli.jar: picocli 4.7.7 By Remko Popma
+- internal\lib\snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+Exit Code=0
+
+
+=====================================
+LIQUIBASE VALIDATED
+=====================================
+
+Checking PostgreSQL Driver...
+
+=====================================
+VALIDATING POSTGRESQL JDBC DRIVER
+=====================================
+
+Expected Driver Version : 42.7.3
+
+Driver Found:
+C:\Users\Admin\.jenkins\workspace\posgre_01_final\tools\drivers\postgresql-42.7.3.jar
+
+=====================================
+POSTGRESQL JDBC DRIVER VALIDATED
+=====================================
+
+TERRAFORM VALIDATED
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+
+=====================================
+VALIDATING POSTGRESQL PORT
+=====================================
+
+============================================================
+VALIDATING POSTGRESQL PORT
+============================================================
+Host : 127.0.0.1
+Port : 5432
+
+PostgreSQL port validation successful.
+
+=====================================
+POSTGRESQL PORT VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING POSTGRESQL
+=====================================
+
+============================================================
+VALIDATING POSTGRESQL INSTANCE
+============================================================
+Database : postgres
+Port     : 5432
+Version  : PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.42.34436, 64-bit
+
+PostgreSQL validation successful.
+
+=====================================
+POSTGRESQL VALIDATED
+=====================================
+
+
+=====================================
+POSTGRESQL ENVIRONMENT VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py stage-end             --database postgresql             --action setup             --build-number "2"             --stage-name "Validate Environment"             --status SUCCESS 
+Stage completed: Validate Environment
+Stage Status: SUCCESS
+Stage Duration: 9.56 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+FINALIZING POSTGRESQL SETUP LOGGING AND REPORTING
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\logging\logger.py finalize                         --database postgresql                         --action setup                         --build-number "2"                         --status "SUCCESS" 
+Execution log finalized: logs\postgresql\setup\build_2\execution.json
+Final Status: SUCCESS
+Duration: 86.91 seconds
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\reporting\generate_report.py                         --database postgresql                         --action setup                         --build-number "2" 
+Reports generated successfully.
+JSON Report: reports\postgresql\setup\build_2\report.json
+HTML Report: reports\postgresql\setup\build_2\report.html
+[Pipeline] bat
+
+C:\Users\Admin\.jenkins\workspace\posgre_01_final>python scripts\reporting\generate_history.py                         --database postgresql                         --action setup                         --build-number "2" 
+Execution history generated successfully.
+History Record: ADDED
+Total Executions: 2
+JSON History: reports\history\execution_history.json
+HTML History: reports\history\execution_history.html
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] echo
+POSTGRESQL SETUP PIPELINE COMPLETED
+[Pipeline] echo
+POSTGRESQL SETUP SUCCESSFUL
+[Pipeline] script
+[Pipeline] {
+[Pipeline] readFile
+[Pipeline] echo
+PostgreSQL configured successfully in project-local mode.
+[Pipeline] echo
+Windows Service and Global PSQL configuration were skipped because Administrator privileges were unavailable.
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

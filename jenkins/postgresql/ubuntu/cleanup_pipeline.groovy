@@ -1,85 +1,14 @@
+def context = [database: 'postgresql', action: 'cleanup', operatingSystem: 'ubuntu']
 pipeline {
-
-    agent any
-
-    parameters {
-
-        choice(
-            name: 'CLEANUP_MODE',
-            choices: [
-                'PRESERVE_DATA',
-                'DELETE_DATA'
-            ],
-            description: 'Select PostgreSQL cleanup mode'
-        )
-    }
-
+    agent { label 'ubuntu-node' }
+    parameters { choice(name: 'CLEANUP_MODE', choices: ['PRESERVE_DATA', 'DELETE_DATA'], description: 'Select PostgreSQL cleanup mode') }
     stages {
-
-        stage('Validate Cleanup Parameters') {
-
-            steps {
-
-                script {
-
-                    if (
-                        params.CLEANUP_MODE != 'PRESERVE_DATA' &&
-                        params.CLEANUP_MODE != 'DELETE_DATA'
-                    ) {
-                        error("Invalid CLEANUP_MODE: ${params.CLEANUP_MODE}")
-                    }
-
-                    echo """
-=====================================
-POSTGRESQL UBUNTU CLEANUP PARAMETERS
-=====================================
-
-Cleanup Mode : ${params.CLEANUP_MODE}
-"""
-                }
-            }
-        }
-
-        stage('Run PostgreSQL Cleanup') {
-
-            steps {
-
-                withEnv([
-                    "CLEANUP_MODE=${params.CLEANUP_MODE}"
-                ]) {
-
-                    sh '''
-                        echo
-                        echo "====================================="
-                        echo "RUNNING POSTGRESQL UBUNTU CLEANUP"
-                        echo "====================================="
-                        echo
-
-                        bash scripts/bash/postgresql/cleanup/postgresql_cleanup_pipeline.sh
-
-                        echo
-                        echo "====================================="
-                        echo "POSTGRESQL UBUNTU CLEANUP COMPLETED"
-                        echo "====================================="
-                        echo
-                    '''
-                }
-            }
-        }
+        stage('Initialize Logging') { steps { script { load('jenkins/common/standalone_pipeline_support.groovy').initialize(context) } } }
+        stage('Execute POSTGRESQL CLEANUP Steps') { steps { script { def tracker = load 'jenkins/common/common_stage_tracker.groovy'; load('jenkins/common/postgresql/cleanup_steps.groovy').execute(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }]) } } }
     }
-
     post {
-
-        success {
-            echo 'POSTGRESQL UBUNTU CLEANUP SUCCESSFUL'
-        }
-
-        failure {
-            echo 'POSTGRESQL UBUNTU CLEANUP FAILED'
-        }
-
-        always {
-            echo 'POSTGRESQL UBUNTU CLEANUP PIPELINE COMPLETED'
-        }
+        success { echo 'UBUNTU POSTGRESQL CLEANUP SUCCESSFUL' }
+        failure { echo 'UBUNTU POSTGRESQL CLEANUP FAILED' }
+        always { script { load('jenkins/common/standalone_pipeline_support.groovy').finalize(context) }; echo 'UBUNTU POSTGRESQL CLEANUP PIPELINE COMPLETED' }
     }
 }

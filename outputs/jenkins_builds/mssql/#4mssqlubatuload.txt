@@ -1,0 +1,445 @@
+Started by user Nitesh Patel
+Obtained jenkins/mssql/ubuntu/setup_pipeline.groovy from git https://github.com/niteshquantum/DataPlatform-Automation.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/02_mssql_u_final
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/02_mssql_u_final/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/cleanup-architecture-v1^{commit} # timeout=10
+Checking out Revision bd8f8f3c831ca06986d3da4be1e6aa8110b9b209 (refs/remotes/origin/cleanup-architecture-v1)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f bd8f8f3c831ca06986d3da4be1e6aa8110b9b209 # timeout=10
+Commit message: "fix(mssql): quote ODBC driver name in Ubuntu mssql.conf"
+ > git rev-list --no-walk bd8f8f3c831ca06986d3da4be1e6aa8110b9b209 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Set Permissions)
+[Pipeline] sh
++ find scripts/bash -type f -name *.sh -exec chmod +x {} ;
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Initialize Logging)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py init --database mssql --action setup --os ubuntu --build-number 4 --job-name 02_mssql_u_final --build-url http://192.168.1.14:8080/job/02_mssql_u_final/4/
+Execution log initialized: logs/mssql/setup/build_4/execution.json
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Validate Python Runtime
+Stage started: Validate Python Runtime
+[Pipeline] sh
++ ./scripts/bash/common/validate_python_runtime.sh
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Python Found:
+/usr/bin/python3
+Python 3.10.12
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Validate Python Runtime --status SUCCESS
+Stage completed: Validate Python Runtime
+Stage Status: SUCCESS
+Stage Duration: 1.26 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Install Python Requirements
+Stage started: Install Python Requirements
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/install_python_requirements.sh
+
+=====================================
+INSTALLING MSSQL PYTHON REQUIREMENTS
+=====================================
+
+Python 3.10.12
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: pandas in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.3.3)
+Requirement already satisfied: pyyaml in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 2)) (6.0.3)
+Requirement already satisfied: python-dotenv in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 3)) (1.2.2)
+Requirement already satisfied: gdown>=5.2.0 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (6.1.0)
+Requirement already satisfied: pyodbc in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/mssql.txt (line 3)) (5.3.0)
+Requirement already satisfied: numpy>=1.22.4 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.2.6)
+Requirement already satisfied: python-dateutil>=2.8.2 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /usr/lib/python3/dist-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2022.1)
+Requirement already satisfied: tzdata>=2022.7 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2026.2)
+Requirement already satisfied: beautifulsoup4 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.15.0)
+Requirement already satisfied: filelock in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (3.29.7)
+Requirement already satisfied: requests[socks] in /usr/lib/python3/dist-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (2.25.1)
+Requirement already satisfied: tqdm in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.68.4)
+Requirement already satisfied: typing-extensions>=4.0 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.15.0)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3/dist-packages (from python-dateutil>=2.8.2->pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (1.16.0)
+Requirement already satisfied: soupsieve>=1.6.1 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from beautifulsoup4->gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (2.8.4)
+Requirement already satisfied: PySocks!=1.5.7,>=1.5.6 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from requests[socks]->gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (1.7.1)
+
+=====================================
+MSSQL PYTHON REQUIREMENTS INSTALLED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Install Python Requirements --status SUCCESS
+Stage completed: Install Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 1.82 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Validate Python Requirements
+Stage started: Validate Python Requirements
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/validate_python_requirements.sh
+
+=====================================
+VALIDATING MSSQL PYTHON REQUIREMENTS
+=====================================
+
+Python 3.10.12
+
+=====================================
+MSSQL PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Validate Python Requirements --status SUCCESS
+Stage completed: Validate Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 1.5 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Java Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Validate Java Runtime
+Stage started: Validate Java Runtime
+[Pipeline] sh
++ ./scripts/bash/common/validate_java_runtime.sh
+
+=====================================
+VALIDATING JAVA RUNTIME
+=====================================
+
+Java Found:
+/usr/bin/java
+openjdk version "21.0.11" 2026-04-21
+OpenJDK Runtime Environment (build 21.0.11+10-1-22.04.2-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.11+10-1-22.04.2-Ubuntu, mixed mode, sharing)
+
+=====================================
+JAVA RUNTIME VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Validate Java Runtime --status SUCCESS
+Stage completed: Validate Java Runtime
+Stage Status: SUCCESS
+Stage Duration: 0.6 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Tools)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Install Tools
+Stage started: Install Tools
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/install_tools.sh
+
+=====================================
+INSTALLING TERRAFORM
+=====================================
+
+Terraform already installed
+Terraform v1.13.0
+on linux_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+
+=====================================
+INSTALLING LIQUIBASE
+=====================================
+
+Liquibase already installed
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 13:50:13 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: /var/lib/jenkins/workspace/02_mssql_u_final/tools/liquibase
+Java Home /usr/lib/jvm/java-21-openjdk-amd64 (Version 21.0.11)
+Libraries:
+- internal/lib/commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal/lib/commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal/lib/commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal/lib/commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal/lib/h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal/lib/opencsv.jar: opencsv 5.12.0
+- internal/lib/picocli.jar: picocli 4.7.7 By Remko Popma
+- internal/lib/snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+=====================================
+INSTALLING MSSQL JDBC DRIVER
+=====================================
+
+MSSQL Driver already installed
+/var/lib/jenkins/workspace/02_mssql_u_final/tools/drivers/mssql-jdbc-12.10.0.jre11.jar
+
+=====================================
+TOOLS INSTALLED SUCCESSFULLY
+=====================================
+
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+
+Terraform:
+Terraform v1.13.0
+on linux_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+
+Liquibase:
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 13:50:13 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: /var/lib/jenkins/workspace/02_mssql_u_final/tools/liquibase
+Java Home /usr/lib/jvm/java-21-openjdk-amd64 (Version 21.0.11)
+Libraries:
+- internal/lib/commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal/lib/commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal/lib/commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal/lib/commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal/lib/h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal/lib/opencsv.jar: opencsv 5.12.0
+- internal/lib/picocli.jar: picocli 4.7.7 By Remko Popma
+- internal/lib/snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Install Tools --status SUCCESS
+Stage completed: Install Tools
+Stage Status: SUCCESS
+Stage Duration: 2.1 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Check MSSQL Instance)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Check MSSQL Instance
+Stage started: Check MSSQL Instance
+[Pipeline] sh
++ bash scripts/bash/mssql/setup/check_instance.sh
+[Pipeline] echo
+Instance State: INSTANCE_RUNNING_AND_USABLE
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Check MSSQL Instance --status SUCCESS
+Stage completed: Check MSSQL Instance
+Stage Status: SUCCESS
+Stage Duration: 1.27 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install MSSQL)
+Stage "Install MSSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy MSSQL)
+Stage "Deploy MSSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start MSSQL)
+Stage "Start MSSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Configure Global MSSQL)
+Stage "Configure Global MSSQL" skipped due to when conditional
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Configure MSSQL User)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action setup --build-number 4 --stage-name Configure MSSQL User
+Stage started: Configure MSSQL User
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/configure_mssql_user.sh
+SCRIPT_DIR   : /var/lib/jenkins/workspace/02_mssql_u_final/scripts/bash/mssql/setup
+PROJECT_ROOT : /var/lib/jenkins/workspace/02_mssql_u_final
+CONFIG_FILE  : /var/lib/jenkins/workspace/02_mssql_u_final/config/ubuntu/mssql.conf
+
+=====================================
+CONFIGURING MSSQL USER
+=====================================
+
+Configured User : sa
+
+Checking whether login exists...
+./scripts/bash/mssql/setup/configure_mssql_user.sh: line 52: [: 1(1rowsaffected): integer expression expected
+Creating login 'sa'...
+Msg 15025, Level 16, State 1, Server mohit-kushwah, Line 1
+The server principal 'sa' already exists.
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action setup --build-number 4 --stage-name Configure MSSQL User --status FAILURE
+Stage completed: Configure MSSQL User
+Stage Status: FAILURE
+Stage Duration: 1.04 seconds
+[Pipeline] sh
++ python3 scripts/logging/logger.py set-error --database mssql --action setup --build-number 4 --failed-stage Configure MSSQL User --message Stage execution failed
+Pipeline error recorded: logs/mssql/setup/build_4/execution.json
+Failed Stage: Configure MSSQL User
+Error Message: Stage execution failed
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Environment)
+Stage "Validate Environment" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+FINALIZING UBUNTU MSSQL SETUP LOGGING AND REPORTING
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py finalize --database mssql --action setup --build-number 4 --status FAILURE
+Execution log finalized: logs/mssql/setup/build_4/execution.json
+Final Status: FAILURE
+Duration: 12.05 seconds
+[Pipeline] sh
++ python3 scripts/reporting/generate_report.py --database mssql --action setup --build-number 4
+Reports generated successfully.
+JSON Report: reports/mssql/setup/build_4/report.json
+HTML Report: reports/mssql/setup/build_4/report.html
+[Pipeline] sh
++ python3 scripts/reporting/generate_history.py --database mssql --action setup --build-number 4
+Execution history generated successfully.
+History Record: ADDED
+Total Executions: 3
+JSON History: reports/history/execution_history.json
+HTML History: reports/history/execution_history.html
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] echo
+UBUNTU MSSQL SETUP PIPELINE COMPLETED
+[Pipeline] echo
+UBUNTU MSSQL SETUP FAILED
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

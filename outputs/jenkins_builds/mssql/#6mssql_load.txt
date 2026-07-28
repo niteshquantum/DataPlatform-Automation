@@ -1,0 +1,753 @@
+Started by user Nitesh Patel
+Obtained jenkins/mssql/ubuntu/load_pipeline.groovy from git https://github.com/niteshquantum/DataPlatform-Automation.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/02_mssql_u_final
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/02_mssql_u_final/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/cleanup-architecture-v1^{commit} # timeout=10
+Checking out Revision 7cf68558d08e59127f42021a4f08b08b1e165dca (refs/remotes/origin/cleanup-architecture-v1)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 7cf68558d08e59127f42021a4f08b08b1e165dca # timeout=10
+Commit message: "fix(mssql): suppress sqlcmd row-count output in configure_mssql_user.sh"
+ > git rev-list --no-walk 7cf68558d08e59127f42021a4f08b08b1e165dca # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Set Permissions)
+[Pipeline] sh
++ find scripts/bash -type f -name *.sh -exec chmod +x {} ;
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Initialize Logging)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py init --database mssql --action load --os ubuntu --build-number 6 --job-name 02_mssql_u_final --build-url http://192.168.1.14:8080/job/02_mssql_u_final/6/
+Execution log initialized: logs/mssql/load/build_6/execution.json
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Validate Python Runtime
+Stage started: Validate Python Runtime
+[Pipeline] sh
++ ./scripts/bash/common/validate_python_runtime.sh
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Python Found:
+/usr/bin/python3
+Python 3.10.12
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Validate Python Runtime --status SUCCESS
+Stage completed: Validate Python Runtime
+Stage Status: SUCCESS
+Stage Duration: 0.96 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Install Python Requirements
+Stage started: Install Python Requirements
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/install_python_requirements.sh
+
+=====================================
+INSTALLING MSSQL PYTHON REQUIREMENTS
+=====================================
+
+Python 3.10.12
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: pandas in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.3.3)
+Requirement already satisfied: pyyaml in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 2)) (6.0.3)
+Requirement already satisfied: python-dotenv in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 3)) (1.2.2)
+Requirement already satisfied: gdown>=5.2.0 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (6.1.0)
+Requirement already satisfied: pyodbc in /var/lib/jenkins/.local/lib/python3.10/site-packages (from -r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/mssql.txt (line 3)) (5.3.0)
+Requirement already satisfied: numpy>=1.22.4 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.2.6)
+Requirement already satisfied: python-dateutil>=2.8.2 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /usr/lib/python3/dist-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2022.1)
+Requirement already satisfied: tzdata>=2022.7 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (2026.2)
+Requirement already satisfied: beautifulsoup4 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.15.0)
+Requirement already satisfied: filelock in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (3.29.7)
+Requirement already satisfied: requests[socks] in /usr/lib/python3/dist-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (2.25.1)
+Requirement already satisfied: tqdm in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.68.4)
+Requirement already satisfied: typing-extensions>=4.0 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (4.15.0)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3/dist-packages (from python-dateutil>=2.8.2->pandas->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 1)) (1.16.0)
+Requirement already satisfied: soupsieve>=1.6.1 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from beautifulsoup4->gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (2.8.4)
+Requirement already satisfied: PySocks!=1.5.7,>=1.5.6 in /var/lib/jenkins/.local/lib/python3.10/site-packages (from requests[socks]->gdown>=5.2.0->-r /var/lib/jenkins/workspace/02_mssql_u_final/requirements/common.txt (line 4)) (1.7.1)
+
+=====================================
+MSSQL PYTHON REQUIREMENTS INSTALLED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Install Python Requirements --status SUCCESS
+Stage completed: Install Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 1.6 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Validate Python Requirements
+Stage started: Validate Python Requirements
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/validate_python_requirements.sh
+
+=====================================
+VALIDATING MSSQL PYTHON REQUIREMENTS
+=====================================
+
+Python 3.10.12
+
+=====================================
+MSSQL PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Validate Python Requirements --status SUCCESS
+Stage completed: Validate Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 0.97 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Tools)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Validate Tools
+Stage started: Validate Tools
+[Pipeline] sh
++ ./scripts/bash/mssql/validate_tools.sh
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+
+Terraform:
+Terraform v1.13.0
+on linux_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+
+Liquibase:
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 14:02:17 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: /var/lib/jenkins/workspace/02_mssql_u_final/tools/liquibase
+Java Home /usr/lib/jvm/java-21-openjdk-amd64 (Version 21.0.11)
+Libraries:
+- internal/lib/commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal/lib/commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal/lib/commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal/lib/commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal/lib/h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal/lib/opencsv.jar: opencsv 5.12.0
+- internal/lib/picocli.jar: picocli 4.7.7 By Remko Popma
+- internal/lib/snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Validate Tools --status SUCCESS
+Stage completed: Validate Tools
+Stage Status: SUCCESS
+Stage Duration: 1.98 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start MSSQL)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Start MSSQL
+Stage started: Start MSSQL
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/start_mssql.sh
+
+=====================================
+STARTING MSSQL SERVER
+=====================================
+
+MSSQL Server is already running.
+
+=====================================
+MSSQL SERVER START SUCCESSFUL
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Start MSSQL --status SUCCESS
+Stage completed: Start MSSQL
+Stage Status: SUCCESS
+Stage Duration: 1.09 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate MSSQL Instance)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Validate MSSQL Instance
+Stage started: Validate MSSQL Instance
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/validate_mssql_instance.sh
+
+=====================================
+VALIDATING MSSQL INSTANCE
+=====================================
+
+Host : 127.0.0.1
+Port : 1433
+User : sa
+
+Testing MSSQL instance connection...
+version                                                                                                                                                                                                                                                                                                      local_address                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local_port                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Microsoft SQL Server 2022 (RTM-CU25-GDR) (KB5101347) - 16.0.4262.2 (X64) 
+	Jun 18 2026 14:30:08 
+	Copyright (C) 2022 Microsoft Corporation
+	Developer Edition (64-bit) on Linux (Ubuntu 22.04.5 LTS) <X64>                                                                                                   127.0.0.1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        1433                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+(1 rows affected)
+
+MSSQL INSTANCE VALIDATION SUCCESSFUL
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Validate MSSQL Instance --status SUCCESS
+Stage completed: Validate MSSQL Instance
+Stage Status: SUCCESS
+Stage Duration: 1.18 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Download Dataset)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Download Dataset
+Stage started: Download Dataset
+[Pipeline] sh
++ ./scripts/bash/common/download_dataset.sh
+
+=====================================
+DOWNLOADING DATASET
+=====================================
+
+Downloading...
+From: https://drive.google.com/uc?id=1J96umqV5NM9M4bDG238EYkJ5GsNJAYnC
+To: /var/lib/jenkins/workspace/02_mssql_u_final/incoming/archive/tmpydvk890i.tmp
+
+============================================================
+DATASET DOWNLOAD
+============================================================
+
+Downloading dataset...
+
+  0%|          | 0.00/13.7k [00:00<?, ?B/s]100%|██████████| 13.7k/13.7k [00:00<00:00, 57.4MB/s]
+
+[SUCCESS] Dataset downloaded successfully.
+/var/lib/jenkins/workspace/02_mssql_u_final/incoming/archive/testdatasmall.zip
+
+============================================================
+DATASET EXTRACTION & MERGE
+============================================================
+
+Extracting and merging dataset...
+
+[SUCCESS] Dataset extracted and merged successfully.
+
+============================================================
+DATASET VERIFICATION
+============================================================
+[OK] Verified folder: mongodb
+[OK] Verified folder: mssql
+[OK] Verified folder: mysql
+[OK] Verified folder: postgresql
+
+=====================================
+DATASET READY
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Download Dataset --status SUCCESS
+Stage completed: Download Dataset
+Stage Status: SUCCESS
+Stage Duration: 4.43 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Profile Source Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Profile Source Data
+Stage started: Profile Source Data
+[Pipeline] sh
++ ./scripts/bash/common/run_data_profiling.sh mssql
+
+=====================================
+DATA PROFILING
+=====================================
+
+
+=====================================
+DATA PROFILING STARTED
+=====================================
+Database       : mssql
+Input Directory: /var/lib/jenkins/workspace/02_mssql_u_final/incoming/mssql
+Files Found    : 3
+
+Profiling: employees.csv
+Status   : SUCCESS
+
+Profiling: orders.csv
+Status   : SUCCESS
+
+Profiling: products.csv
+Status   : SUCCESS
+
+=====================================
+DATA PROFILING COMPLETED
+=====================================
+Successful Files : 3
+Failed Files     : 0
+Output           : /var/lib/jenkins/workspace/02_mssql_u_final/metadata/profiling/mssql/profiling.json
+
+
+=====================================
+DATA PROFILING COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Profile Source Data --status SUCCESS
+Stage completed: Profile Source Data
+Stage Status: SUCCESS
+Stage Duration: 0.87 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Create Database)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Create Database
+Stage started: Create Database
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/create_database.sh
+
+=====================================
+CREATE DATABASE
+=====================================
+
+Host     : 127.0.0.1
+Port     : 1433
+Database : EcommerceMSSQL
+User     : sa
+
+Creating database if it does not exist...
+
+DATABASE READY : EcommerceMSSQL
+
+=====================================
+DATABASE VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Create Database --status SUCCESS
+Stage completed: Create Database
+Stage Status: SUCCESS
+Stage Duration: 1.01 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate MSSQL)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Validate MSSQL
+Stage started: Validate MSSQL
+[Pipeline] sh
++ ./scripts/bash/mssql/setup/validate_mssql.sh
+
+=====================================
+VALIDATING MSSQL SERVER
+=====================================
+
+Checking SQL Server service...
+Checking SQL Server port...
+Validating SQL Server connection...
+
+=====================================
+MSSQL SERVER VALIDATION SUCCESSFUL
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Validate MSSQL --status SUCCESS
+Stage completed: Validate MSSQL
+Stage Status: SUCCESS
+Stage Duration: 1.3 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Load Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mssql --action load --build-number 6 --stage-name Load Data
+Stage started: Load Data
+[Pipeline] sh
++ ./scripts/bash/mssql/load/load_data.sh
+
+=====================================
+MSSQL DATA LOAD
+=====================================
+
+
+-------------------------------------
+DETECTING SCHEMA
+-------------------------------------
+
+2026-07-28 14:02:29,163 - INFO - Starting schema detection...
+2026-07-28 14:02:29,163 - INFO - Database type: mssql
+2026-07-28 14:02:29,163 - INFO - Scanning incoming directory: /var/lib/jenkins/workspace/02_mssql_u_final/incoming/mssql
+2026-07-28 14:02:29,164 - INFO - Found 3 CSV file(s)
+2026-07-28 14:02:29,164 - INFO - Extracted headers from products.csv: ['product_id', 'product_name', 'category', 'sub_category', 'sku', 'supplier_id', 'unit_price', 'cost_price', 'stock_quantity', 'reorder_level', 'weight_kg', 'is_active']
+2026-07-28 14:02:29,164 - INFO - Created new table 'products' with columns: ['product_id', 'product_name', 'category', 'sub_category', 'sku', 'supplier_id', 'unit_price', 'cost_price', 'stock_quantity', 'reorder_level', 'weight_kg', 'is_active']
+2026-07-28 14:02:29,164 - INFO - Extracted headers from orders.csv: ['order_id', 'customer_id', 'employee_id', 'order_date', 'ship_date', 'shipping_method', 'freight_cost', 'order_status', 'payment_method', 'total_amount', 'tax_amount']
+2026-07-28 14:02:29,164 - INFO - CDC Status [orders] : NEW
+2026-07-28 14:02:29,164 - INFO - Created new table 'orders' with columns: ['order_id', 'customer_id', 'employee_id', 'order_date', 'ship_date', 'shipping_method', 'freight_cost', 'order_status', 'payment_method', 'total_amount', 'tax_amount']
+2026-07-28 14:02:29,165 - INFO - Extracted headers from employees.csv: ['employee_id', 'first_name', 'last_name', 'email', 'phone_number', 'hire_date', 'job_id', 'salary', 'commission_pct', 'manager_id', 'department_id', 'city', 'state', 'country', 'postal_code', 'status']
+2026-07-28 14:02:29,165 - INFO - CDC Status [employees] : NEW
+2026-07-28 14:02:29,165 - INFO - Created new table 'employees' with columns: ['employee_id', 'first_name', 'last_name', 'email', 'phone_number', 'hire_date', 'job_id', 'salary', 'commission_pct', 'manager_id', 'department_id', 'city', 'state', 'country', 'postal_code', 'status']
+2026-07-28 14:02:29,165 - INFO - Found 0 JSON file(s)
+2026-07-28 14:02:29,165 - INFO - CDC metadata written to /var/lib/jenkins/workspace/02_mssql_u_final/metadata/mssql/cdc_status.json
+
+-------------------------------------
+GENERATING LIQUIBASE XML
+-------------------------------------
+
+================================================================================
+TABLE              : products
+COVERED TABLES     : []
+ALREADY COVERED    : []
+SCHEMA COLUMNS     : ['product_id', 'product_name', 'category', 'sub_category', 'sku', 'supplier_id', 'unit_price', 'cost_price', 'stock_quantity', 'reorder_level', 'weight_kg', 'is_active']
+NEW COLUMNS        : ['product_id', 'product_name', 'category', 'sub_category', 'sku', 'supplier_id', 'unit_price', 'cost_price', 'stock_quantity', 'reorder_level', 'weight_kg', 'is_active']
+================================================================================
+Generated 001_create_products.xml
+================================================================================
+TABLE              : orders
+COVERED TABLES     : ['products']
+ALREADY COVERED    : []
+SCHEMA COLUMNS     : ['order_id', 'customer_id', 'employee_id', 'order_date', 'ship_date', 'shipping_method', 'freight_cost', 'order_status', 'payment_method', 'total_amount', 'tax_amount']
+NEW COLUMNS        : ['order_id', 'customer_id', 'employee_id', 'order_date', 'ship_date', 'shipping_method', 'freight_cost', 'order_status', 'payment_method', 'total_amount', 'tax_amount']
+================================================================================
+Generated 002_create_orders.xml
+================================================================================
+TABLE              : employees
+COVERED TABLES     : ['products', 'orders']
+ALREADY COVERED    : []
+SCHEMA COLUMNS     : ['employee_id', 'first_name', 'last_name', 'email', 'phone_number', 'hire_date', 'job_id', 'salary', 'commission_pct', 'manager_id', 'department_id', 'city', 'state', 'country', 'postal_code', 'status']
+NEW COLUMNS        : ['employee_id', 'first_name', 'last_name', 'email', 'phone_number', 'hire_date', 'job_id', 'salary', 'commission_pct', 'manager_id', 'department_id', 'city', 'state', 'country', 'postal_code', 'status']
+================================================================================
+Generated 003_create_employees.xml
+
+-------------------------------------
+UPDATING MASTER XML
+-------------------------------------
+
+Added 001_create_products.xml
+Added 002_create_orders.xml
+Added 003_create_employees.xml
+
+master.xml updated successfully
+
+-------------------------------------
+SCHEMA DECISION
+-------------------------------------
+
+Schema changes detected.
+Running Liquibase...
+
+=====================================
+RUNNING LIQUIBASE
+=====================================
+
+Database : EcommerceMSSQL
+Host     : 127.0.0.1
+Port     : 1433
+User     : sa
+Driver   : /var/lib/jenkins/workspace/02_mssql_u_final/tools/drivers/mssql-jdbc-12.10.0.jre11.jar
+
+openjdk version "21.0.11" 2026-04-21
+OpenJDK Runtime Environment (build 21.0.11+10-1-22.04.2-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.11+10-1-22.04.2-Ubuntu, mixed mode, sharing)
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 14:02:29 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+Database is up to date, no changesets to execute
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               3
+Filtered out:                 0
+-------------------------------
+Total change sets:            3
+
+Liquibase command 'update' was executed successfully.
+
+=====================================
+LIQUIBASE UPDATE COMPLETED
+=====================================
+
+
+-------------------------------------
+LOADING DATA
+-------------------------------------
+
+LOAD MODE : full
+=== BEFORE DATA LOADER ===
+2026-07-28 14:02:33,076 - INFO - Starting generic data loader...
+2026-07-28 14:02:33,076 - INFO - Database type: mssql
+2026-07-28 14:02:33,076 - INFO - Incoming directory: /var/lib/jenkins/workspace/02_mssql_u_final/incoming/mssql
+2026-07-28 14:02:33,078 - ERROR - Unable to connect to database: ('01000', '[01000] [unixODBC][Driver Manager]Can\'t open lib \'"ODBC Driver 18 for SQL Server"\' : file not found (0) (SQLDriverConnect)')
+=== AFTER DATA LOADER ===
+EXIT CODE : 0
+
+-------------------------------------
+VALIDATING DATA
+-------------------------------------
+
+
+==================================================
+MSSQL VALIDATION FAILED
+==================================================
+('01000', '[01000] [unixODBC][Driver Manager]Can\'t open lib \'"ODBC Driver 18 for SQL Server"\' : file not found (0) (SQLDriverConnect)')
+==================================================
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mssql --action load --build-number 6 --stage-name Load Data --status FAILURE
+Stage completed: Load Data
+Stage Status: FAILURE
+Stage Duration: 5.56 seconds
+[Pipeline] sh
++ python3 scripts/logging/logger.py set-error --database mssql --action load --build-number 6 --failed-stage Load Data --message Stage execution failed
+Pipeline error recorded: logs/mssql/load/build_6/execution.json
+Failed Stage: Load Data
+Error Message: Stage execution failed
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Loaded Data)
+Stage "Validate Loaded Data" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Database Objects)
+Stage "Deploy Database Objects" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Database Objects)
+Stage "Validate Database Objects" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Database Assessment)
+Stage "Database Assessment" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Assessment Report)
+Stage "Assessment Report" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Reconcile Source and Target Data)
+Stage "Reconcile Source and Target Data" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Discover Database Environment)
+Stage "Discover Database Environment" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Analyze Database Growth)
+Stage "Analyze Database Growth" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Analyze Migration Requirements)
+Stage "Analyze Migration Requirements" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Assess Migration)
+Stage "Assess Migration" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Migration Recommendations)
+Stage "Generate Migration Recommendations" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Governance Action Plan)
+Stage "Generate Governance Action Plan" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Technical Migration Report)
+Stage "Generate Technical Migration Report" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Executive Migration Report)
+Stage "Generate Executive Migration Report" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+FINALIZING UBUNTU MSSQL LOAD LOGGING AND REPORTING
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py finalize --database mssql --action load --build-number 6 --status FAILURE
+Execution log finalized: logs/mssql/load/build_6/execution.json
+Final Status: FAILURE
+Duration: 26.15 seconds
+[Pipeline] sh
++ python3 scripts/reporting/generate_report.py --database mssql --action load --build-number 6
+Reports generated successfully.
+JSON Report: reports/mssql/load/build_6/report.json
+HTML Report: reports/mssql/load/build_6/report.html
+[Pipeline] sh
++ python3 scripts/reporting/generate_history.py --database mssql --action load --build-number 6
+Execution history generated successfully.
+History Record: ADDED
+Total Executions: 5
+JSON History: reports/history/execution_history.json
+HTML History: reports/history/execution_history.html
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] echo
+UBUNTU MSSQL LOAD PIPELINE COMPLETED
+[Pipeline] echo
+UBUNTU MSSQL LOAD FAILED
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

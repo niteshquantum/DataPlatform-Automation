@@ -1,0 +1,1104 @@
+Started by user DIVYA PATIL
+Obtained jenkins/postgresql/windows/setup_pipeline.groovy from git https://github.com/niteshquantum/DataPlatform-Automation.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.49.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/postgresql_Setup^{commit}" # timeout=10
+Checking out Revision d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 (refs/remotes/origin/postgresql_Setup)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 # timeout=10
+Commit message: "postgresql_setup"
+First time build. Skipping changelog.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (PostgreSQL Setup)
+[Pipeline] node
+Running on Jenkins in C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2
+[Pipeline] {
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+Cloning the remote Git repository
+Cloning repository https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git.exe init C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2 # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.49.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+ > git.exe config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+ > git.exe rev-parse "refs/remotes/origin/postgresql_Setup^{commit}" # timeout=10
+Checking out Revision d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 (refs/remotes/origin/postgresql_Setup)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 # timeout=10
+Commit message: "postgresql_setup"
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.49.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/postgresql_Setup^{commit}" # timeout=10
+Checking out Revision d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 (refs/remotes/origin/postgresql_Setup)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f d8b6166cb4e4029ab19fc2bdb33e0384e338cde6 # timeout=10
+Commit message: "postgresql_setup"
+[Pipeline] script
+[Pipeline] {
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\common\validate_python_runtime.bat
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Using Python:
+C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe
+Python 3.13.4
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\install_python_requirements.bat
+
+=====================================
+PYTHON VERSION
+=====================================
+
+Using Python:
+C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe
+Python 3.13.4
+
+=====================================
+INSTALLING PYTHON REQUIREMENTS
+=====================================
+
+Requirement already satisfied: pandas in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from -r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (2.3.3)
+Requirement already satisfied: pyyaml in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from -r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 2)) (6.0.3)
+Requirement already satisfied: python-dotenv in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from -r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 3)) (1.2.1)
+Requirement already satisfied: gdown>=5.2.0 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from -r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (6.1.0)
+Requirement already satisfied: psycopg2-binary in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from -r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\scripts\batch\postgresql\setup\..\..\..\..\requirements\postgresql.txt (line 3)) (2.9.12)
+Requirement already satisfied: numpy>=1.26.0 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from pandas->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (2.3.3)
+Requirement already satisfied: python-dateutil>=2.8.2 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from pandas->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from pandas->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from pandas->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (2025.2)
+Requirement already satisfied: beautifulsoup4 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (4.13.5)
+Requirement already satisfied: filelock in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (3.29.7)
+Requirement already satisfied: requests[socks] in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (2.32.5)
+Requirement already satisfied: tqdm in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (4.67.1)
+Requirement already satisfied: six>=1.5 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from python-dateutil>=2.8.2->pandas->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 1)) (1.17.0)
+Requirement already satisfied: soupsieve>1.2 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from beautifulsoup4->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (2.8)
+Requirement already satisfied: typing-extensions>=4.0.0 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from beautifulsoup4->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (4.15.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (3.4.3)
+Requirement already satisfied: idna<4,>=2.5 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (3.10)
+Requirement already satisfied: urllib3<3,>=1.21.1 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (2.5.0)
+Requirement already satisfied: certifi>=2017.4.17 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (2025.8.3)
+Requirement already satisfied: PySocks!=1.5.7,>=1.5.6 in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from requests[socks]->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (1.7.1)
+Requirement already satisfied: colorama in c:\users\admin\appdata\local\programs\python\python313\lib\site-packages (from tqdm->gdown>=5.2.0->-r C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\requirements\common.txt (line 4)) (0.4.6)
+
+[notice] A new release of pip is available: 25.3 -> 26.1.2
+[notice] To update, run: python.exe -m pip install --upgrade pip
+
+=====================================
+PYTHON REQUIREMENTS INSTALLED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\validate_python_requirements.bat
+
+=====================================
+VALIDATING PYTHON REQUIREMENTS
+=====================================
+
+Using Python:
+C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe
+
+Python Version:
+Python 3.13.4
+
+Checking PyYAML...
+Checking python-dotenv...
+Checking psycopg2...
+Checking pandas...
+
+=====================================
+PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\common\validate_java_runtime.bat
+=====================================
+VALIDATING JAVA RUNTIME
+=====================================
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk1.8.0_202
+  Ignoring unsupported: jre1.8.0_202
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+  Found supported JDK: jdk-17.0.14.7-hotspot -> selecting version 17
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 17
+JAVA_HOME         : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 17.0.14
+
+========================================
+Java 17 validated successfully
+========================================
+'...' is not recognized as an internal or external command,
+operable program or batch file.
+Java Path:
+C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\bin\java.exe
+D:\java21-install\bin\java.exe
+D:\bin\java.exe
+C:\Program Files\java\jdk1.8.0_202\bin\java.exe
+
+JAVA_HOME:
+C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+
+Java Version:
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+Detecting Java Version...
+Detected Java Major Version: 17
+
+Java 17 detected - Supported
+
+=====================================
+JAVA RUNTIME VALIDATED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\install_tools.bat
+
+=====================================
+INSTALLING POSTGRESQL TOOLS
+=====================================
+
+[1/4] Installing Terraform...
+
+=====================================
+INSTALLING TERRAFORM
+=====================================
+
+Downloading Terraform...
+Extracting Terraform...
+Terraform Installed Successfully.
+[2/4] Installing Liquibase...
+
+=====================================
+INSTALLING LIQUIBASE
+=====================================
+
+Downloading Liquibase Version 5.0.3 ...
+URL : https://github.com/liquibase/liquibase/releases/download/v5.0.3/liquibase-5.0.3.zip
+LiquibaseDir = C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\liquibase
+
+
+    Directory: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\liquibase
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----         7/28/2026  12:07 PM                examples                                                             
+d-----         7/28/2026  12:07 PM                internal                                                             
+d-----         7/28/2026  12:07 PM                lib                                                                  
+d-----         7/28/2026  12:07 PM                licenses                                                             
+-a----         7/28/2026  12:03 PM              0 .gitkeep                                                             
+-a----         5/14/2026   4:12 PM             50 ABOUT.txt                                                            
+-a----         5/14/2026   4:12 PM         466775 changelog.txt                                                        
+-a----         5/14/2026   4:12 PM          11088 GETTING_STARTED.txt                                                  
+-a----         5/14/2026   4:12 PM           3688 LICENSE.txt                                                          
+-a----         5/13/2026   7:11 PM           2655 liquibase                                                            
+-a----         5/13/2026   7:11 PM           3247 liquibase.bat                                                        
+-a----         5/14/2026   4:12 PM           3566 README.txt                                                           
+-a----         5/14/2026   4:12 PM            738 UNINSTALL.txt                                                        
+Liquibase downloaded successfully.
+
+
+
+LIQUIBASE INSTALLATION SUCCESSFUL
+
+[3/4] Installing PostgreSQL JDBC Driver...
+
+=====================================
+INSTALLING POSTGRESQL JDBC DRIVER
+=====================================
+
+
+=====================================
+DOWNLOADING POSTGRESQL JDBC DRIVER
+=====================================
+Version : 42.7.3
+URL     : https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+
+
+=====================================
+POSTGRESQL JDBC DRIVER INSTALLED
+=====================================
+Driver : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\drivers\postgresql-42.7.3.jar
+=====================================
+
+POSTGRESQL JDBC DRIVER INSTALLATION SUCCESSFUL
+
+[4/4] Validating Installed Tools...
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+Checking Terraform...
+Terraform v1.13.0
+on windows_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+Checking Liquibase...
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk1.8.0_202
+  Ignoring unsupported: jre1.8.0_202
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+  Found supported JDK: jdk-17.0.14.7-hotspot -> selecting version 17
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 17
+JAVA_HOME         : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 17.0.14
+
+========================================
+Java 17 validated successfully
+========================================
+
+=====================================
+VALIDATING LIQUIBASE
+=====================================
+
+Expected Liquibase Version : 5.0.3
+
+Java Found:
+C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\bin\java.exe
+
+=====================================
+JAVA HOME BEFORE LIQUIBASE
+=====================================
+JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+Checking Liquibase Version...
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 12:07:29 using Java 17.0.14 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\liquibase
+Java Home C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot (Version 17.0.14)
+Libraries:
+- internal\lib\commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal\lib\commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal\lib\commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal\lib\commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal\lib\h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal\lib\opencsv.jar: opencsv 5.12.0
+- internal\lib\picocli.jar: picocli 4.7.7 By Remko Popma
+- internal\lib\snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+Exit Code=0
+
+
+=====================================
+LIQUIBASE VALIDATED
+=====================================
+
+Checking PostgreSQL Driver...
+
+=====================================
+VALIDATING POSTGRESQL JDBC DRIVER
+=====================================
+
+Expected Driver Version : 42.7.3
+
+Driver Found:
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\drivers\postgresql-42.7.3.jar
+
+=====================================
+POSTGRESQL JDBC DRIVER VALIDATED
+=====================================
+
+TERRAFORM VALIDATED
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+
+=====================================
+POSTGRESQL TOOLS INSTALLED SUCCESSFULLY
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\deploy_postgresql.bat
+
+=====================================
+DEPLOYING POSTGRESQL
+=====================================
+
+
+=====================================
+TERRAFORM INIT
+=====================================
+
+[0m[1mInitializing the backend...[0m
+[0m[1mInitializing provider plugins...[0m
+- Finding hashicorp/null versions matching "~> 3.2"...
+- Installing hashicorp/null v3.3.0...
+- Installed hashicorp/null v3.3.0 (signed by HashiCorp)
+Terraform has created a lock file [1m.terraform.lock.hcl[0m to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.[0m
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+
+=====================================
+TERRAFORM VALIDATE
+=====================================
+
+[32m[1mSuccess![0m The configuration is valid.
+[0m
+
+=====================================
+TERRAFORM APPLY
+=====================================
+
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # null_resource.install_postgresql_windows[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "install_postgresql_windows" {
+      [32m+[0m[0m id = (known after apply)
+    }
+
+[1mPlan:[0m 1 to add, 0 to change, 0 to destroy.
+[0m[0m[1mnull_resource.install_postgresql_windows: Creating...[0m[0m
+[0m[1mnull_resource.install_postgresql_windows: Provisioning with 'local-exec'...[0m[0m
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mExecuting: ["powershell.exe" "-NoProfile" "-NonInteractive" "-ExecutionPolicy" "Bypass" "-File" "C:/ProgramData/Jenkins/.jenkins/workspace/01_postgresql_final@2/scripts/powershell/postgresql/install_windows.ps1"]
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:37] Project Root  : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:37] Project PG Bin: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\bin
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:38] Host               : 127.0.0.1
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:38] Port               : 5432
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:38] Database           : DataManagementDB
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:38] User               : postgres
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:38] Version            : 17
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:43] Project folder binaries not found - checking system installation...
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:43] Searching PostgreSQL Version 17 ...
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:43] Found system PostgreSQL at: C:\Program Files\PostgreSQL\17\bin
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:43] System installation found.
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:43] Copying binaries from C:\Program Files\PostgreSQL\17\bin to project folder...
+[0m[1mnull_resource.install_postgresql_windows: Still creating... [00m10s elapsed][0m[0m
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:47] Binaries copied successfully
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:47] Binary validation successful.
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:07:47] Initializing data directory: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\data
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mThe files belonging to this database system will be owned by user "SYSTEM".
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mThis user must also own the server process.
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mThe database cluster will be initialized with locale "English_United States.1252".
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mThe default text search configuration will be set to "english".
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mData page checksums are disabled.
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mfixing permissions on existing directory C:/ProgramData/Jenkins/.jenkins/workspace/01_postgresql_final@2/databases/postgresql/data ... ok
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mcreating subdirectories ... ok
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mselecting dynamic shared memory implementation ... windows
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mselecting default "max_connections" ...
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m100
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mselecting default "shared_buffers" ...
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m128MB
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mselecting default time zone ... Asia/Calcutta
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mcreating configuration files ... ok
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mrunning bootstrap script ...
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mok
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mperforming post-bootstrap initialization ...
+[0m[1mnull_resource.install_postgresql_windows: Still creating... [00m20s elapsed][0m[0m
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mok
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0msyncing data to disk ...
+[0m[1mnull_resource.install_postgresql_windows: Still creating... [00m30s elapsed][0m[0m
+[0m[1mnull_resource.install_postgresql_windows: Still creating... [00m40s elapsed][0m[0m
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mok
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0minitdb: warning: enabling "trust" authentication for local connections
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0minitdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0mSuccess. You can now start the database server using:
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m    ^"C^:^\ProgramData^\Jenkins^\^.jenkins^\workspace^\01^_postgresql^_final^@2^\databases^\postgresql^\bin^\pg^_ctl^" -D ^"C^:^\ProgramData^\Jenkins^\^.jenkins^\workspace^\01^_postgresql^_final^@2^\databases^\postgresql^\data^" -l logfile start
+
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Data directory initialized with dev settings, port = 5432
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18]
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] =======================================
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] POSTGRESQL INSTALLATION COMPLETED
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] =======================================
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Version  : 17
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Host     : 127.0.0.1
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Port     : 5432
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Database : DataManagementDB
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] User     : postgres
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Binaries : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\bin
+[0m[1mnull_resource.install_postgresql_windows (local-exec):[0m [0m[2026-07-28 12:08:18] Data Dir : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\data
+[0m[1mnull_resource.install_postgresql_windows: Creation complete after 41s [id=8014295003030650058][0m
+[33m╷[0m[0m
+[33m│[0m [0m[1m[33mWarning: [0m[0m[1mResource targeting is in effect[0m
+[33m│[0m [0m
+[33m│[0m [0m[0mYou are creating a plan with the -target option, which means that the
+[33m│[0m [0mresult of this plan may not represent all of the changes requested by the
+[33m│[0m [0mcurrent configuration.
+[33m│[0m [0m
+[33m│[0m [0mThe -target option is not for routine use, and is provided only for
+[33m│[0m [0mexceptional situations such as recovering from errors or mistakes, or when
+[33m│[0m [0mTerraform specifically suggests to use it as part of an error message.
+[33m╵[0m[0m
+[33m╷[0m[0m
+[33m│[0m [0m[1m[33mWarning: [0m[0m[1mApplied changes may be incomplete[0m
+[33m│[0m [0m
+[33m│[0m [0m[0mThe plan was created with the -target option in effect, so some changes
+[33m│[0m [0mrequested in the configuration may have been ignored and the output values
+[33m│[0m [0mmay not be fully updated. Run the following command to verify that no other
+[33m│[0m [0mchanges are pending:
+[33m│[0m [0m    terraform plan
+[33m│[0m [0m
+[33m│[0m [0mNote that the -target option is not suitable for routine use, and is
+[33m│[0m [0mprovided only for exceptional situations such as recovering from errors or
+[33m│[0m [0mmistakes, or when Terraform specifically suggests to use it as part of an
+[33m│[0m [0merror message.
+[33m╵[0m[0m
+[0m[1m[32m
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+[0m
+=====================================
+POSTGRESQL DEPLOYMENT COMPLETED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\configure_postgresql_service.bat
+
+=====================================
+CONFIGURING POSTGRESQL WINDOWS SERVICE
+=====================================
+
+
+=====================================
+CONFIGURING POSTGRESQL WINDOWS SERVICE
+=====================================
+
+Project Root : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2
+PostgreSQL   : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\bin\pg_ctl.exe
+Data Path    : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\data
+Log Path     : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\outputs\logs\postgresql_service.log
+Host         : 127.0.0.1
+Port         : 5432
+Database     : DataManagementDB
+User         : postgres
+Service      : PostgreSQLAutomation
+
+Existing PostgreSQL service found.
+Checking current project PostgreSQL instance...
+Standalone PostgreSQL instance is not running.
+Removing existing PostgreSQL service...
+
+Registering PostgreSQL Windows Service...
+Starting PostgreSQL Windows Service...
+
+=====================================
+POSTGRESQL WINDOWS SERVICE CONFIGURED
+=====================================
+
+Service : PostgreSQLAutomation
+Status  : Running
+Startup : Automatic
+Host    : 127.0.0.1
+Port    : 5432
+
+
+=====================================
+POSTGRESQL WINDOWS SERVICE SUCCESSFUL
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\create_database.bat
+
+=====================================
+CREATE DATABASE
+=====================================
+
+============================================================
+CREATE POSTGRESQL DATABASE
+============================================================
+Database : DataManagementDB
+Host     : 127.0.0.1
+Port     : 5432
+
+Database created : DataManagementDB
+
+Database validation successful.
+
+DATABASE READY
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\run_liquibase.bat
+
+=====================================
+RUNNING POSTGRESQL LIQUIBASE
+=====================================
+
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk1.8.0_202
+  Ignoring unsupported: jre1.8.0_202
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+  Found supported JDK: jdk-17.0.14.7-hotspot -> selecting version 17
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 17
+JAVA_HOME         : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 17.0.14
+
+========================================
+Java 17 validated successfully
+========================================
+
+=====================================
+VALIDATING LIQUIBASE
+=====================================
+
+Expected Liquibase Version : 5.0.3
+
+Java Found:
+C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\bin\java.exe
+
+=====================================
+JAVA HOME BEFORE LIQUIBASE
+=====================================
+JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+Checking Liquibase Version...
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 12:08:37 using Java 17.0.14 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\liquibase
+Java Home C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot (Version 17.0.14)
+Libraries:
+- internal\lib\commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal\lib\commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal\lib\commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal\lib\commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal\lib\h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal\lib\opencsv.jar: opencsv 5.12.0
+- internal\lib\picocli.jar: picocli 4.7.7 By Remko Popma
+- internal\lib\snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+Exit Code=0
+
+
+=====================================
+LIQUIBASE VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING POSTGRESQL JDBC DRIVER
+=====================================
+
+Expected Driver Version : 42.7.3
+
+Driver Found:
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\drivers\postgresql-42.7.3.jar
+
+=====================================
+POSTGRESQL JDBC DRIVER VALIDATED
+=====================================
+
+
+Database  : DataManagementDB
+Host      : 127.0.0.1
+Port      : 5432
+User      : postgres
+Driver    : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\drivers\postgresql-42.7.3.jar
+Changelog : liquibase\postgresql\master.xml
+
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk1.8.0_202
+  Ignoring unsupported: jre1.8.0_202
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+  Found supported JDK: jdk-17.0.14.7-hotspot -> selecting version 17
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 17
+JAVA_HOME         : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 17.0.14
+
+========================================
+Java 17 validated successfully
+========================================
+JAVA_HOME : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 12:08:43 using Java 17.0.14 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+Database is up to date, no changesets to execute
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            0
+
+Liquibase command 'update' was executed successfully.
+
+=====================================
+POSTGRESQL LIQUIBASE UPDATE COMPLETED
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\configure_global_psql.bat
+
+=====================================
+CONFIGURING GLOBAL PSQL COMMAND
+=====================================
+
+
+=====================================
+CONFIGURING GLOBAL PSQL COMMAND
+=====================================
+
+psql.exe : C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\databases\postgresql\bin\psql.exe
+Host     : 127.0.0.1
+Port     : 5432
+Database : DataManagementDB
+User     : postgres
+
+psql command directory already exists in System PATH
+
+=====================================
+GLOBAL PSQL CONFIGURED SUCCESSFULLY
+=====================================
+
+Command:
+psql
+Instance wrapper:
+psql_DataManagementDB_5432.cmd
+
+Open a NEW CMD before testing.
+
+
+=====================================
+GLOBAL PSQL CONFIGURATION SUCCESSFUL
+=====================================
+
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2>scripts\batch\postgresql\setup\validate_environment.bat
+
+=====================================
+VALIDATING POSTGRESQL ENVIRONMENT
+=====================================
+
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Using Python:
+C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe
+Python 3.13.4
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING PYTHON REQUIREMENTS
+=====================================
+
+Using Python:
+C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe
+
+Python Version:
+Python 3.13.4
+
+Checking PyYAML...
+Checking python-dotenv...
+Checking psycopg2...
+Checking pandas...
+
+=====================================
+PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING TOOLS
+=====================================
+
+Checking Terraform...
+Terraform v1.13.0
+on windows_amd64
+
+Your version of Terraform is out of date! The latest version
+is 1.15.8. You can update by downloading from https://developer.hashicorp.com/terraform/install
+Checking Liquibase...
+========================================
+       Discovering Installed JDK
+========================================
+
+Checking C:\Program Files\Java
+  Ignoring unsupported: jdk1.8.0_202
+  Ignoring unsupported: jre1.8.0_202
+Checking C:\Program Files\Microsoft
+  Ignoring unsupported: AzureAttestService
+  Found supported JDK: jdk-17.0.14.7-hotspot -> selecting version 17
+
+========================================
+Java Configuration
+========================================
+Selected Version : JDK 17
+JAVA_HOME         : C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+========================================
+
+Validating Java installation...
+
+--- java -version ---
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+--- javac -version ---
+javac 17.0.14
+
+========================================
+Java 17 validated successfully
+========================================
+
+=====================================
+VALIDATING LIQUIBASE
+=====================================
+
+Expected Liquibase Version : 5.0.3
+
+Java Found:
+C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot\bin\java.exe
+
+=====================================
+JAVA HOME BEFORE LIQUIBASE
+=====================================
+JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot
+
+openjdk version "17.0.14" 2025-01-21 LTS
+OpenJDK Runtime Environment Microsoft-10800295 (build 17.0.14+7-LTS)
+OpenJDK 64-Bit Server VM Microsoft-10800295 (build 17.0.14+7-LTS, mixed mode, sharing)
+
+Checking Liquibase Version...
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 12:09:05 using Java 17.0.14 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Home: C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\liquibase
+Java Home C:\Program Files\Microsoft\jdk-17.0.14.7-hotspot (Version 17.0.14)
+Libraries:
+- internal\lib\commons-collections4.jar: Apache Commons Collections 4.5.0 By The Apache Software Foundation
+- internal\lib\commons-io.jar: Apache Commons IO 2.22.0 By The Apache Software Foundation
+- internal\lib\commons-lang3.jar: Apache Commons Lang 3.20.0 By The Apache Software Foundation
+- internal\lib\commons-text.jar: Apache Commons Text 1.15.0 By The Apache Software Foundation
+- internal\lib\h2.jar: H2 Database Engine 2.4.240 By H2 Group
+- internal\lib\opencsv.jar: opencsv 5.12.0
+- internal\lib\picocli.jar: picocli 4.7.7 By Remko Popma
+- internal\lib\snakeyaml.jar: SnakeYAML 2.6.0
+
+
+Liquibase Version: 5.0.3
+
+
+Exit Code=0
+
+
+=====================================
+LIQUIBASE VALIDATED
+=====================================
+
+Checking PostgreSQL Driver...
+
+=====================================
+VALIDATING POSTGRESQL JDBC DRIVER
+=====================================
+
+Expected Driver Version : 42.7.3
+
+Driver Found:
+C:\ProgramData\Jenkins\.jenkins\workspace\01_postgresql_final@2\tools\drivers\postgresql-42.7.3.jar
+
+=====================================
+POSTGRESQL JDBC DRIVER VALIDATED
+=====================================
+
+TERRAFORM VALIDATED
+
+=====================================
+TOOLS VALIDATED SUCCESSFULLY
+=====================================
+
+
+=====================================
+VALIDATING POSTGRESQL PORT
+=====================================
+
+============================================================
+VALIDATING POSTGRESQL PORT
+============================================================
+Host : 127.0.0.1
+Port : 5432
+
+PostgreSQL port validation successful.
+
+=====================================
+POSTGRESQL PORT VALIDATED
+=====================================
+
+
+=====================================
+VALIDATING POSTGRESQL
+=====================================
+
+============================================================
+VALIDATING POSTGRESQL
+============================================================
+Database : DataManagementDB
+Port     : 5432
+Version  : PostgreSQL 17.5 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+
+PostgreSQL validation successful.
+
+=====================================
+POSTGRESQL VALIDATED
+=====================================
+
+
+=====================================
+POSTGRESQL ENVIRONMENT VALIDATED
+=====================================
+
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+PostgreSQL Pipeline Completed
+[Pipeline] echo
+Action: SETUP
+[Pipeline] echo
+=====================================
+[Pipeline] echo
+POSTGRESQL WINDOWS PIPELINE SUCCESSFUL
+[Pipeline] echo
+=====================================
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

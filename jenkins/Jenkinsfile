@@ -64,18 +64,18 @@ def executePipeline(
             echo "Publishing Executive Report"
             echo "=========================================="
 
-		if (action == "load") {
-		
-		    publishHTML([
-		        allowMissing: true,
-		        alwaysLinkToLastBuild: true,
-		        keepAll: true,
-		        reportDir: "reports/migration/${database}",
-		        reportFiles: "executive_report.html",
-		        reportName: "${database.toUpperCase()} Executive Report"
-		    ])
-		
-		}
+            if (action == "load") {
+
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: "reports/migration/${database}",
+                    reportFiles: "executive_report.html",
+                    reportName: "${database.toUpperCase()} Executive Report"
+                ])
+
+            }
 
             return
         }
@@ -289,184 +289,88 @@ def executePipeline(
     }
 }
 
-/*
-============================================================
-MASTER DATABASE PIPELINE
-============================================================
-*/
-
 pipeline {
 
     agent none
 
     options {
-
         disableConcurrentBuilds()
     }
 
     parameters {
-
-        choice(
-            name: 'DATABASE',
-            choices: [
-                'MYSQL',
-                'POSTGRESQL',
-                'MSSQL',
-                'MONGODB'
-            ],
-            description: 'Select Database'
-        )
-
-        choice(
-            name: 'ACTION',
-            choices: [
-                'SETUP',
-                'LOAD',
-                'CLEANUP'
-            ],
-            description: 'Select Action'
-        )
-
-        choice(
-            name: 'CLEANUP_MODE',
-            choices: [
-                'PRESERVE_DATA',
-                'DELETE_DATA'
-            ],
-            description: 'Select Cleanup Mode'
-        )
-
-        string(
-            name: 'USERNAME',
-            defaultValue: '',
-            description: 'RBAC Username'
-        )
-
-        password(
-            name: 'PASSWORD',
-            defaultValue: '',
-            description: 'RBAC Password'
-        )
+        choice(name: 'DATABASE', choices: ['MYSQL', 'POSTGRESQL', 'MONGODB', 'MSSQL'], description: 'Select Database')
+        choice(name: 'ACTION', choices: ['SETUP', 'LOAD', 'CLEANUP'], description: 'Select Action')
+        choice(name: 'CLEANUP_MODE', choices: ['PRESERVE_DATA', 'DELETE_DATA'], description: 'Select cleanup mode when ACTION is CLEANUP')
+        string(name: 'USERNAME', defaultValue: '', description: 'RBAC Username')
+        password(name: 'PASSWORD', defaultValue: '', description: 'RBAC Password')
     }
 
     stages {
-
-        /*
-        ============================================================
-        VALIDATE SELECTION
-        ============================================================
-        */
-
-        stage('Validate Selection') {
-
+        stage('Resolve Pipeline Route') {
             agent any
-
             steps {
-
+                checkout scm
                 script {
+                    def configuration = load 'jenkins/pipeline_config.groovy'
+                    def route = configuration.resolve(params.DATABASE, params.ACTION)
 
-                    if (currentBuild.number == 1) {
+                    env.ROUTED_DATABASE = params.DATABASE.toLowerCase()
+                    env.ROUTED_ACTION = params.ACTION.toLowerCase()
+                    env.ROUTED_NODE = route.node
+                    env.ROUTED_OS = route.os
+                    env.ROUTED_PIPELINE = route.path
 
-                        currentBuild.description = "Parameters Registered"
-
-                        if (currentBuild.number == 1) {
-                            echo "First build detected. Parameters will be available after this build."
-                        }
+                    if (!fileExists(env.ROUTED_PIPELINE)) {
+                        error "Configured pipeline module does not exist: ${env.ROUTED_PIPELINE}"
                     }
 
-                    echo "============================================"
-                    echo "MASTER DATABASE PIPELINE"
-                    echo "============================================"
-                    echo "DATABASE     : ${params.DATABASE}"
-                    echo "ACTION       : ${params.ACTION}"
-                    echo "============================================"
-
+                    echo "DATABASE      : ${params.DATABASE}"
+                    echo "ACTION        : ${params.ACTION}"
+                    echo "NODE          : ${env.ROUTED_NODE}"
+                    echo "OS            : ${env.ROUTED_OS}"
+                    echo "PIPELINE PATH : ${env.ROUTED_PIPELINE}"
                 }
             }
         }
-
-        /*
-        ============================================================
-        RESOLVE PIPELINE ROUTE
-        ============================================================
-        */
-
-        stage('Resolve Pipeline Route') {
-
-            agent any
-
-            steps {
-
-                checkout scm
-
-                script {
-
-                    def resolver = load('jenkins/routing/pipeline_resolver.groovy')
-                    def operatingSystem = isUnix() ? 'ubuntu' : 'windows'
-                    def resolved = resolver.resolve(params.DATABASE, params.ACTION, operatingSystem)
-                    env.RESOLVED_PIPELINE = resolved.pipelinePath
-                    env.AGENT_LABEL = resolved.agentLabel
-                    echo "Resolved Pipeline : ${env.RESOLVED_PIPELINE}"
-                    echo "Agent Label       : ${env.AGENT_LABEL}"
-
-                }
-            }
-        }
-
-        /*
-        ============================================================
-        EXECUTE ROUTED PIPELINE
-        ============================================================
-        */
 
         stage('Execute Routed Pipeline') {
-
             agent {
-                label "${env.AGENT_LABEL}"
+                label "${env.ROUTED_NODE}"
             }
-
             when {
-                expression {
-                    currentBuild.number > 1
-                }
+                expression { currentBuild.number > 1 }
             }
-
             steps {
                 checkout scm
                 script {
-                    load("${env.RESOLVED_PIPELINE}")
+                    def module = load env.ROUTED_PIPELINE
+
+                    if (module == null) {
+                        error("Unable to load routed pipeline module: ${env.ROUTED_PIPELINE}")
+                    }
+
+                    executePipeline(
+                        env.ROUTED_DATABASE,
+                        env.ROUTED_ACTION,
+                        env.ROUTED_OS
+                    ) {
+                        def tracker = load 'jenkins/common/common_stage_tracker.groovy'
+                        def context = [database: env.ROUTED_DATABASE, action: env.ROUTED_ACTION, operatingSystem: env.ROUTED_OS, node: env.ROUTED_NODE, cleanupMode: params.CLEANUP_MODE]
+                        module.execute(context + [runTrackedStage: { String stageName, Closure stageBody -> tracker.track(context, stageName, stageBody) }])
+                    }
                 }
             }
         }
-
     }
 
     post {
-
         success {
-
-            echo """
-            ============================================
-            MASTER DATABASE PIPELINE SUCCESSFUL
-            DATABASE : ${params.DATABASE}
-            ACTION   : ${params.ACTION}
-            ============================================
-            """
+            echo "MASTER DATABASE PIPELINE SUCCESSFUL: ${params.DATABASE} ${params.ACTION}"
         }
-
         failure {
-
-            echo """
-            ============================================
-            MASTER DATABASE PIPELINE FAILED
-            DATABASE : ${params.DATABASE}
-            ACTION   : ${params.ACTION}
-            ============================================
-            """
+            echo "MASTER DATABASE PIPELINE FAILED: ${params.DATABASE} ${params.ACTION}"
         }
-
         always {
-
             echo 'MASTER DATABASE PIPELINE COMPLETED'
         }
     }

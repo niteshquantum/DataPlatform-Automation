@@ -1,0 +1,1497 @@
+Started by user Nitesh Patel
+Obtained jenkins/mysql/ubuntu/load_pipeline.groovy from git https://github.com/niteshquantum/DataPlatform-Automation.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/lib/jenkins/workspace/02_mysql_u_final
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/lib/jenkins/workspace/02_mysql_u_final/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/niteshquantum/DataPlatform-Automation.git # timeout=10
+Fetching upstream changes from https://github.com/niteshquantum/DataPlatform-Automation.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/niteshquantum/DataPlatform-Automation.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/cleanup-architecture-v1^{commit} # timeout=10
+Checking out Revision a4c628eee424caee097284f212fe474729fc4e01 (refs/remotes/origin/cleanup-architecture-v1)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f a4c628eee424caee097284f212fe474729fc4e01 # timeout=10
+Commit message: "fix(mysql): align expected Ubuntu MySQL version with installed 8.0.46"
+ > git rev-list --no-walk dbf23e8cc1e5f116012c8a098e7580badcbd2ed4 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Initialize Logging)
+[Pipeline] sh
++ python3 scripts/logging/logger.py init --database mysql --action load --os ubuntu --build-number 3 --job-name 02_mysql_u_final --build-url http://192.168.1.14:8080/job/02_mysql_u_final/3/
+Execution log initialized: logs/mysql/load/build_3/execution.json
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Set Permissions)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Set Permissions
+Stage started: Set Permissions
+[Pipeline] sh
++ find scripts/bash -type f -name *.sh -exec chmod +x {} ;
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Set Permissions --status SUCCESS
+Stage completed: Set Permissions
+Stage Status: SUCCESS
+Stage Duration: 1.33 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Runtime)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate Python Runtime
+Stage started: Validate Python Runtime
+[Pipeline] sh
++ ./scripts/bash/common/validate_python_runtime.sh
+
+=====================================
+VALIDATING PYTHON RUNTIME
+=====================================
+
+Python Found:
+/usr/bin/python3
+Python 3.10.12
+
+=====================================
+PYTHON RUNTIME VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate Python Runtime --status SUCCESS
+Stage completed: Validate Python Runtime
+Stage Status: SUCCESS
+Stage Duration: 1.4 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Python Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate Python Requirements
+Stage started: Validate Python Requirements
+[Pipeline] sh
++ ./scripts/bash/mysql/setup/validate_python_requirements.sh
+
+=====================================
+VALIDATING PYTHON REQUIREMENTS
+=====================================
+
+Python 3.10.12
+
+=====================================
+PYTHON REQUIREMENTS VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate Python Requirements --status SUCCESS
+Stage completed: Validate Python Requirements
+Stage Status: SUCCESS
+Stage Duration: 2.1 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start MySQL)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Start MySQL
+Stage started: Start MySQL
+[Pipeline] sh
++ ./scripts/bash/mysql/setup/start_mysql.sh
+
+=====================================
+STARTING MYSQL
+=====================================
+
+
+MYSQL START SUCCESSFUL
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Start MySQL --status SUCCESS
+Stage completed: Start MySQL
+Stage Status: SUCCESS
+Stage Duration: 6.37 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate MySQL Instance)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate MySQL Instance
+Stage started: Validate MySQL Instance
+[Pipeline] sh
++ ./scripts/bash/mysql/setup/validate_mysql_instance.sh
+
+=====================================
+VALIDATING MYSQL INSTANCE
+=====================================
+
+Host     : 127.0.0.1
+Port     : 3306
+User     : rootuser
+
+Testing MySQL connection...
+mysql: [Warning] Using a password on the command line interface can be insecure.
+version	actual_port	hostname
+8.0.46-0ubuntu0.22.04.3	3306	mohit-kushwah
+
+MYSQL INSTANCE VALIDATION SUCCESSFUL
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate MySQL Instance --status SUCCESS
+Stage completed: Validate MySQL Instance
+Stage Status: SUCCESS
+Stage Duration: 1.56 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Download Dataset)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Download Dataset
+Stage started: Download Dataset
+[Pipeline] sh
++ ./scripts/bash/common/download_dataset.sh
+
+=====================================
+DOWNLOADING DATASET
+=====================================
+
+
+============================================================
+DATASET DOWNLOAD
+============================================================
+
+[INFO] Dataset already exists:
+/var/lib/jenkins/workspace/02_mysql_u_final/incoming/archive/testdatasmall.zip
+[INFO] Existing archive is valid. Skipping download.
+
+============================================================
+DATASET EXTRACTION & MERGE
+============================================================
+
+[WARNING] Missing or empty extracted folders: ['mysql']
+[INFO] Re-extracting...
+
+Extracting and merging dataset...
+
+[SUCCESS] Dataset extracted and merged successfully.
+
+============================================================
+DATASET VERIFICATION
+============================================================
+[OK] Verified folder: mongodb
+[OK] Verified folder: mssql
+[OK] Verified folder: mysql
+[OK] Verified folder: postgresql
+
+=====================================
+DATASET READY
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Download Dataset --status SUCCESS
+Stage completed: Download Dataset
+Stage Status: SUCCESS
+Stage Duration: 0.91 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Profile Source Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Profile Source Data
+Stage started: Profile Source Data
+[Pipeline] sh
++ ./scripts/bash/common/run_data_profiling.sh mysql
+
+=====================================
+DATA PROFILING
+=====================================
+
+
+=====================================
+DATA PROFILING STARTED
+=====================================
+Database       : mysql
+Input Directory: /var/lib/jenkins/workspace/02_mysql_u_final/incoming/mysql
+Files Found    : 3
+
+Profiling: employees.csv
+Status   : SUCCESS
+
+Profiling: orders.csv
+Status   : SUCCESS
+
+Profiling: products.csv
+Status   : SUCCESS
+
+=====================================
+DATA PROFILING COMPLETED
+=====================================
+Successful Files : 3
+Failed Files     : 0
+Output           : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/profiling/mysql/profiling.json
+
+
+=====================================
+DATA PROFILING COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Profile Source Data --status SUCCESS
+Stage completed: Profile Source Data
+Stage Status: SUCCESS
+Stage Duration: 1.27 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Create Database)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Create Database
+Stage started: Create Database
+[Pipeline] sh
++ ./scripts/bash/mysql/setup/create_database.sh
+
+=====================================
+CREATE DATABASE
+=====================================
+
+Host     : 127.0.0.1
+Port     : 3306
+Database : EcommerceMysql
+User     : rootuser
+
+Configuring MySQL application user...
+MySQL application user configured successfully.
+
+Creating database if not exists...
+
+DATABASE READY : EcommerceMysql
+
+=====================================
+DATABASE VALIDATED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Create Database --status SUCCESS
+Stage completed: Create Database
+Stage Status: SUCCESS
+Stage Duration: 1.46 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate MySQL)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate MySQL
+Stage started: Validate MySQL
+[Pipeline] sh
++ ./scripts/bash/mysql/setup/validate_mysql.sh
+
+=====================================
+VALIDATING MYSQL
+=====================================
+
+mysql: [Warning] Using a password on the command line interface can be insecure.
+DATABASE()
+EcommerceMysql
+
+MYSQL VALIDATION SUCCESSFUL
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate MySQL --status SUCCESS
+Stage completed: Validate MySQL
+Stage Status: SUCCESS
+Stage Duration: 1.59 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Load Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Load Data
+Stage started: Load Data
+[Pipeline] sh
++ ./scripts/bash/mysql/load/load_data.sh
+
+=====================================
+MYSQL DATA LOAD
+=====================================
+
+
+-------------------------------------
+DETECTING SCHEMA
+-------------------------------------
+
+2026-07-28 13:20:30,405 - INFO - Starting schema detection...
+2026-07-28 13:20:30,405 - INFO - Database type: mysql
+2026-07-28 13:20:30,405 - INFO - Scanning incoming directory: /var/lib/jenkins/workspace/02_mysql_u_final/incoming/mysql
+2026-07-28 13:20:30,406 - INFO - Found 3 CSV file(s)
+2026-07-28 13:20:30,406 - INFO - Extracted headers from products.csv: ['product_id', 'product_name', 'category', 'sub_category', 'sku', 'supplier_id', 'unit_price', 'cost_price', 'stock_quantity', 'reorder_level', 'weight_kg', 'is_active']
+2026-07-28 13:20:30,406 - INFO - CDC Status [products] : UNCHANGED
+2026-07-28 13:20:30,406 - INFO - Updated table 'products' with new columns: []
+2026-07-28 13:20:30,406 - INFO - Extracted headers from orders.csv: ['order_id', 'customer_id', 'employee_id', 'order_date', 'ship_date', 'shipping_method', 'freight_cost', 'order_status', 'payment_method', 'total_amount', 'tax_amount']
+2026-07-28 13:20:30,407 - INFO - CDC Status [orders] : UNCHANGED
+2026-07-28 13:20:30,407 - INFO - Updated table 'orders' with new columns: []
+2026-07-28 13:20:30,407 - INFO - Extracted headers from employees.csv: ['employee_id', 'first_name', 'last_name', 'email', 'phone_number', 'hire_date', 'job_id', 'salary', 'commission_pct', 'manager_id', 'department_id', 'city', 'state', 'country', 'postal_code', 'status']
+2026-07-28 13:20:30,407 - INFO - CDC Status [employees] : UNCHANGED
+2026-07-28 13:20:30,407 - INFO - Updated table 'employees' with new columns: []
+2026-07-28 13:20:30,407 - INFO - Found 0 JSON file(s)
+2026-07-28 13:20:30,408 - INFO - CDC metadata written to /var/lib/jenkins/workspace/02_mysql_u_final/metadata/mysql/cdc_status.json
+
+-------------------------------------
+GENERATING LIQUIBASE XML
+-------------------------------------
+
+No schema changes detected. Nothing to generate.
+
+-------------------------------------
+UPDATING MASTER XML
+-------------------------------------
+
+Added 001_create_employees.xml
+Added 002_create_orders.xml
+Added 003_create_products.xml
+
+master.xml updated successfully
+
+-------------------------------------
+SCHEMA DECISION
+-------------------------------------
+
+No schema changes detected.
+Running CDC...
+{
+    "changed_files": [],
+    "skipped_files": [
+        "employees.csv",
+        "orders.csv",
+        "products.csv"
+    ],
+    "results": {
+        "employees.csv": {
+            "status": "UNCHANGED",
+            "checksum": "d243961ae5ade95b1316ce691e45d12e8322772f3bb3a6084667c74fd7e2c06f"
+        },
+        "orders.csv": {
+            "status": "UNCHANGED",
+            "checksum": "ccf3a5d9d27033a731f835ab3b87dc7219ed9c423ec172e5eb6153d29e3134c1"
+        },
+        "products.csv": {
+            "status": "UNCHANGED",
+            "checksum": "f4cc0e5753c8641d1f8687daa87f9355a46205b04511a5198f73469fcc622275"
+        }
+    }
+}
+No data changes detected.
+
+-------------------------------------
+SKIPPING DATA LOAD
+-------------------------------------
+
+
+-------------------------------------
+VALIDATING DATA
+-------------------------------------
+
+
+==================================================
+MYSQL VALIDATION SUCCESS
+==================================================
+Database : EcommerceMysql
+Port     : 3306
+Version  : 8.0.46-0ubuntu0.22.04.3
+
+Tables Validated:
+[OK] employees                      200 rows
+[OK] orders                         190 rows
+[OK] products                       200 rows
+==================================================
+
+=====================================
+MYSQL LOAD PIPELINE COMPLETED
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Load Data --status SUCCESS
+Stage completed: Load Data
+Stage Status: SUCCESS
+Stage Duration: 0.94 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Loaded Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate Loaded Data
+Stage started: Validate Loaded Data
+[Pipeline] sh
++ ./scripts/bash/mysql/load/validate_loaded_data.sh
+
+=====================================
+VALIDATING LOADED DATA
+=====================================
+
+
+==================================================
+LOADED DATA SUMMARY
+==================================================
+employees                      200
+orders                         190
+products                       200
+v_employees                    10
+v_orders                       10
+v_products                     10
+==================================================
+DATA VALIDATION COMPLETED
+==================================================
+
+LOADED DATA VALIDATION SUCCESSFUL
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate Loaded Data --status SUCCESS
+Stage completed: Validate Loaded Data
+Stage Status: SUCCESS
+Stage Duration: 1.09 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Database Objects)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Deploy Database Objects
+Stage started: Deploy Database Objects
+[Pipeline] sh
++ ./scripts/bash/mysql/objects/deploy_objects.sh
+
+=====================================
+MYSQL OBJECTS DEPLOYMENT
+=====================================
+
+
+=====================================
+BOOTSTRAP GENERATOR : MYSQL
+=====================================
+
+Detecting objects for mysql...
+Generated : 001_v_products.sql
+Generated : 002_v_orders.sql
+Generated : 003_v_employees.sql
+Generated : 001_fn_products_count.sql
+Generated : 002_fn_orders_count.sql
+Generated : 003_fn_employees_count.sql
+Generated : 001_sp_products.sql
+Generated : 002_sp_orders.sql
+Generated : 003_sp_employees.sql
+Skipped trigger for products: created_at column not found
+Skipped trigger for orders: created_at column not found
+Skipped trigger for employees: created_at column not found
+Generated : 001_ev_products_cleanup.sql
+Generated : 002_ev_orders_cleanup.sql
+Generated : 003_ev_employees_cleanup.sql
+Generated : 001_idx_products_product_id.sql
+Generated : 002_idx_orders_order_id.sql
+Generated : 003_idx_employees_employee_id.sql
+----------------------------------------
+Generating Liquibase Objects : mysql
+----------------------------------------
+Generated : 001_v_products.xml
+Generated : 002_v_orders.xml
+Generated : 003_v_employees.xml
+Generated : 001_fn_products_count.xml
+Generated : 002_fn_orders_count.xml
+Generated : 003_fn_employees_count.xml
+Generated : 001_sp_products.xml
+Generated : 002_sp_orders.xml
+Generated : 003_sp_employees.xml
+Generated : 001_ev_products_cleanup.xml
+Generated : 002_ev_orders_cleanup.xml
+Generated : 003_ev_employees_cleanup.xml
+Generated : 001_idx_products_product_id.xml
+Generated : 002_idx_orders_order_id.xml
+Generated : 003_idx_employees_employee_id.xml
+
+----------------------------------------
+Scanning Custom Objects : mysql
+----------------------------------------
+No custom SQL objects found. Skipping custom Liquibase generation.
+----------------------------------------
+----------------------------------------
+Liquibase Object Generation Completed
+----------------------------------------
+Generated : master_objects.xml
+Liquibase includes : 15
+
+=====================================
+BOOTSTRAP GENERATION COMPLETE
+=====================================
+
+
+=====================================
+RUNNING LIQUIBASE
+=====================================
+
+Database : EcommerceMysql
+Host     : 127.0.0.1
+Port     : 3306
+User     : rootuser
+Driver   : /var/lib/jenkins/workspace/02_mysql_u_final/tools/drivers/mysql-connector-j-9.5.0.jar
+
+openjdk version "21.0.11" 2026-04-21
+OpenJDK Runtime Environment (build 21.0.11+10-1-22.04.2-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.11+10-1-22.04.2-Ubuntu, mixed mode, sharing)
+
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 13:20:33 using Java 21.0.11 (version 5.0.3 #10665 built at 2026-05-13 17:55+0000)
+Liquibase Version: 5.0.3
+
+Database is up to date, no changesets to execute
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:              15
+Filtered out:                 0
+-------------------------------
+Total change sets:           15
+
+Liquibase command 'update' was executed successfully.
+
+=====================================
+LIQUIBASE UPDATE COMPLETED
+=====================================
+
+
+=====================================
+DATABASE OBJECT DEPLOYMENT
+=====================================
+Database  : mysql
+OS        : Linux
+Runner    : /var/lib/jenkins/workspace/02_mysql_u_final/scripts/bash/mysql/setup/run_liquibase.sh
+Changelog : liquibase/mysql/master_objects.xml
+
+
+=====================================
+DATABASE OBJECT DEPLOYMENT SUCCESSFUL
+=====================================
+
+=====================================
+MYSQL OBJECTS DEPLOYMENT SUCCESSFUL
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Deploy Database Objects --status SUCCESS
+Stage completed: Deploy Database Objects
+Stage Status: SUCCESS
+Stage Duration: 5.26 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Validate Database Objects)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Validate Database Objects
+Stage started: Validate Database Objects
+[Pipeline] sh
++ ./scripts/bash/mysql/objects/validate_objects.sh
+
+=====================================
+MYSQL OBJECTS VALIDATION
+=====================================
+
+
+=====================================
+DATABASE OBJECT VALIDATION
+=====================================
+Database : mysql
+Connected to MySQL successfully.
+
+VIEWS:
+  Generated : 3/3
+  Custom    : 0/0
+  Total     : 3/3
+  STATUS    : PASS
+
+FUNCTIONS:
+  Generated : 3/3
+  Custom    : 0/0
+  Total     : 3/3
+  STATUS    : PASS
+
+PROCEDURES:
+  Generated : 3/3
+  Custom    : 0/0
+  Total     : 3/3
+  STATUS    : PASS
+
+TRIGGERS:
+  Generated : 0/0
+  Custom    : 0/0
+  Total     : 0/0
+  STATUS    : PASS
+
+EVENTS:
+  Generated : 3/3
+  Custom    : 0/0
+  Total     : 3/3
+  STATUS    : PASS
+
+INDEXES:
+  Generated : 3/3
+  Custom    : 0/0
+  Total     : 3/3
+  STATUS    : PASS
+
+=====================================
+ALL DATABASE OBJECTS VALIDATED
+Report : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/mysql/object_validation_report.json
+=====================================
+
+=====================================
+MYSQL OBJECTS VALIDATION SUCCESSFUL
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Validate Database Objects --status SUCCESS
+Stage completed: Validate Database Objects
+Stage Status: SUCCESS
+Stage Duration: 1.43 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Database Assessment)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Database Assessment
+Stage started: Database Assessment
+[Pipeline] sh
++ ./scripts/bash/mysql/assessment/run_assessment.sh all
+
+==================================================
+DATABASE INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Databases : 1
+
+Databases
+
+1. EcommerceMysql
+
+Summary
+
+1 database successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+SCHEMA INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Schemas : 1
+
+Schemas
+
+1. EcommerceMysql
+
+Summary
+
+1 schema successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+TABLE INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Tables : 5
+
+Tables
+
+1. DATABASECHANGELOG
+2. DATABASECHANGELOGLOCK
+3. employees
+4. orders
+5. products
+
+Summary
+
+5 tables successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+VIEW INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Views : 3
+
+Views
+
+1. v_employees
+2. v_orders
+3. v_products
+
+Summary
+
+3 views successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+STORED PROCEDURE INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Stored Procedures : 3
+
+Stored Procedures
+
+1. sp_employees
+2. sp_orders
+3. sp_products
+
+Summary
+
+3 stored procedures successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+FUNCTION INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Functions : 3
+
+Functions
+
+1. fn_employees_count
+2. fn_orders_count
+3. fn_products_count
+
+Summary
+
+3 functions successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+TRIGGER INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Triggers : 0
+
+Summary
+
+No triggers currently exist.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required; this inventory is currently empty.
+
+==================================================
+
+
+==================================================
+EVENT INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Events : 3
+
+Events
+
+1. ev_employees_cleanup
+2. ev_orders_cleanup
+3. ev_products_cleanup
+
+Summary
+
+3 events successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+
+==================================================
+INDEX INVENTORY
+==================================================
+
+Database Engine : MySQL
+
+Database Name : EcommerceMysql
+
+Total Indexes : 4
+
+Indexes
+
+1. PRIMARY
+2. idx_employees_employee_id
+3. idx_orders_order_id
+4. idx_products_product_id
+
+Summary
+
+4 indexes successfully discovered.
+
+Status
+
+PASS
+
+Recommendation
+
+No action required.
+
+==================================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Database Assessment --status SUCCESS
+Stage completed: Database Assessment
+Stage Status: SUCCESS
+Stage Duration: 1.53 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Assessment Report)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Assessment Report
+Stage started: Assessment Report
+[Pipeline] sh
++ ./scripts/bash/common/generate_assessment_report.sh
+
+==================================================
+ASSESSMENT REPORT
+==================================================
+
+Databases Assessed : 4
+Inventory Categories Executed : 9
+Inventory Runs Completed : 9
+
+Categories
+
+1. Database
+2. Event
+3. Function
+4. Index
+5. Procedure
+6. Schema
+7. Table
+8. Trigger
+9. View
+
+Summary
+
+Assessment completed successfully.
+
+Overall Status
+
+PASS
+
+Recommendation
+
+Review any empty inventories as part of normal capacity planning.
+
+==================================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Assessment Report --status SUCCESS
+Stage completed: Assessment Report
+Stage Status: SUCCESS
+Stage Duration: 0.62 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Reconcile Source and Target Data)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Reconcile Source and Target Data
+Stage started: Reconcile Source and Target Data
+[Pipeline] sh
++ ./scripts/bash/common/run_reconciliation.sh mysql
+
+=====================================
+DATA RECONCILIATION
+=====================================
+
+
+=====================================
+DATA RECONCILIATION STARTED
+=====================================
+Database: mysql
+
+Reconciling: employees
+Status      : NOT_RECONCILED
+
+Reconciling: orders
+Status      : NOT_RECONCILED
+
+Reconciling: products
+Status      : NOT_RECONCILED
+
+=====================================
+DATA RECONCILIATION COMPLETED
+=====================================
+Expected Datasets      : 3
+Reconciled Datasets    : 0
+Not Reconciled         : 3
+Missing Target Datasets: 0
+Extra Target Datasets  : 3
+Total Issues           : 6
+Output                 : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/reconciliation/mysql/reconciliation.json
+
+
+=====================================
+DATA RECONCILIATION COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Reconcile Source and Target Data --status SUCCESS
+Stage completed: Reconcile Source and Target Data
+Stage Status: SUCCESS
+Stage Duration: 1.03 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Discover Database Environment)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Discover Database Environment
+Stage started: Discover Database Environment
+[Pipeline] sh
++ python3 scripts/discovery/discovery_engine.py --database mysql
+
+=====================================
+DATABASE DISCOVERY STARTED
+=====================================
+Database: mysql
+
+=====================================
+DATABASE DISCOVERY COMPLETED
+=====================================
+Database       : mysql
+Total Datasets : 3
+Total Records  : 590
+
+Largest Datasets:
+  employees                      200
+  products                       200
+  orders                         190
+
+Output          : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/discovery/mysql/discovery.json
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Discover Database Environment --status SUCCESS
+Stage completed: Discover Database Environment
+Stage Status: SUCCESS
+Stage Duration: 1.14 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Analyze Database Growth)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Analyze Database Growth
+Stage started: Analyze Database Growth
+[Pipeline] sh
++ python3 scripts/discovery/growth_analyzer.py --database mysql
+
+=====================================
+DATABASE GROWTH ANALYSIS STARTED
+=====================================
+Database: mysql
+
+Baseline snapshot created.
+Growth analysis will be available after the next discovery run.
+
+=====================================
+DATABASE GROWTH ANALYSIS COMPLETED
+=====================================
+Output: /var/lib/jenkins/workspace/02_mysql_u_final/metadata/discovery/mysql/growth_analysis.json
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Analyze Database Growth --status SUCCESS
+Stage completed: Analyze Database Growth
+Stage Status: SUCCESS
+Stage Duration: 1.3 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Analyze Migration Requirements)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Analyze Migration Requirements
+Stage started: Analyze Migration Requirements
+[Pipeline] sh
++ python3 scripts/discovery/requirement_analyzer.py --database mysql
+
+=====================================
+MIGRATION REQUIREMENT ANALYSIS STARTED
+=====================================
+Database: mysql
+
+Retention Requirements:
+  Required Retention Days : 365
+  Archive Required        : True
+
+SLA Requirements:
+  Maximum Migration Time  : 60 minutes
+  Maximum Downtime        : 15 minutes
+
+=====================================
+MIGRATION REQUIREMENT ANALYSIS COMPLETED
+=====================================
+Output: /var/lib/jenkins/workspace/02_mysql_u_final/metadata/discovery/mysql/requirements_analysis.json
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Analyze Migration Requirements --status SUCCESS
+Stage completed: Analyze Migration Requirements
+Stage Status: SUCCESS
+Stage Duration: 1.45 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Assess Migration)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Assess Migration
+Stage started: Assess Migration
+[Pipeline] sh
++ ./scripts/bash/common/run_assessment.sh mysql
+
+=====================================
+MIGRATION ASSESSMENT
+=====================================
+
+
+=====================================
+MIGRATION ASSESSMENT STARTED
+=====================================
+Database: mysql
+
+Assessing Migration Risk...
+Risk Score : 55
+Risk Level : CRITICAL
+
+Assessing Migration Complexity...
+Complexity Score : 30
+Complexity Level : MEDIUM
+
+Assessing Migration Readiness...
+Readiness Score : 21
+Readiness Level : NOT_READY
+
+=====================================
+MIGRATION ASSESSMENT COMPLETED
+=====================================
+Database         : mysql
+Risk Level       : CRITICAL
+Complexity Level : MEDIUM
+Readiness Score  : 21
+Readiness Level  : NOT_READY
+Overall Status   : ACTION_REQUIRED
+Output           : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/assessment/mysql/assessment.json
+
+
+=====================================
+MIGRATION ASSESSMENT COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Assess Migration --status SUCCESS
+Stage completed: Assess Migration
+Stage Status: SUCCESS
+Stage Duration: 1.51 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Migration Recommendations)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Generate Migration Recommendations
+Stage started: Generate Migration Recommendations
+[Pipeline] sh
++ ./scripts/bash/common/run_recommendation.sh mysql
+
+=====================================
+MIGRATION RECOMMENDATIONS
+=====================================
+
+
+=====================================
+RECOMMENDATION ENGINE STARTED
+=====================================
+Database: mysql
+
+=====================================
+RECOMMENDATION ENGINE COMPLETED
+=====================================
+Total Recommendations : 13
+Critical Priority     : 1
+High Priority         : 4
+Medium Priority       : 0
+Low Priority          : 8
+Output                : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/recommendation/mysql/recommendation.json
+
+
+=====================================
+MIGRATION RECOMMENDATIONS COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Generate Migration Recommendations --status SUCCESS
+Stage completed: Generate Migration Recommendations
+Stage Status: SUCCESS
+Stage Duration: 0.63 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Governance Action Plan)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Generate Governance Action Plan
+Stage started: Generate Governance Action Plan
+[Pipeline] sh
++ ./scripts/bash/common/run_action_plan.sh mysql
+
+=====================================
+GOVERNANCE ACTION PLAN
+=====================================
+
+
+=====================================
+ACTION PLAN ENGINE STARTED
+=====================================
+Database: mysql
+
+=====================================
+ACTION PLAN ENGINE COMPLETED
+=====================================
+Total Actions    : 13
+Open Actions     : 13
+Blocking Actions : 5
+Critical Actions : 1
+High Actions     : 4
+Medium Actions   : 0
+Low Actions      : 8
+Governance       : APPROVAL_BLOCKED
+Output           : /var/lib/jenkins/workspace/02_mysql_u_final/metadata/governance/mysql/action_plan.json
+
+
+=====================================
+GOVERNANCE ACTION PLAN COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Generate Governance Action Plan --status SUCCESS
+Stage completed: Generate Governance Action Plan
+Stage Status: SUCCESS
+Stage Duration: 0.8 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Technical Migration Report)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Generate Technical Migration Report
+Stage started: Generate Technical Migration Report
+[Pipeline] sh
++ ./scripts/bash/common/generate_technical_report.sh mysql
+
+=====================================
+TECHNICAL MIGRATION REPORT
+=====================================
+
+
+=====================================
+TECHNICAL REPORT GENERATION STARTED
+=====================================
+Database: mysql
+
+=====================================
+TECHNICAL REPORT GENERATION COMPLETED
+=====================================
+Database : mysql
+Output   : /var/lib/jenkins/workspace/02_mysql_u_final/reports/migration/mysql/technical_report.html
+
+
+=====================================
+TECHNICAL MIGRATION REPORT COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Generate Technical Migration Report --status SUCCESS
+Stage completed: Generate Technical Migration Report
+Stage Status: SUCCESS
+Stage Duration: 0.9 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Generate Executive Migration Report)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-start --database mysql --action load --build-number 3 --stage-name Generate Executive Migration Report
+Stage started: Generate Executive Migration Report
+[Pipeline] sh
++ ./scripts/bash/common/generate_executive_report.sh mysql
+
+=====================================
+EXECUTIVE MIGRATION REPORT
+=====================================
+
+
+=====================================
+EXECUTIVE REPORT GENERATION STARTED
+=====================================
+Database: mysql
+
+=====================================
+EXECUTIVE REPORT GENERATION COMPLETED
+=====================================
+Database : mysql
+Output   : /var/lib/jenkins/workspace/02_mysql_u_final/reports/migration/mysql/executive_report.html
+
+
+=====================================
+EXECUTIVE MIGRATION REPORT COMPLETE
+=====================================
+
+[Pipeline] sh
++ python3 scripts/logging/logger.py stage-end --database mysql --action load --build-number 3 --stage-name Generate Executive Migration Report --status SUCCESS
+Stage completed: Generate Executive Migration Report
+Stage Status: SUCCESS
+Stage Duration: 1.01 seconds
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+FINALIZING UBUNTU MYSQL LOAD LOGGING AND REPORTING
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ python3 scripts/logging/logger.py finalize --database mysql --action load --build-number 3 --status SUCCESS
+Execution log finalized: logs/mysql/load/build_3/execution.json
+Final Status: SUCCESS
+Duration: 38.59 seconds
+[Pipeline] sh
++ python3 scripts/reporting/generate_report.py --database mysql --action load --build-number 3
+Reports generated successfully.
+JSON Report: reports/mysql/load/build_3/report.json
+HTML Report: reports/mysql/load/build_3/report.html
+[Pipeline] sh
++ python3 scripts/reporting/generate_history.py --database mysql --action load --build-number 3
+Execution history generated successfully.
+History Record: ADDED
+Total Executions: 3
+JSON History: reports/history/execution_history.json
+HTML History: reports/history/execution_history.html
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] archiveArtifacts
+Archiving artifacts
+Recording fingerprints
+[Pipeline] echo
+UBUNTU MYSQL LOAD PIPELINE COMPLETED
+[Pipeline] echo
+UBUNTU MYSQL LOAD SUCCESSFUL
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
