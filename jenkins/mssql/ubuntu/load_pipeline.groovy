@@ -327,16 +327,6 @@ pipeline {
 
                         sh './scripts/bash/common/generate_assessment_report.sh'
                     }
-                }
-            }
-        }
-
-
-        stage('Reconcile Source and Target Data') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Reconcile Source and Target Data'
@@ -344,16 +334,6 @@ pipeline {
 
                         sh './scripts/bash/common/run_reconciliation.sh mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Discover Database Environment') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Discover Database Environment'
@@ -361,16 +341,6 @@ pipeline {
 
                         sh 'python3 scripts/discovery/discovery_engine.py --database mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Analyze Database Growth') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Analyze Database Growth'
@@ -378,16 +348,6 @@ pipeline {
 
                         sh 'python3 scripts/discovery/growth_analyzer.py --database mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Analyze Migration Requirements') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Analyze Migration Requirements'
@@ -395,31 +355,11 @@ pipeline {
 
                         sh 'python3 scripts/discovery/requirement_analyzer.py --database mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Assess Migration') {
-
-            steps {
-
-                script {
 
                     runTrackedStage('Assess Migration') {
 
                         sh './scripts/bash/common/run_assessment.sh mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Generate Migration Recommendations') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Generate Migration Recommendations'
@@ -427,16 +367,6 @@ pipeline {
 
                         sh './scripts/bash/common/run_recommendation.sh mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Generate Governance Action Plan') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Generate Governance Action Plan'
@@ -444,16 +374,6 @@ pipeline {
 
                         sh './scripts/bash/common/run_action_plan.sh mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Generate Technical Migration Report') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Generate Technical Migration Report'
@@ -461,16 +381,6 @@ pipeline {
 
                         sh './scripts/bash/common/generate_technical_report.sh mssql'
                     }
-                }
-            }
-        }
-
-
-        stage('Generate Executive Migration Report') {
-
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Generate Executive Migration Report'
