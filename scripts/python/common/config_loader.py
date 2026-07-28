@@ -16,7 +16,7 @@ def load_config(config_path):
 
             if "=" in line:
                 key, value = line.split("=", 1)
-                config[key.strip()] = value.strip()
+                config[key.strip()] = value.strip().strip('"')
 
     return config
 
