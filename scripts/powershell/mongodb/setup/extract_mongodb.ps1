@@ -36,17 +36,24 @@ try {
     Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
     Write-Host "Archive validated successfully."
 
-    if (Test-Path $TargetDir) {
-        Write-Host "Removing existing folder: $TargetDir"
-        Remove-Item $TargetDir -Recurse -Force
-    }
-
     $extractedFolder = Get-ChildItem $TempDir -Directory |
         Where-Object { $_.Name -like "mongodb-*" } |
         Select-Object -First 1
 
     if ($null -eq $extractedFolder) {
         throw "No mongodb-* folder found in archive"
+    }
+
+    $MongodExe = Join-Path $extractedFolder.FullName "bin\mongod.exe"
+    if (!(Test-Path -LiteralPath $MongodExe -PathType Leaf)) {
+        throw "Archive does not contain bin\\mongod.exe in the MongoDB distribution folder."
+    }
+
+    # Do not replace a working installation until the new archive has been
+    # fully extracted and its required executable has been verified.
+    if (Test-Path $TargetDir) {
+        Write-Host "Removing existing folder: $TargetDir"
+        Remove-Item $TargetDir -Recurse -Force
     }
 
     Move-Item $extractedFolder.FullName $TargetDir -Force

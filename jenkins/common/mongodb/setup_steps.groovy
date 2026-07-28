@@ -38,6 +38,12 @@ def getInstanceState() {
 def execute(Map context) {
     def runTrackedStage = context.runTrackedStage ?: { String stageName, Closure stageBody -> stageBody() }
 
+    stage('Validate Python Runtime') {
+        runTrackedStage('Validate Python Runtime') {
+            bat 'scripts\\batch\\common\\validate_python_runtime.bat'
+        }
+    }
+
     stage('Check Administrator Privileges') {
         runTrackedStage(
             'Check Administrator Privileges'
@@ -83,6 +89,24 @@ def execute(Map context) {
         }
     }
 
+    stage('Install Python Requirements') {
+        runTrackedStage('Install Python Requirements') {
+            bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
+        }
+    }
+
+    stage('Validate Python Requirements') {
+        runTrackedStage('Validate Python Requirements') {
+            bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
+        }
+    }
+
+    stage('Install MongoDB Tools') {
+        runTrackedStage('Install MongoDB Tools') {
+            bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
+        }
+    }
+
     stage('Check MongoDB Instance') {
         runTrackedStage(
             'Check MongoDB Instance'
@@ -94,6 +118,10 @@ def execute(Map context) {
             echo "Initial Instance State: >${instanceState}<"
             echo "State length: ${instanceState.length()}"
             echo "Deploy condition (NO_INSTANCE): ${instanceState == 'NO_INSTANCE'}"
+
+            if (instanceState == 'PORT_OCCUPIED_BY_NON_MONGODB') {
+                error 'Configured MongoDB port is occupied by an unmanaged process. Aborting before deployment.'
+            }
         }
     }
 
@@ -158,10 +186,6 @@ def execute(Map context) {
         ) {
             bat 'scripts\\batch\\mongodb\\setup\\validate_port.bat'
         }
-    }
-
-    stage('Configure Database RBAC') {
-        runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' }
     }
 
     stage('Validate MongoDB Instance') {

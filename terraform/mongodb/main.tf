@@ -18,7 +18,6 @@ resource "null_resource" "download_mongodb_windows" {
   triggers = {
     download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
     mongodb_url            = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip"
-    mongodb_port           = var.mongodb_port
   }
 
   provisioner "local-exec" {
@@ -28,7 +27,7 @@ resource "null_resource" "download_mongodb_windows" {
     command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1"
 
     environment = {
-      DOWNLOAD_URL       = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip"
+      DOWNLOAD_URL         = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.12.zip"
       DOWNLOAD_OUTPUT_PATH = "${path.module}/../../databases/mongodb/mongodb.zip"
     }
   }
@@ -41,10 +40,8 @@ resource "null_resource" "extract_mongodb_windows" {
   ]
 
   triggers = {
-    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
-    extract_script_sha256  = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongodb.ps1")
-    mongodb_zip_sha256     = filesha256("${path.module}/../../databases/mongodb/mongodb.zip")
-    mongodb_port           = var.mongodb_port
+    extract_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongodb.ps1")
+    download_resource_id  = null_resource.download_mongodb_windows.id
   }
 
   provisioner "local-exec" {
@@ -68,14 +65,9 @@ resource "null_resource" "extract_mongodb_windows" {
 
 resource "null_resource" "download_mongosh_windows" {
 
-  depends_on = [
-    null_resource.extract_mongodb_windows
-  ]
-
   triggers = {
     download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
     mongosh_url            = "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip"
-    mongodb_port           = var.mongodb_port
   }
 
   provisioner "local-exec" {
@@ -85,7 +77,7 @@ resource "null_resource" "download_mongosh_windows" {
     command = "${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1"
 
     environment = {
-      DOWNLOAD_URL       = "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip"
+      DOWNLOAD_URL         = "https://downloads.mongodb.com/compass/mongosh-2.5.8-win32-x64.zip"
       DOWNLOAD_OUTPUT_PATH = "${path.module}/../../databases/mongodb/mongosh.zip"
     }
   }
@@ -98,10 +90,8 @@ resource "null_resource" "extract_mongosh_windows" {
   ]
 
   triggers = {
-    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
-    extract_script_sha256  = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongosh.ps1")
-    mongosh_zip_sha256     = filesha256("${path.module}/../../databases/mongodb/mongosh.zip")
-    mongodb_port           = var.mongodb_port
+    extract_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongosh.ps1")
+    download_resource_id  = null_resource.download_mongosh_windows.id
   }
 
   provisioner "local-exec" {
@@ -126,8 +116,14 @@ resource "null_resource" "extract_mongosh_windows" {
 resource "null_resource" "initialize_mongodb_windows" {
 
   depends_on = [
+    null_resource.extract_mongodb_windows,
     null_resource.extract_mongosh_windows
   ]
+
+  triggers = {
+    mongodb_extract_resource_id = null_resource.extract_mongodb_windows.id
+    mongosh_extract_resource_id = null_resource.extract_mongosh_windows.id
+  }
 
   provisioner "local-exec" {
 
@@ -161,10 +157,10 @@ resource "null_resource" "configure_mongodb_windows" {
   ]
 
   triggers = {
-    mongodb_version      = "8.0.12"
-    script_version       = "2.3"
-    mongodb_port         = var.mongodb_port
-    use_existing_mongodb = tostring(var.use_existing_mongodb)
+    mongodb_version       = "8.0.12"
+    install_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/install_windows.ps1")
+    mongodb_port          = var.mongodb_port
+    use_existing_mongodb  = tostring(var.use_existing_mongodb)
   }
 
   provisioner "local-exec" {

@@ -36,17 +36,24 @@ try {
     Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
     Write-Host "Archive validated successfully."
 
-    if (Test-Path $TargetDir) {
-        Write-Host "Removing existing folder: $TargetDir"
-        Remove-Item $TargetDir -Recurse -Force
-    }
-
     $extractedFolder = Get-ChildItem $TempDir -Directory |
         Where-Object { $_.Name -like "mongosh-*" } |
         Select-Object -First 1
 
     if ($null -eq $extractedFolder) {
         throw "No mongosh-* folder found in archive"
+    }
+
+    $MongoshExe = Join-Path $extractedFolder.FullName "bin\mongosh.exe"
+    if (!(Test-Path -LiteralPath $MongoshExe -PathType Leaf)) {
+        throw "Archive does not contain bin\\mongosh.exe in the mongosh distribution folder."
+    }
+
+    # Do not replace a working installation until the new archive has been
+    # fully extracted and its required executable has been verified.
+    if (Test-Path $TargetDir) {
+        Write-Host "Removing existing folder: $TargetDir"
+        Remove-Item $TargetDir -Recurse -Force
     }
 
     Move-Item $extractedFolder.FullName $TargetDir -Force
