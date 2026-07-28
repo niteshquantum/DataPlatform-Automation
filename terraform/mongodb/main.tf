@@ -40,49 +40,29 @@ resource "null_resource" "extract_mongodb_windows" {
     null_resource.download_mongodb_windows
   ]
 
+  triggers = {
+    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
+    extract_script_sha256  = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongodb.ps1")
+    mongodb_zip_sha256     = filesha256("${path.module}/../../databases/mongodb/mongodb.zip")
+    mongodb_port           = var.mongodb_port
+  }
+
   provisioner "local-exec" {
 
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = [
+      "PowerShell",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File"
+    ]
 
-    command = <<EOT
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/extract_mongodb.ps1"
 
-$ErrorActionPreference = 'Stop'
-
-Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
-
-$ZipPath = "..\..\databases\mongodb\mongodb.zip"
-
-try {
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-    $zip.Dispose()
-}
-catch {
-    throw "Invalid/corrupt MongoDB archive detected: $ZipPath"
-}
-
-if (Test-Path "..\..\databases\mongodb\server") {
-    Remove-Item "..\..\databases\mongodb\server" -Recurse -Force
-}
-
-Expand-Archive `
-    -Path "..\..\databases\mongodb\mongodb.zip" `
-    -DestinationPath "..\..\databases\mongodb" `
-    -Force
-
-$folder = Get-ChildItem "..\..\databases\mongodb" -Directory |
-Where-Object { $_.Name -like "mongodb-*" } |
-Select-Object -First 1
-
-if ($null -eq $folder) {
-    throw "MongoDB extraction failed"
-}
-
-Rename-Item $folder.FullName "server" -Force
-
-Write-Host "MongoDB Extraction Complete"
-
-EOT
-
+    environment = {
+      ZIP_PATH         = "${path.module}/../../databases/mongodb/mongodb.zip"
+      DESTINATION_ROOT = "${path.module}/../../databases/mongodb"
+      TARGET_FOLDER    = "server"
+    }
   }
 }
 
@@ -117,45 +97,29 @@ resource "null_resource" "extract_mongosh_windows" {
     null_resource.download_mongosh_windows
   ]
 
+  triggers = {
+    download_script_sha256 = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/download_mongodb.ps1")
+    extract_script_sha256  = filesha256("${path.module}/../../scripts/powershell/mongodb/setup/extract_mongosh.ps1")
+    mongosh_zip_sha256     = filesha256("${path.module}/../../databases/mongodb/mongosh.zip")
+    mongodb_port           = var.mongodb_port
+  }
+
   provisioner "local-exec" {
 
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = [
+      "PowerShell",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File"
+    ]
 
-    command = <<EOT
+    command = "${path.module}/../../scripts/powershell/mongodb/setup/extract_mongosh.ps1"
 
-$ErrorActionPreference = 'Stop'
-
-Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
-
-$ZipPath = "..\..\databases\mongodb\mongosh.zip"
-
-try {
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-    $zip.Dispose()
-}
-catch {
-    throw "Invalid/corrupt mongosh archive detected: $ZipPath"
-}
-
-if (Test-Path "..\..\databases\mongodb\mongosh") {
-    Remove-Item "..\..\databases\mongodb\mongosh" -Recurse -Force
-}
-
-Expand-Archive `
-    -Path "..\..\databases\mongodb\mongosh.zip" `
-    -DestinationPath "..\..\databases\mongodb" `
-    -Force
-
-$folder = Get-ChildItem "..\..\databases\mongodb" -Directory |
-Where-Object { $_.Name -like "mongosh-*" } |
-Select-Object -First 1
-
-Rename-Item $folder.FullName "mongosh" -Force
-
-Write-Host "mongosh Extraction Complete"
-
-EOT
-
+    environment = {
+      ZIP_PATH         = "${path.module}/../../databases/mongodb/mongosh.zip"
+      DESTINATION_ROOT = "${path.module}/../../databases/mongodb"
+      TARGET_FOLDER    = "mongosh"
+    }
   }
 }
 

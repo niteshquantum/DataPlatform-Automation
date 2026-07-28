@@ -48,13 +48,17 @@ function Test-ZipIntegrity {
         return $false
     }
 
+    $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("zip_validate_" + [Guid]::NewGuid().ToString())
+
     try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
-        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
-        $zip.Dispose()
+        Expand-Archive -Path $Path -DestinationPath $tempDir -Force
+        Remove-Item $tempDir -Recurse -Force
         return $true
     }
     catch {
+        if (Test-Path $tempDir) {
+            Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         return $false
     }
 }
