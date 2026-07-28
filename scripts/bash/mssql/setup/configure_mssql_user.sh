@@ -46,7 +46,7 @@ LOGIN_EXISTS=$($SQLCMD \
     -U sa \
     -P "$MSSQL_PASSWORD" \
     -C \
-    -Q "SELECT COUNT(*) FROM sys.server_principals WHERE name='${MSSQL_USER}';" \
+    -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.server_principals WHERE name='${MSSQL_USER}';" \
     -h -1 -W 2>/dev/null | tr -d '[:space:]')
 
 if [ "$LOGIN_EXISTS" -gt 0 ]; then
