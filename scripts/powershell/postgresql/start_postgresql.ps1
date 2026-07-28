@@ -268,49 +268,8 @@ if ($ExistingService) {
             }
 
             Write-Log "======================================="
-
-            throw $_
+            Write-Log "Falling back to pg_ctl start due to service start failure."
         }
-
-        $ServiceStarted = $false
-
-    for ($i = 1; $i -le 30; $i++) {
-
-        $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-
-        if ($svc -and $svc.Status -eq "Running") {
-            $ServiceStarted = $true
-            break
-        }
-
-        Start-Sleep -Seconds 1
-    }
-
-    if (-not $ServiceStarted) {
-        throw "PostgreSQL Windows Service failed to start"
-    }
-
-    $PortStarted = $false
-
-    for ($i = 1; $i -le 30; $i++) {
-
-        $conn = Get-NetTCPConnection -LocalPort $ExpectedPort -State Listen -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-
-        if ($conn) {
-            $PortStarted = $true
-            break
-        }
-
-        Start-Sleep -Seconds 1
-    }
-
-    if (-not $PortStarted) {
-        throw "PostgreSQL is not listening on port $ExpectedPort"
-    }
-
-    Write-Log "PostgreSQL Windows Service started successfully."
-    exit 0
 }
 
 # =====================================
