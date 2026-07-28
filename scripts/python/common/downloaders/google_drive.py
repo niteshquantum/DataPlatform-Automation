@@ -1,21 +1,25 @@
+import os
 import gdown
 
+SOURCE_TYPE = "google_drive"
 
-def download(url, output_path):
+def download(config, output_path):
     """
-    Download a file from Google Drive.
-
-    Parameters
-    ----------
-    url : str
-        Google Drive share URL.
-
-    output_path : str
-        Destination file path.
+    Download a dataset from Google Drive.
     """
+
+    source_path = (
+        os.getenv("SOURCE_PATH")
+        or config.get("SOURCE_PATH")
+    )
+
+    if not source_path:
+        raise ValueError(
+            "SOURCE_PATH is not configured."
+        )
 
     gdown.download(
-        url,
+        source_path,
         output_path,
         quiet=False
     )

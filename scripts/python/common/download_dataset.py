@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -6,7 +7,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
-from scripts.python.common.downloaders import google_drive
+from scripts.python.common.factory.downloader_factory import (
+    get_downloader
+)
 
 from scripts.python.common.config_loader import (
     load_common_config,
@@ -49,6 +52,18 @@ def download_dataset():
 
     config = load_common_config("dataset")
 
+source_type = (
+    os.getenv("SOURCE_TYPE")
+    or config.get("SOURCE_TYPE")
+)
+
+if not source_type:
+    raise ValueError(
+        "SOURCE_TYPE is not configured."
+    )
+
+downloader = get_downloader(source_type)
+
     project_root = get_project_root()
 
     download_directory = (
@@ -90,13 +105,10 @@ def download_dataset():
             suffix=".tmp"
         ) as tmp:
             tmp_path = Path(tmp.name)
-
-        google_drive.download(
-            config["DATASET_URL"],
+        downloader.download(
+            config,
             str(tmp_path)
-            
         )
-
         validate_zip(tmp_path)
 
         tmp_path.replace(output_file)
