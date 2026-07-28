@@ -397,6 +397,8 @@ pipeline {
 
             steps {
 
+                checkout scm
+
                 script {
 
                     def resolver = load('jenkins/routing/pipeline_resolver.groovy')
