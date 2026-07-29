@@ -132,15 +132,22 @@ resource "null_resource" "extract_mongosh_windows" {
 
 $ErrorActionPreference = 'Stop'
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
-
 $ZipPath = "..\..\databases\mongodb\mongosh.zip"
+$ValidationPath = Join-Path ([System.IO.Path]::GetTempPath()) "mongosh-zip-validation-$PID"
 
 try {
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-    $zip.Dispose()
+    if (Test-Path -LiteralPath $ValidationPath) {
+        Remove-Item -LiteralPath $ValidationPath -Recurse -Force
+    }
+
+    Expand-Archive -LiteralPath $ZipPath -DestinationPath $ValidationPath -Force
+    Remove-Item -LiteralPath $ValidationPath -Recurse -Force
 }
 catch {
+    if (Test-Path -LiteralPath $ValidationPath) {
+        Remove-Item -LiteralPath $ValidationPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     throw "Invalid/corrupt mongosh archive detected: $ZipPath"
 }
 
