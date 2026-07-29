@@ -51,6 +51,12 @@ def validate_zip(path: Path) -> None:
 def download_dataset():
 
     config = load_common_config("dataset")
+    print("=" * 60)
+    print("ENV SOURCE_TYPE :", os.getenv("SOURCE_TYPE"))
+    print("ENV SOURCE_PATH :", os.getenv("SOURCE_PATH"))
+    print("CONFIG SOURCE_TYPE :", config.get("SOURCE_TYPE"))
+    print("CONFIG SOURCE_PATH :", config.get("SOURCE_PATH"))
+    print("=" * 60)
 
     source_type = (
         os.getenv("SOURCE_TYPE")
