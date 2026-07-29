@@ -65,6 +65,42 @@ Write-Host ""
 
 $ExpectedMongodPath = [System.IO.Path]::GetFullPath($MongodExe)
 
+function Resolve-ServiceExecutablePath {
+    param([string]$ServicePathName)
+
+    if ([string]::IsNullOrWhiteSpace($ServicePathName)) {
+        return $null
+    }
+
+    $ServiceExecutableMatch = [regex]::Match(
+        $ServicePathName.Trim(),
+        '(?i)^(?:"(?<quotedPath>[^"]+?\.exe)"|(?<unquotedPath>.+?\.exe))(?=\s|$)'
+    )
+
+    if (-not $ServiceExecutableMatch.Success) {
+        return $null
+    }
+
+    $ServiceExecutable = if ($ServiceExecutableMatch.Groups['quotedPath'].Success) {
+        $ServiceExecutableMatch.Groups['quotedPath'].Value
+    }
+    else {
+        $ServiceExecutableMatch.Groups['unquotedPath'].Value
+    }
+
+    try {
+        return [System.IO.Path]::GetFullPath($ServiceExecutable)
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-ManagedMongoServiceCommand {
+    return '"{0}" --dbpath "{1}" --logpath "{2}" --logappend --bind_ip "{3}" --port {4} --service' -f `
+        $MongodExe, $DataPath, $LogPath, $MongoHost, $MongoPort
+}
+
 function Write-ManagedServiceStartupDiagnostics {
     param(
         [string]$Name,
@@ -109,25 +145,16 @@ function Write-ManagedServiceStartupDiagnostics {
 }
 
 function Stop-StaleManagedMongoProcesses {
-    param([string]$ServicePathName)
-
-    $ServiceExecutableMatch = [regex]::Match(
-        $ServicePathName,
-        '^(?:"(?<quotedPath>[^"]+)"|(?<unquotedPath>\S+))'
+    param(
+        [string]$ServicePathName,
+        [string]$FallbackExecutablePath
     )
 
-    if (-not $ServiceExecutableMatch.Success) {
-        throw "Unable to resolve the managed MongoDB executable from the service ImagePath."
-    }
+    $ServiceExecutable = Resolve-ServiceExecutablePath -ServicePathName $ServicePathName
 
-    $ServiceExecutable = if ($ServiceExecutableMatch.Groups['quotedPath'].Success) {
-        $ServiceExecutableMatch.Groups['quotedPath'].Value
+    if (-not $ServiceExecutable) {
+        $ServiceExecutable = [System.IO.Path]::GetFullPath($FallbackExecutablePath)
     }
-    else {
-        $ServiceExecutableMatch.Groups['unquotedPath'].Value
-    }
-
-    $ServiceExecutable = [System.IO.Path]::GetFullPath($ServiceExecutable)
 
     Get-CimInstance Win32_Process -Filter "Name='mongod.exe'" -ErrorAction Stop |
         Where-Object {
@@ -192,21 +219,9 @@ if ($Listener) {
 
         if ($ServiceInfo) {
 
-            $ServicePathName = $ServiceInfo.PathName.Trim()
-            $ServiceExe = $ServicePathName
+            $ServiceExe = Resolve-ServiceExecutablePath -ServicePathName $ServiceInfo.PathName
 
-            if ($ServicePathName.StartsWith('"')) {
-                $EndQuote = $ServicePathName.IndexOf('"', 1)
-                if ($EndQuote -ne -1) {
-                    $ServiceExe = $ServicePathName.Substring(1, $EndQuote - 1)
-                }
-            }
-            else {
-                $ServiceExe = $ServicePathName.Split(' ')[0]
-            }
-
-            if ($ActualPath) {
-                $ServiceExe = [System.IO.Path]::GetFullPath($ServiceExe)
+            if ($ActualPath -and $ServiceExe) {
                 if ($ActualPath.Equals($ServiceExe, [System.StringComparison]::OrdinalIgnoreCase)) {
                     $IsProjectOwned = $true
                 }
@@ -287,25 +302,24 @@ if ($ServiceInfo) {
         -Filter "Name='$ServiceName'" `
         -ErrorAction Stop
 
+    $ServiceExecutable = Resolve-ServiceExecutablePath -ServicePathName $ServiceConfiguration.PathName
+
     $ServicePortMatch = [regex]::Match(
         $ServiceConfiguration.PathName,
-        '(?i)--port\s+(?<port>\d+)'
+        '(?i)--port(?:\s+|=)(?<port>\d+)'
     )
 
-    if (-not $ServicePortMatch.Success) {
-        throw "Managed MongoDB service '$ServiceName' does not have a direct --port argument. Refusing to alter its configuration."
-    }
-
-    $ServicePort = [int]$ServicePortMatch.Groups['port'].Value
-
-    $ServiceNeedsPortUpdate = $ServicePort -ne [int]$MongoPort
+    $ServiceNeedsPortUpdate = -not $ServicePortMatch.Success -or
+        [int]$ServicePortMatch.Groups['port'].Value -ne [int]$MongoPort
     $ServiceHasLogAppend = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--logappend(?:\s|$)'
+    $ServiceNeedsCommandRebuild = -not $ServiceExecutable
 
-    if ($ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend) {
-        if ($ServiceNeedsPortUpdate) {
+    if ($ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend -or $ServiceNeedsCommandRebuild) {
+        if ($ServiceNeedsPortUpdate -and $ServicePortMatch.Success) {
+            $ServicePort = [int]$ServicePortMatch.Groups['port'].Value
             Write-Host "Managed service port ($ServicePort) differs from configured port ($MongoPort). Updating the managed service configuration."
         }
-        else {
+        elseif (-not $ServiceHasLogAppend) {
             Write-Host "Managed service is missing --logappend. Updating the managed service configuration."
         }
 
@@ -315,17 +329,23 @@ if ($ServiceInfo) {
         }
 
         Stop-StaleManagedMongoProcesses `
-            -ServicePathName $ServiceConfiguration.PathName
+            -ServicePathName $ServiceConfiguration.PathName `
+            -FallbackExecutablePath $ExpectedMongodPath
 
-        $UpdatedServicePath = [regex]::Replace(
-            $ServiceConfiguration.PathName,
-            '(?i)--port\s+\d+',
-            "--port $MongoPort",
-            1
-        )
+        if ($ServiceNeedsCommandRebuild -or -not $ServicePortMatch.Success) {
+            $UpdatedServicePath = Get-ManagedMongoServiceCommand
+        }
+        else {
+            $UpdatedServicePath = [regex]::Replace(
+                $ServiceConfiguration.PathName,
+                '(?i)--port(?:\s+|=)\d+',
+                "--port $MongoPort",
+                1
+            )
 
-        if (-not $ServiceHasLogAppend) {
-            $UpdatedServicePath = "$UpdatedServicePath --logappend"
+            if (-not $ServiceHasLogAppend) {
+                $UpdatedServicePath = "$UpdatedServicePath --logappend"
+            }
         }
 
         & sc.exe config $ServiceName "binPath= $UpdatedServicePath" | Out-Null
