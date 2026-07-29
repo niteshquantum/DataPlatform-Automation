@@ -292,7 +292,13 @@ pipeline {
                         'Download Dataset'
                     ) {
 
-                        bat 'scripts\\batch\\common\\download_dataset.bat'
+                        withEnv([
+    "SOURCE_TYPE=${params.SOURCE_TYPE}",
+    "SOURCE_PATH=${params.SOURCE_PATH}"
+]) {
+
+    bat 'scripts\\batch\\common\\download_dataset.bat'
+}
                     }
                 }
             }
