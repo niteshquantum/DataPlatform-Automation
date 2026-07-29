@@ -100,9 +100,7 @@ def execute(Map context) {
 
         stage('Validate Python Runtime') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Python Runtime'
@@ -110,16 +108,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\validate_python_runtime.bat'
                     }
-                }
-            }
         }
 
 
         stage('Install Python Requirements') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Install Python Requirements'
@@ -127,16 +121,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\install_python_requirements.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate Python Requirements') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Python Requirements'
@@ -144,16 +134,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\validate_python_requirements.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate Java Runtime') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Validate Java Runtime'
@@ -161,16 +147,12 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\common\\validate_java_runtime.bat'
                     }
-                }
-            }
         }
 
 
         stage('Install Tools') {
 
-            steps {
 
-                script {
 
                     runTrackedStage(
                         'Install Tools'
@@ -178,16 +160,11 @@ def execute(Map context) {
 
                         bat 'scripts\\batch\\mongodb\\setup\\install_tools.bat'
                     }
-                }
-            }
         }
 
 
         stage('Validate Tools') {
 
-            steps {
-
-                script {
 
                     runTrackedStage(
                         'Validate Tools'
@@ -196,8 +173,7 @@ def execute(Map context) {
                         bat 'scripts\\batch\\mongodb\\setup\\validate_tools.bat'
                     }
                 }
-            }
-        }
+
 
 
         stage('Check MongoDB Instance') {
