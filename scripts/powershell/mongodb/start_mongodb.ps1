@@ -286,6 +286,7 @@ if ($Listener) {
 # =====================================
 
 $ServiceName = "MongoDBAutomation"
+$ServiceDisplayName = "MongoDB Automation Service"
 
 $ServiceInfo = Get-Service `
     -Name $ServiceName `
@@ -312,9 +313,15 @@ if ($ServiceInfo) {
     $ServiceNeedsPortUpdate = -not $ServicePortMatch.Success -or
         [int]$ServicePortMatch.Groups['port'].Value -ne [int]$MongoPort
     $ServiceHasLogAppend = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--logappend(?:\s|$)'
-    $ServiceNeedsCommandRebuild = -not $ServiceExecutable
+    $ServiceHasService = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--service(?:\s|$)'
+    $ServiceUsesCurrentWorkspace = $ServiceExecutable -and
+        $ServiceExecutable.Equals($ExpectedMongodPath, [System.StringComparison]::OrdinalIgnoreCase) -and
+        $ServiceConfiguration.PathName -match [regex]::Escape($DataPath) -and
+        $ServiceConfiguration.PathName -match [regex]::Escape($LogPath)
+    $ServiceNeedsRecreation = -not $ServiceUsesCurrentWorkspace -or
+        $ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend -or -not $ServiceHasService
 
-    if ($ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend -or $ServiceNeedsCommandRebuild) {
+    if ($ServiceNeedsRecreation) {
         if ($ServiceNeedsPortUpdate -and $ServicePortMatch.Success) {
             $ServicePort = [int]$ServicePortMatch.Groups['port'].Value
             Write-Host "Managed service port ($ServicePort) differs from configured port ($MongoPort). Updating the managed service configuration."
@@ -332,27 +339,30 @@ if ($ServiceInfo) {
             -ServicePathName $ServiceConfiguration.PathName `
             -FallbackExecutablePath $ExpectedMongodPath
 
-        if ($ServiceNeedsCommandRebuild -or -not $ServicePortMatch.Success) {
-            $UpdatedServicePath = Get-ManagedMongoServiceCommand
-        }
-        else {
-            $UpdatedServicePath = [regex]::Replace(
-                $ServiceConfiguration.PathName,
-                '(?i)--port(?:\s+|=)\d+',
-                "--port $MongoPort",
-                1
-            )
-
-            if (-not $ServiceHasLogAppend) {
-                $UpdatedServicePath = "$UpdatedServicePath --logappend"
-            }
-        }
-
-        & sc.exe config $ServiceName "binPath= $UpdatedServicePath" | Out-Null
+        & sc.exe delete $ServiceName | Out-Null
 
         if ($LASTEXITCODE -ne 0) {
-            throw "Failed to update the managed MongoDB service port to $MongoPort."
+            throw "Failed to remove managed MongoDB service '$ServiceName'."
         }
+
+        for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
+            if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) {
+                break
+            }
+
+            Start-Sleep -Seconds 1
+        }
+
+        if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
+            throw "Managed MongoDB service '$ServiceName' could not be removed."
+        }
+
+        New-Service `
+            -Name $ServiceName `
+            -DisplayName $ServiceDisplayName `
+            -BinaryPathName (Get-ManagedMongoServiceCommand) `
+            -StartupType Automatic `
+            -ErrorAction Stop
 
         $ServiceInfo = Get-Service -Name $ServiceName -ErrorAction Stop
     }
