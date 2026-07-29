@@ -204,6 +204,46 @@ if ($ServiceInfo) {
     Write-Host "Durable managed service detected: $ServiceName"
     Write-Host "Service status : $($ServiceInfo.Status)"
 
+    $ServiceConfiguration = Get-CimInstance `
+        Win32_Service `
+        -Filter "Name='$ServiceName'" `
+        -ErrorAction Stop
+
+    $ServicePortMatch = [regex]::Match(
+        $ServiceConfiguration.PathName,
+        '(?i)--port\s+(?<port>\d+)'
+    )
+
+    if (-not $ServicePortMatch.Success) {
+        throw "Managed MongoDB service '$ServiceName' does not have a direct --port argument. Refusing to alter its configuration."
+    }
+
+    $ServicePort = [int]$ServicePortMatch.Groups['port'].Value
+
+    if ($ServicePort -ne [int]$MongoPort) {
+        Write-Host "Managed service port ($ServicePort) differs from configured port ($MongoPort). Updating the managed service configuration."
+
+        if ($ServiceInfo.Status -eq "Running") {
+            Stop-Service -Name $ServiceName -Force -ErrorAction Stop
+            $ServiceInfo.WaitForStatus("Stopped", (New-TimeSpan -Seconds 30))
+        }
+
+        $UpdatedServicePath = [regex]::Replace(
+            $ServiceConfiguration.PathName,
+            '(?i)--port\s+\d+',
+            "--port $MongoPort",
+            1
+        )
+
+        & sc.exe config $ServiceName "binPath= $UpdatedServicePath" | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to update the managed MongoDB service port to $MongoPort."
+        }
+
+        $ServiceInfo = Get-Service -Name $ServiceName -ErrorAction Stop
+    }
+
     if ($ServiceInfo.Status -eq "Running") {
         Write-Host "Service reports running but port $MongoPort is not listening."
         Write-Host "Waiting briefly for port to become ready..."
