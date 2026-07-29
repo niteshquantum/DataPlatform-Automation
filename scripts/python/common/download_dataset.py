@@ -52,17 +52,17 @@ def download_dataset():
 
     config = load_common_config("dataset")
 
-source_type = (
-    os.getenv("SOURCE_TYPE")
-    or config.get("SOURCE_TYPE")
-)
-
-if not source_type:
-    raise ValueError(
-        "SOURCE_TYPE is not configured."
+    source_type = (
+        os.getenv("SOURCE_TYPE")
+        or config.get("SOURCE_TYPE")
     )
 
-downloader = get_downloader(source_type)
+    if not source_type:
+        raise ValueError(
+            "SOURCE_TYPE is not configured."
+        )
+
+    downloader = get_downloader(source_type)
 
     project_root = get_project_root()
 
