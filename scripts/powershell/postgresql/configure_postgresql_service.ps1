@@ -19,6 +19,7 @@ $PgLogDir = "$PROJECT_ROOT\outputs\logs"
 $PgLog  = "$PgLogDir\postgresql_service.log"
 
 $PgCtl = "$PgBin\pg_ctl.exe"
+$ResolvedPgCtlFromService = $false
 
 $ServiceName = "PostgreSQLAutomation"
 
@@ -85,15 +86,15 @@ if (!(Test-Path $PgCtl)) {
     Write-Host ""
     Write-Host "Resolving pg_ctl.exe from existing PostgreSQL service..."
 
-    $ServiceImagePath = Get-CimInstance `
+    $ServiceConfiguration = Get-CimInstance `
         Win32_Service `
         -Filter "Name='$ServiceName'" `
         -ErrorAction SilentlyContinue
 
-    if ($ServiceImagePath -and $ServiceImagePath.PathName) {
+    if ($ServiceConfiguration -and $ServiceConfiguration.PathName) {
 
         $PgCtlMatch = [regex]::Match(
-            $ServiceImagePath.PathName.Trim(),
+            $ServiceConfiguration.PathName.Trim(),
             '"?(?<path>[A-Za-z]:\\[^"\r\n]*?\\pg_ctl\.exe)"?',
             [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
         )
@@ -105,6 +106,7 @@ if (!(Test-Path $PgCtl)) {
             if (Test-Path -LiteralPath $ServicePgCtl -PathType Leaf) {
                 Write-Host "Resolved pg_ctl.exe from service: $ServicePgCtl"
                 $PgCtl = $ServicePgCtl
+                $ResolvedPgCtlFromService = $true
             }
         }
     }
@@ -112,6 +114,28 @@ if (!(Test-Path $PgCtl)) {
     if (!(Test-Path $PgCtl)) {
         throw "pg_ctl.exe not found in workspace: $PgBin. Unable to resolve it from the PostgreSQLAutomation service."
     }
+}
+
+if ($ResolvedPgCtlFromService) {
+
+    $PgDataMatch = [regex]::Match(
+        $ServiceConfiguration.PathName,
+        '(?:^|\s)-D\s+(?:"(?<quotedPath>[^"]+)"|(?<unquotedPath>\S+))',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+
+    if (-not $PgDataMatch.Success) {
+        throw "Unable to resolve the PostgreSQL data directory (-D) from the PostgreSQLAutomation service."
+    }
+
+    $PgData = if ($PgDataMatch.Groups['quotedPath'].Success) {
+        $PgDataMatch.Groups['quotedPath'].Value
+    }
+    else {
+        $PgDataMatch.Groups['unquotedPath'].Value
+    }
+
+    Write-Host "Resolved PostgreSQL data directory from service: $PgData"
 }
 
 if (!(Test-Path "$PgData\PG_VERSION")) {
