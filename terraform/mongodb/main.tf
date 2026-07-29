@@ -48,15 +48,22 @@ resource "null_resource" "extract_mongodb_windows" {
 
 $ErrorActionPreference = 'Stop'
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
-
 $ZipPath = "..\..\databases\mongodb\mongodb.zip"
+$ValidationPath = Join-Path ([System.IO.Path]::GetTempPath()) "mongodb-zip-validation-$PID"
 
 try {
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-    $zip.Dispose()
+    if (Test-Path -LiteralPath $ValidationPath) {
+        Remove-Item -LiteralPath $ValidationPath -Recurse -Force
+    }
+
+    Expand-Archive -LiteralPath $ZipPath -DestinationPath $ValidationPath -Force
+    Remove-Item -LiteralPath $ValidationPath -Recurse -Force
 }
 catch {
+    if (Test-Path -LiteralPath $ValidationPath) {
+        Remove-Item -LiteralPath $ValidationPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     throw "Invalid/corrupt MongoDB archive detected: $ZipPath"
 }
 
