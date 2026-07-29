@@ -267,6 +267,11 @@ pipeline {
                             error "Port conflict: configured PostgreSQL port is occupied by a non-PostgreSQL process. Aborting setup."
                         }
 
+                        if (instanceState == 'POSTGRESQL_AUTHENTICATION_FAILED') {
+
+                            error "PostgreSQL is reachable on the configured port, but the configured credentials were rejected. Aborting setup."
+                        }
+
                         if (instanceState == 'UNKNOWN') {
 
                             error "Unknown PostgreSQL instance state detected. Aborting setup."

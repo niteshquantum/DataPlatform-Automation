@@ -73,11 +73,11 @@ def get_database_url(db_type, config):
         return f"jdbc:mysql://{host}:{port}/{database}?user={user}&password={password}"
     
     elif db_type.lower() == 'postgresql':
-        host = config.get('POSTGRES_HOST', 'localhost')
-        port = config.get('POSTGRES_PORT', '5432')
-        database = config.get('POSTGRES_DB', 'postgres')
-        user = config.get('POSTGRES_USER', 'postgres')
-        password = config.get('POSTGRES_PASSWORD', '')
+        host = config['POSTGRESQL_HOST']
+        port = config['POSTGRESQL_PORT']
+        database = config['POSTGRESQL_DB']
+        user = config['POSTGRESQL_USER']
+        password = config['POSTGRESQL_PASSWORD']
         
         return f"jdbc:postgresql://{host}:{port}/{database}?user={user}&password={password}"
     

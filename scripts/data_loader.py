@@ -103,7 +103,7 @@ def get_database_connection(db_type, config):
 
         return psycopg2.connect(
             host=config.get('POSTGRESQL_HOST', 'localhost'),
-            port=int(config.get('POSTGRESQL_PORT', 5432)),
+            port=int(config['POSTGRESQL_PORT']),
             user=config.get('POSTGRESQL_USER', 'postgres'),
             password=config.get('POSTGRESQL_PASSWORD', ''),
             dbname=config.get('POSTGRESQL_DB', '')

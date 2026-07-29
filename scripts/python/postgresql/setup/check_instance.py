@@ -67,6 +67,10 @@ def check_instance():
         print(f"Instance not reachable : {e}")
         print()
 
+        if "password authentication failed" in str(e).lower():
+            print("INSTANCE_STATE=POSTGRESQL_AUTHENTICATION_FAILED")
+            return "POSTGRESQL_AUTHENTICATION_FAILED"
+
         if managed:
             print("INSTANCE_STATE=INSTANCE_INSTALLED_BUT_STOPPED")
             return "INSTANCE_INSTALLED_BUT_STOPPED"
