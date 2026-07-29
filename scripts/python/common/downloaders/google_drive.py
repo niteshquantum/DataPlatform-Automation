@@ -18,7 +18,7 @@ def download(config, output_path):
 
     if not source_path:
         raise ValueError(
-        "SOURCE_PATH is not configured."
+            "SOURCE_PATH is not configured."
     )
 
     gdown.download(
