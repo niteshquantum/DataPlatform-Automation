@@ -235,6 +235,7 @@ Write-Log "Installing MongoDB Windows Service..."
 & "$MongodExe" `
     --dbpath "$DataPath" `
     --logpath "$LogPath" `
+    --logappend `
     --bind_ip "$MongoHost" `
     --port "$MongoPort" `
     --serviceName "$ServiceName" `

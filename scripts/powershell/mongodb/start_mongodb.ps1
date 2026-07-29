@@ -65,6 +65,84 @@ Write-Host ""
 
 $ExpectedMongodPath = [System.IO.Path]::GetFullPath($MongodExe)
 
+function Write-ManagedServiceStartupDiagnostics {
+    param(
+        [string]$Name,
+        [string]$ServicePathName
+    )
+
+    Write-Host ""
+    Write-Host "MONGODB SERVICE STARTUP DIAGNOSTICS"
+    & sc.exe qc $Name
+    & sc.exe queryex $Name
+    Get-Service -Name $Name -ErrorAction SilentlyContinue | Format-List Name, Status, StartType
+    Get-CimInstance Win32_Service -Filter "Name='$Name'" -ErrorAction SilentlyContinue |
+        Format-List Name, State, Status, ExitCode, ServiceSpecificExitCode, ProcessId, StartName, PathName
+
+    Get-WinEvent -FilterHashtable @{
+        LogName = 'System'
+        ProviderName = 'Service Control Manager'
+        StartTime = (Get-Date).AddMinutes(-5)
+    } -ErrorAction SilentlyContinue |
+        Where-Object { $_.Message -match [regex]::Escape($Name) } |
+        Select-Object -First 10 TimeCreated, Id, LevelDisplayName, Message |
+        Format-List
+
+    $LogPathMatch = [regex]::Match(
+        $ServicePathName,
+        '(?i)--logpath\s+(?:"(?<quotedPath>[^"]+)"|(?<unquotedPath>\S+))'
+    )
+
+    if ($LogPathMatch.Success) {
+        $ServiceLogPath = if ($LogPathMatch.Groups['quotedPath'].Success) {
+            $LogPathMatch.Groups['quotedPath'].Value
+        }
+        else {
+            $LogPathMatch.Groups['unquotedPath'].Value
+        }
+
+        if (Test-Path -LiteralPath $ServiceLogPath) {
+            Write-Host "LAST MONGODB LOG ENTRIES:"
+            Get-Content -LiteralPath $ServiceLogPath -Tail 50
+        }
+    }
+}
+
+function Stop-StaleManagedMongoProcesses {
+    param([string]$ServicePathName)
+
+    $ServiceExecutableMatch = [regex]::Match(
+        $ServicePathName,
+        '^(?:"(?<quotedPath>[^"]+)"|(?<unquotedPath>\S+))'
+    )
+
+    if (-not $ServiceExecutableMatch.Success) {
+        throw "Unable to resolve the managed MongoDB executable from the service ImagePath."
+    }
+
+    $ServiceExecutable = if ($ServiceExecutableMatch.Groups['quotedPath'].Success) {
+        $ServiceExecutableMatch.Groups['quotedPath'].Value
+    }
+    else {
+        $ServiceExecutableMatch.Groups['unquotedPath'].Value
+    }
+
+    $ServiceExecutable = [System.IO.Path]::GetFullPath($ServiceExecutable)
+
+    Get-CimInstance Win32_Process -Filter "Name='mongod.exe'" -ErrorAction Stop |
+        Where-Object {
+            $_.ExecutablePath -and
+            [System.IO.Path]::GetFullPath($_.ExecutablePath).Equals(
+                $ServiceExecutable,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )
+        } |
+        ForEach-Object {
+            Write-Host "Stopping stale managed mongod process (PID $($_.ProcessId)) before service reconfiguration."
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
+        }
+}
+
 # =====================================
 # CHECK IF ALREADY RUNNING
 # =====================================
@@ -220,13 +298,24 @@ if ($ServiceInfo) {
 
     $ServicePort = [int]$ServicePortMatch.Groups['port'].Value
 
-    if ($ServicePort -ne [int]$MongoPort) {
-        Write-Host "Managed service port ($ServicePort) differs from configured port ($MongoPort). Updating the managed service configuration."
+    $ServiceNeedsPortUpdate = $ServicePort -ne [int]$MongoPort
+    $ServiceHasLogAppend = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--logappend(?:\s|$)'
+
+    if ($ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend) {
+        if ($ServiceNeedsPortUpdate) {
+            Write-Host "Managed service port ($ServicePort) differs from configured port ($MongoPort). Updating the managed service configuration."
+        }
+        else {
+            Write-Host "Managed service is missing --logappend. Updating the managed service configuration."
+        }
 
         if ($ServiceInfo.Status -eq "Running") {
             Stop-Service -Name $ServiceName -Force -ErrorAction Stop
             $ServiceInfo.WaitForStatus("Stopped", (New-TimeSpan -Seconds 30))
         }
+
+        Stop-StaleManagedMongoProcesses `
+            -ServicePathName $ServiceConfiguration.PathName
 
         $UpdatedServicePath = [regex]::Replace(
             $ServiceConfiguration.PathName,
@@ -234,6 +323,10 @@ if ($ServiceInfo) {
             "--port $MongoPort",
             1
         )
+
+        if (-not $ServiceHasLogAppend) {
+            $UpdatedServicePath = "$UpdatedServicePath --logappend"
+        }
 
         & sc.exe config $ServiceName "binPath= $UpdatedServicePath" | Out-Null
 
@@ -265,9 +358,17 @@ if ($ServiceInfo) {
     Write-Host "Starting managed MongoDB service..."
     Write-Host ""
 
-    Start-Service `
-        -Name $ServiceName `
-        -ErrorAction Stop
+    try {
+        Start-Service `
+            -Name $ServiceName `
+            -ErrorAction Stop
+    }
+    catch {
+        Write-ManagedServiceStartupDiagnostics `
+            -Name $ServiceName `
+            -ServicePathName $ServiceConfiguration.PathName
+        throw
+    }
 
     Write-Host "Waiting for MongoDB service to start..."
 
