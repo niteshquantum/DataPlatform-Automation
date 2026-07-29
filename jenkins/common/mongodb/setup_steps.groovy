@@ -287,9 +287,9 @@ def execute(Map context) {
         }
 
 
-        stage('Configure Database RBAC') {
-runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' }
-        }
+//         stage('Configure Database RBAC') {
+// runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mongodb\\rbac\\configure_database_rbac.bat' }
+//         }
 
         stage('Validate MongoDB Instance') {
 
