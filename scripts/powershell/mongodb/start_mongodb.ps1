@@ -101,6 +101,111 @@ function Get-ManagedMongoServiceCommand {
         $MongodExe, $DataPath, $LogPath, $MongoHost, $MongoPort
 }
 
+function Test-MongoPathWritable {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+
+    $ProbePath = Join-Path $Path ".mongodb-write-test-$PID.tmp"
+
+    try {
+        [System.IO.File]::WriteAllText($ProbePath, '')
+    }
+    finally {
+        Remove-Item -LiteralPath $ProbePath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Test-ManagedMongoStartupPrerequisites {
+    param([string]$ServiceName)
+
+    if (-not (Test-Path -LiteralPath $MongodExe)) {
+        throw "mongod.exe not found: $MongodExe"
+    }
+
+    Test-MongoPathWritable -Path $DataPath
+    Test-MongoPathWritable -Path (Split-Path -Parent $LogPath)
+
+    $ServiceAccount = Get-CimInstance `
+        Win32_Service `
+        -Filter "Name='$ServiceName'" `
+        -ErrorAction Stop
+
+    if ([string]::IsNullOrWhiteSpace($ServiceAccount.StartName)) {
+        throw "Managed MongoDB service '$ServiceName' does not have a service account."
+    }
+
+    $StaleProcesses = Get-CimInstance Win32_Process -Filter "Name='mongod.exe'" -ErrorAction Stop |
+        Where-Object {
+            $_.ExecutablePath -and
+            [System.IO.Path]::GetFullPath($_.ExecutablePath).Equals(
+                $ExpectedMongodPath,
+                [System.StringComparison]::OrdinalIgnoreCase
+            )
+        }
+
+    if ($StaleProcesses) {
+        throw "A stale managed mongod.exe process is still running."
+    }
+
+    $PortConflict = Get-NetTCPConnection `
+        -LocalPort $MongoPort `
+        -State Listen `
+        -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+
+    if ($PortConflict) {
+        throw "Port $MongoPort is already in use before starting the managed MongoDB service."
+    }
+}
+
+function Invoke-MongoDirectStartupDiagnostics {
+    $DiagnosticStdOut = Join-Path $env:TEMP "mongodb-direct-startup-$PID.stdout.log"
+    $DiagnosticStdErr = Join-Path $env:TEMP "mongodb-direct-startup-$PID.stderr.log"
+
+    Remove-Item -LiteralPath $DiagnosticStdOut, $DiagnosticStdErr -Force -ErrorAction SilentlyContinue
+
+    Write-Host "MONGODB DIRECT STARTUP DIAGNOSTICS"
+
+    try {
+        $DiagnosticProcess = Start-Process `
+            -FilePath $MongodExe `
+            -ArgumentList @(
+                '--dbpath', $DataPath,
+                '--logpath', $LogPath,
+                '--logappend',
+                '--bind_ip', $MongoHost,
+                '--port', $MongoPort
+            ) `
+            -RedirectStandardOutput $DiagnosticStdOut `
+            -RedirectStandardError $DiagnosticStdErr `
+            -PassThru `
+            -WindowStyle Hidden
+
+        if (-not $DiagnosticProcess.WaitForExit(10000)) {
+            Stop-Process -Id $DiagnosticProcess.Id -Force -ErrorAction SilentlyContinue
+            $DiagnosticProcess.WaitForExit()
+        }
+
+        Write-Host "Direct mongod.exe exit code: $($DiagnosticProcess.ExitCode)"
+
+        if (Test-Path -LiteralPath $DiagnosticStdOut) {
+            Write-Host "DIRECT MONGOD STDOUT:"
+            Get-Content -LiteralPath $DiagnosticStdOut
+        }
+
+        if (Test-Path -LiteralPath $DiagnosticStdErr) {
+            Write-Host "DIRECT MONGOD STDERR:"
+            Get-Content -LiteralPath $DiagnosticStdErr
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $DiagnosticStdOut, $DiagnosticStdErr -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Write-ManagedServiceStartupDiagnostics {
     param(
         [string]$Name,
@@ -124,6 +229,14 @@ function Write-ManagedServiceStartupDiagnostics {
         Select-Object -First 10 TimeCreated, Id, LevelDisplayName, Message |
         Format-List
 
+    Get-WinEvent -FilterHashtable @{
+        LogName = 'Application'
+        StartTime = (Get-Date).AddMinutes(-5)
+    } -ErrorAction SilentlyContinue |
+        Where-Object { $_.ProviderName -match 'Mongo' -or $_.Message -match 'mongod|mongodb' } |
+        Select-Object -First 20 TimeCreated, Id, ProviderName, LevelDisplayName, Message |
+        Format-List
+
     $LogPathMatch = [regex]::Match(
         $ServicePathName,
         '(?i)--logpath\s+(?:"(?<quotedPath>[^"]+)"|(?<unquotedPath>\S+))'
@@ -139,7 +252,7 @@ function Write-ManagedServiceStartupDiagnostics {
 
         if (Test-Path -LiteralPath $ServiceLogPath) {
             Write-Host "LAST MONGODB LOG ENTRIES:"
-            Get-Content -LiteralPath $ServiceLogPath -Tail 50
+            Get-Content -LiteralPath $ServiceLogPath -Tail 100
         }
     }
 }
@@ -362,14 +475,31 @@ if ($ServiceInfo) {
             throw "Managed MongoDB service '$ServiceName' could not be fully removed."
         }
 
-        New-Service `
-            -Name $ServiceName `
-            -DisplayName $ServiceDisplayName `
-            -BinaryPathName (Get-ManagedMongoServiceCommand) `
-            -StartupType Automatic `
-            -ErrorAction Stop
+        & $MongodExe `
+            --dbpath "$DataPath" `
+            --logpath "$LogPath" `
+            --logappend `
+            --bind_ip "$MongoHost" `
+            --port "$MongoPort" `
+            --serviceName "$ServiceName" `
+            --serviceDisplayName "$ServiceDisplayName" `
+            --install
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install managed MongoDB service '$ServiceName'."
+        }
+
+        & sc.exe config $ServiceName start= auto | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to configure managed MongoDB service '$ServiceName' for automatic startup."
+        }
 
         $ServiceInfo = Get-Service -Name $ServiceName -ErrorAction Stop
+        $ServiceConfiguration = Get-CimInstance `
+            Win32_Service `
+            -Filter "Name='$ServiceName'" `
+            -ErrorAction Stop
     }
 
     if ($ServiceInfo.Status -eq "Running") {
@@ -394,6 +524,8 @@ if ($ServiceInfo) {
     Write-Host ""
 
     try {
+        Test-ManagedMongoStartupPrerequisites -ServiceName $ServiceName
+
         Start-Service `
             -Name $ServiceName `
             -ErrorAction Stop
@@ -402,6 +534,7 @@ if ($ServiceInfo) {
         Write-ManagedServiceStartupDiagnostics `
             -Name $ServiceName `
             -ServicePathName $ServiceConfiguration.PathName
+        Invoke-MongoDirectStartupDiagnostics
         throw
     }
 
@@ -424,6 +557,11 @@ if ($ServiceInfo) {
     if (-not $ServiceStarted) {
 
         $Svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+
+        Write-ManagedServiceStartupDiagnostics `
+            -Name $ServiceName `
+            -ServicePathName $ServiceConfiguration.PathName
+        Invoke-MongoDirectStartupDiagnostics
 
         if ($Svc -and $Svc.Status -ne "Running") {
             throw "Managed MongoDB service failed to start. Current status: $($Svc.Status)"
