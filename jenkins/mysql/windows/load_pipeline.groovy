@@ -83,6 +83,25 @@ pipeline {
 
 
     parameters {
+        choice(
+            name: 'SOURCE_TYPE',
+            choices: [
+                'google_drive',
+                'local',
+                's3',
+                'azure_blob',
+                'ftp',
+                'sftp',
+                'api'
+            ],
+            description: 'Select dataset source.'
+    )
+
+        string(
+            name: 'SOURCE_PATH',
+            defaultValue: '',
+            description: 'Dataset location (URL, local path, S3 key, etc.).'
+    )
 
         booleanParam(
             name: 'RUN_ASSESSMENT',
