@@ -291,14 +291,16 @@ pipeline {
                     runTrackedStage(
                         'Download Dataset'
                     ) {
+                        echo "params.SOURCE_TYPE = '${params.SOURCE_TYPE}'"
+                        echo "params.SOURCE_PATH = '${params.SOURCE_PATH}'"
 
                         withEnv([
-    "SOURCE_TYPE=${params.SOURCE_TYPE}",
-    "SOURCE_PATH=${params.SOURCE_PATH}"
-]) {
-
-    bat 'scripts\\batch\\common\\download_dataset.bat'
-}
+                        "SOURCE_TYPE=${params.SOURCE_TYPE}",
+                        "SOURCE_PATH=${params.SOURCE_PATH}"
+    ]) {
+        bat 'set SOURCE'
+        bat 'scripts\\batch\\common\\download_dataset.bat'
+    }
                     }
                 }
             }
