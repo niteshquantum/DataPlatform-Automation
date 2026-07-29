@@ -346,15 +346,20 @@ if ($ServiceInfo) {
         }
 
         for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
-            if (-not (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue)) {
+            $ServiceCheck = Get-CimInstance `
+                Win32_Service `
+                -Filter "Name='$ServiceName'" `
+                -ErrorAction SilentlyContinue
+
+            if (-not $ServiceCheck) {
                 break
             }
 
             Start-Sleep -Seconds 1
         }
 
-        if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
-            throw "Managed MongoDB service '$ServiceName' could not be removed."
+        if (Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue) {
+            throw "Managed MongoDB service '$ServiceName' could not be fully removed."
         }
 
         New-Service `
