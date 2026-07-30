@@ -26,15 +26,46 @@ def configure():
  finally: cur.close(); conn.close()
  conn=connect(c); conn.autocommit=True; cur=conn.cursor()
  try:
-  for role in ('developer','qa','viewer'):
-      
-    cur.execute(sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(db),sql.Identifier(ROLE_NAMES[role])))
-    cur.execute(sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(sql.Identifier(ROLE_NAMES[role])))
-    cur.execute(sql.SQL("GRANT CREATE ON SCHEMA public TO {}").format(sql.Identifier(ROLE_NAMES['developer'])))
-    cur.execute(sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {}").format(sql.Identifier(ROLE_NAMES['developer'])))
-    cur.execute(sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}, {}").format(sql.Identifier(ROLE_NAMES['qa']),sql.Identifier(ROLE_NAMES['viewer'])))
-    cur.execute(sql.SQL("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {}").format(sql.Identifier(ROLE_NAMES['developer'])))
-    cur.execute(sql.SQL("GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO {}, {}").format(sql.Identifier(ROLE_NAMES['developer']),sql.Identifier(ROLE_NAMES['qa'])))
+    for role in ('developer', 'qa', 'viewer'):
+        cur.execute(sql.SQL(
+        "GRANT CONNECT ON DATABASE {} TO {}"
+    ).format(
+        sql.Identifier(db),
+        sql.Identifier(ROLE_NAMES[role])
+    ))
+
+    cur.execute(sql.SQL(
+        "GRANT USAGE ON SCHEMA public TO {}"
+    ).format(
+        sql.Identifier(ROLE_NAMES[role])
+    ))
+
+    cur.execute(sql.SQL(
+        "GRANT CREATE ON SCHEMA public TO {}"
+    ).format(sql.Identifier(ROLE_NAMES['developer'])))
+
+    cur.execute(sql.SQL(
+        "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {}"
+    ).format(sql.Identifier(ROLE_NAMES['developer'])))
+
+    cur.execute(sql.SQL(
+        "GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}, {}"
+    ).format(
+        sql.Identifier(ROLE_NAMES['qa']),
+        sql.Identifier(ROLE_NAMES['viewer'])
+    ))
+
+    cur.execute(sql.SQL(
+        "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {}"
+    ).format(sql.Identifier(ROLE_NAMES['developer'])))
+
+    cur.execute(sql.SQL(
+        "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO {}, {}"
+    ).format(
+        sql.Identifier(ROLE_NAMES['developer']),
+        sql.Identifier(ROLE_NAMES['qa'])
+    ))
+
     cur.execute(sql.SQL("""
     ALTER DEFAULT PRIVILEGES
     FOR ROLE {}
@@ -59,8 +90,17 @@ def configure():
         sql.Identifier(ROLE_NAMES['qa']),
         sql.Identifier(ROLE_NAMES['viewer'])
     ))
-  cur.execute(sql.SQL("ALTER DEFAULT PRIVILEGES FOR ROLE {} IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO {}, {}").format(sql.Identifier(c['POSTGRESQL_USER']),sql.Identifier(ROLE_NAMES['developer']),sql.Identifier(ROLE_NAMES['qa'])))
-  log.info("RBAC configuration PASS")
+
+    cur.execute(sql.SQL(
+        "ALTER DEFAULT PRIVILEGES FOR ROLE {} IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO {}, {}"
+    ).format(
+        sql.Identifier(c['POSTGRESQL_USER']),
+        sql.Identifier(ROLE_NAMES['developer']),
+        sql.Identifier(ROLE_NAMES['qa'])
+    ))
+
+    log.info("RBAC configuration PASS")
+
  finally: cur.close(); conn.close()
 def validate():
  c,u=database_rbac_config(DATABASE); log=get_rbac_logger(DATABASE); outcomes=[]
