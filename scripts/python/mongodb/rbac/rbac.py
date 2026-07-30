@@ -19,10 +19,20 @@ def configure():
  # With --auth, MongoDB's localhost exception permits bootstrap of the first admin user.
  bootstrap=client(c);admin=bootstrap['admin']
  try:
-  command_line = admin.command('getCmdLineOpts')
-  authorization = command_line.get('parsed', {}).get('security', {}).get('authorization')
-  if authorization != 'enabled':
-    raise RuntimeError('MongoDB authorization is not enabled; restart mongod with --auth before configuring RBAC')
+  command_line = admin.command("getCmdLineOpts")
+
+  print("===== MongoDB getCmdLineOpts =====")
+  print(command_line)
+  print("==================================")
+
+  authorization = command_line.get("parsed", {}).get("security", {}).get("authorization")
+
+  print("Authorization =", authorization)
+
+  if authorization != "enabled":
+      raise RuntimeError(
+          f"Authorization check failed. authorization={authorization}, command_line={command_line}"
+      )
 
   info = admin.command('usersInfo', u['admin']['username'])
   if not info.get('users'):
