@@ -22,7 +22,16 @@ def configure():
   command_line = admin.command('getCmdLineOpts')
   authorization = command_line.get('parsed', {}).get('security', {}).get('authorization')
   if authorization != 'enabled':
-   raise RuntimeError('MongoDB authorization is not enabled; restart mongod with --auth before configuring RBAC')
+    raise RuntimeError('MongoDB authorization is not enabled; restart mongod with --auth before configuring RBAC')
+
+  info = admin.command('usersInfo', u['admin']['username'])
+  if not info.get('users'):
+      admin.command(
+            'createUser',
+            u['admin']['username'],
+            pwd=u['admin']['password'],
+            roles=['root']
+        )
   info=admin.command('usersInfo',u['admin']['username'])
   if not info.get('users'): admin.command('createUser',u['admin']['username'],pwd=u['admin']['password'],roles=['root']);log.info('bootstrap admin created')
  finally: bootstrap.close()
