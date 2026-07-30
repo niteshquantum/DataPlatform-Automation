@@ -27,3 +27,13 @@ def get_output_filename(source_type: str,
         return config["DATASET_NAME"]
 
     return config["DATASET_NAME"]
+
+
+
+
+def is_archive_file(file_path: str) -> bool:
+    """
+    Returns True if dataset is a ZIP archive.
+    """
+
+    return Path(file_path).suffix.lower() == ".zip"

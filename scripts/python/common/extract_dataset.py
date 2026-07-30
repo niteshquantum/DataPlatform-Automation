@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -15,6 +16,10 @@ from scripts.python.common.dataset_state import (
     mark_extraction_invalid,
     load_state,
     save_state
+)
+from scripts.python.common.source_utils import (
+    get_output_filename,
+    is_archive_file
 )
 
 
@@ -83,14 +88,36 @@ def extract_dataset():
     config = load_common_config("dataset")
     project_root = get_project_root()
 
+    source_type = (
+        os.getenv("SOURCE_TYPE")
+        or config.get("SOURCE_TYPE")
+    )
+
+    source_path = (
+        os.getenv("SOURCE_PATH")
+        or config.get("SOURCE_PATH")
+    )
+
+    output_filename = get_output_filename(
+        source_type=source_type,
+        source_path=source_path,
+        config=config
+    )
+
     archive_file = (
         project_root /
         config["DOWNLOAD_DIRECTORY"] /
-        config["DATASET_NAME"]
+        output_filename
     )
 
-    validate_zip(archive_file)
+    if not is_archive_file(source_path):
+        print()
+        print("[INFO] Dataset is not a ZIP archive.")
+        print("[INFO] Skipping extraction.")
+        return
 
+    validate_zip(archive_file)
+    
     incoming_path = project_root / "incoming"
     incoming_path.mkdir(parents=True, exist_ok=True)
 
@@ -162,10 +189,34 @@ def verify_dataset():
     project_root = get_project_root()
     incoming = project_root / "incoming"
 
+    source_type = (
+        os.getenv("SOURCE_TYPE")
+        or config.get("SOURCE_TYPE")
+    )
+
+    source_path = (
+        os.getenv("SOURCE_PATH")
+        or config.get("SOURCE_PATH")
+    )
+
+    output_filename = get_output_filename(
+        source_type=source_type,
+        source_path=source_path,
+        config=config
+    )
+    if not is_archive_file(source_path):
+        print()
+        print("=" * 60)
+        print("DATASET VERIFICATION")
+        print("=" * 60)
+        print("[INFO] Non-archive dataset.")
+        print("[INFO] Verification skipped.")
+        return
+
     archive_file = (
         project_root /
         config["DOWNLOAD_DIRECTORY"] /
-        config["DATASET_NAME"]
+        output_filename
     )
 
     print()

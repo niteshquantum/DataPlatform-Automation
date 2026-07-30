@@ -1,33 +1,28 @@
 import os
 from pathlib import Path
 import sys
-import tempfile
-import zipfile
 
+import gdown
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
-from scripts.python.common.source_utils import (
-    get_output_filename
-)
-
-from scripts.python.common.factory.downloader_factory import (
-    get_downloader
-)
 
 from scripts.python.common.config_loader import (
     load_common_config,
     get_project_root
 )
-from scripts.python.common.dataset_state import (
-    build_download_state,
-    mark_download_invalid,
-    reset_state,
-    save_state
+
+from scripts.python.common.factory.downloader_factory import (
+    get_downloader
+)
+from scripts.python.common.source_utils import (
+    get_output_filename,
+    is_archive_file
 )
 
 
 def print_header():
+
     print()
     print("=" * 60)
     print("DATASET DOWNLOAD")
@@ -35,58 +30,32 @@ def print_header():
 
 
 def create_directory(directory: Path):
+
     directory.mkdir(parents=True, exist_ok=True)
-
-
-def validate_zip(path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(f"Downloaded archive not found: {path}")
-    if path.stat().st_size == 0:
-        raise ValueError(f"Downloaded archive is empty: {path}")
-    try:
-        with zipfile.ZipFile(path, "r") as zf:
-            bad = zf.testzip()
-            if bad is not None:
-                raise ValueError(f"Corrupt entry in ZIP: {bad}")
-    except zipfile.BadZipFile as exc:
-        raise ValueError(f"Invalid ZIP file: {path}") from exc
 
 
 def download_dataset():
 
     config = load_common_config("dataset")
-    print("=" * 60)
-    print("ENV SOURCE_TYPE :", os.getenv("SOURCE_TYPE"))
-    print("ENV SOURCE_PATH :", os.getenv("SOURCE_PATH"))
-    print("CONFIG SOURCE_TYPE :", config.get("SOURCE_TYPE"))
-    print("CONFIG SOURCE_PATH :", config.get("SOURCE_PATH"))
-    print("=" * 60)
+
+    project_root = get_project_root()
 
     source_type = (
         os.getenv("SOURCE_TYPE")
         or config.get("SOURCE_TYPE")
     )
 
-    if not source_type:
-        raise ValueError(
-            "SOURCE_TYPE is not configured."
-        )
-
-    downloader = get_downloader(source_type)
-
-    project_root = get_project_root()
-
-    download_directory = (
-        project_root /
-        config["DOWNLOAD_DIRECTORY"]
-    )
-
-    create_directory(download_directory)
-
     source_path = (
         os.getenv("SOURCE_PATH")
         or config.get("SOURCE_PATH")
     )
+
+    database = (
+        os.getenv("DATABASE")
+        or config.get("DATABASE")
+    )
+
+    downloader = get_downloader(source_type)
 
     output_filename = get_output_filename(
         source_type=source_type,
@@ -94,70 +63,99 @@ def download_dataset():
         config=config
     )
 
+    # -------------------------
+    # Decide destination
+    # -------------------------
+
+    if is_archive_file(source_path):
+
+        destination_directory = (
+            project_root /
+            config["DOWNLOAD_DIRECTORY"]
+        )
+
+    else:
+
+        if not database:
+            raise ValueError("DATABASE is required for non-archive datasets.")
+
+        destination_directory = (
+            project_root /
+            "incoming" /
+            database.lower()
+        )
+
+    create_directory(destination_directory)
+
     output_file = (
-        download_directory /
+        destination_directory /
         output_filename
     )
 
-    force = config.get("FORCE_DOWNLOAD", "false").lower() == "true"
+    force = (
+        config.get("FORCE_DOWNLOAD", "false").lower() == "true"
+    )
 
     if output_file.exists() and not force:
+
         print()
         print("[INFO] Dataset already exists:")
         print(output_file)
-        try:
-            validate_zip(output_file)
-            print("[INFO] Existing archive is valid. Skipping download.")
-            return output_file
-        except Exception as exc:
-            print()
-            print(f"[WARNING] Existing archive invalid: {exc}")
-            print("[INFO] Will re-download.")
+
+        return output_file
 
     print()
     print("Downloading dataset...")
     print()
 
-    tmp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            dir=download_directory,
-            delete=False,
-            suffix=".tmp"
-        ) as tmp:
-            tmp_path = Path(tmp.name)
-        downloader.download(
-            config,
-            str(tmp_path)
-        )
-        if output_file.suffix.lower() == ".zip":
-            validate_zip(tmp_path)
+    downloader.download(
+        config,
+        str(output_file)
+    )
 
-        tmp_path.replace(output_file)
+    print()
+    print("[SUCCESS] Dataset downloaded successfully.")
+    print(output_file)
 
-        state = build_download_state(config, output_file)
-        save_state(state)
+    return output_file
 
-        print()
-        print("[SUCCESS] Dataset downloaded successfully.")
-        print(output_file)
+    print()
+    print("Downloading dataset...")
+    print()
 
-        return output_file
+    downloader.download(
+        config,
+        str(output_file)
+    )
 
-    except Exception:
-        if tmp_path and tmp_path.exists():
-            tmp_path.unlink(missing_ok=True)
-        
-        if output_file.suffix.lower() == ".zip":
-            try:
-                validate_zip(output_file)
-            except Exception:
-                output_file.unlink(missing_ok=True)
-        raise
+    print()
+    print("[SUCCESS] Dataset downloaded successfully.")
+    print(output_file)
+
+    return output_file
+
+
+    print()
+    print("Downloading dataset...")
+    print()
+
+    gdown.download(
+        config["DATASET_URL"],
+        str(output_file),
+        quiet=False
+    )
+
+    print()
+    print("[SUCCESS] Dataset downloaded successfully.")
+    print(output_file)
+
+    return output_file
 
 
 def main():
+
     print_header()
+
     download_dataset()
 
 
