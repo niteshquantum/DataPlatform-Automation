@@ -3,12 +3,13 @@ from pathlib import Path
 import sys
 import tempfile
 import zipfile
-from scripts.python.common.source_utils import (
-    get_output_filename
-)
+
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
+from scripts.python.common.source_utils import (
+    get_output_filename
+)
 
 from scripts.python.common.factory.downloader_factory import (
     get_downloader
