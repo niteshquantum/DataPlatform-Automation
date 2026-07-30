@@ -316,7 +316,6 @@ pipeline {
             }
         }
 
-
         stage('Validate MySQL Instance') {
 
             steps {
@@ -333,9 +332,52 @@ pipeline {
             }
         }
 
+        stage('Create Database') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Create Database'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\create_database.bat'
+                    }
+                }
+            }
+        }
+
+        stage('Apply Database Schema') {
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Apply Database Schema'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat'
+                    }
+                }
+            }
+        }
 
         stage('Configure Database RBAC') {
-            steps { script { runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\mysql\\setup\\create_database.bat'; bat 'scripts\\batch\\mysql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat' } } }
+
+            steps {
+
+                script {
+
+                    runTrackedStage(
+                        'Configure Database RBAC'
+                    ) {
+
+                        bat 'scripts\\batch\\mysql\\rbac\\configure_database_rbac.bat'
+                    }
+                }
+            }
         }
 
         stage('Validate Environment') {
@@ -353,8 +395,6 @@ pipeline {
                 }
             }
         }
-    }
-
 
     post {
 
