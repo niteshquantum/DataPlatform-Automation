@@ -70,11 +70,21 @@ REM =====================================
 
 set "MYSQL_EXE=%ROOT%\databases\mysql\server\bin\mysql.exe"
 
-if not exist "%MYSQL_EXE%" (
-echo ERROR: MYSQL CLIENT NOT FOUND
-echo Expected: %MYSQL_EXE%
-exit /b 1
+REM Use project deployment if available
+if exist "%MYSQL_EXE%" goto :MYSQL_FOUND
+
+REM Otherwise use installed MySQL from PATH
+for /f "delims=" %%I in ('where mysql 2^>nul') do (
+    set "MYSQL_EXE=%%I"
+    goto :MYSQL_FOUND
 )
+
+echo ERROR: MYSQL CLIENT NOT FOUND
+exit /b 1
+
+:MYSQL_FOUND
+
+
 
 echo Host     : %MYSQL_HOST%
 echo Port     : %MYSQL_PORT%

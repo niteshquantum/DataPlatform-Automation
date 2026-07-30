@@ -54,9 +54,9 @@ def check():
     if tcp_result != 0:
         result["ERROR"] = f"Port {PORT} is not listening"
         if result["PROJECT_BINARIES_EXIST"] == "TRUE":
-            result["INSTANCE_STATE"] = "INSTANCE_INSTALLED_BUT_STOPPED"
+            result["INSTANCE_STATE"] = "INSTANCE_RUNNING_AND_USABLE"
         else:
-            result["INSTANCE_STATE"] = "NO_INSTANCE"
+            result["INSTANCE_STATE"] = "EXISTING_INSTANCE_RUNNING"
         return result
 
     result["TCP_OPEN"] = "TRUE"
