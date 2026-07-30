@@ -256,15 +256,28 @@ def execute(Map context) {
         // runTrackedStage('Configure Database RBAC') { bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'; bat 'scripts\\batch\\postgresql\\rbac\\configure_database_rbac.bat'; bat 'scripts\\batch\\postgresql\\setup\\run_liquibase.bat' }
         // }
 
+        stage('Create Database') {
+            runTrackedStage('Create Database') {
+                bat 'scripts\\batch\\postgresql\\setup\\create_database.bat'
+            }
+        }
+        stage('Configure PostgreSQL User') {
+            runTrackedStage('Configure PostgreSQL User') {
+                bat 'scripts\\batch\\postgresql\\setup\\configure_postgresql_user.bat'
+            }
+        }
+        stage('Configure Database RBAC') {
+            runTrackedStage('Configure Database RBAC') {
+                bat 'scripts\\batch\\postgresql\\rbac\\configure_database_rbac.bat'
+            }
+        }
+        
+
         stage('Validate Environment') {
-
-    runTrackedStage(
-        'Validate Environment'
-    ) {
-
-        bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
-    }
-}
+            runTrackedStage('Validate Environment') {
+                bat 'scripts\\batch\\postgresql\\setup\\validate_environment.bat'
+            }
+        }
 
 }
 
