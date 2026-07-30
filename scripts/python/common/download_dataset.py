@@ -3,6 +3,9 @@ from pathlib import Path
 import sys
 import tempfile
 import zipfile
+from scripts.python.common.source_utils import (
+    get_output_filename
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
@@ -79,9 +82,20 @@ def download_dataset():
 
     create_directory(download_directory)
 
+    source_path = (
+        os.getenv("SOURCE_PATH")
+        or config.get("SOURCE_PATH")
+    )
+
+    output_filename = get_output_filename(
+        source_type=source_type,
+        source_path=source_path,
+        config=config
+    )
+
     output_file = (
         download_directory /
-        config["DATASET_NAME"]
+        output_filename
     )
 
     force = config.get("FORCE_DOWNLOAD", "false").lower() == "true"
@@ -115,7 +129,8 @@ def download_dataset():
             config,
             str(tmp_path)
         )
-        validate_zip(tmp_path)
+        if output_file.suffix.lower() == ".zip":
+            validate_zip(tmp_path)
 
         tmp_path.replace(output_file)
 
@@ -131,7 +146,8 @@ def download_dataset():
     except Exception:
         if tmp_path and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
-        if output_file.exists():
+        
+        if output_file.suffix.lower() == ".zip":
             try:
                 validate_zip(output_file)
             except Exception:
