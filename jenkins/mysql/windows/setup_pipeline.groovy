@@ -395,6 +395,7 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
 
