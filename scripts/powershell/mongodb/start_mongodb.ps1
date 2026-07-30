@@ -481,6 +481,7 @@ if ($ServiceInfo) {
             --logappend `
             --bind_ip "$MongoHost" `
             --port "$MongoPort" `
+            --auth `
             --serviceName "$ServiceName" `
             --serviceDisplayName "$ServiceDisplayName" `
             --install
@@ -630,7 +631,8 @@ Start-Process `
         "--dbpath", $DataPath,
         "--logpath", $LogPath,
         "--bind_ip", $MongoHost,
-        "--port", $MongoPort
+        "--port", $MongoPort,
+        "--auth"
     ) `
     -WindowStyle Hidden
 
