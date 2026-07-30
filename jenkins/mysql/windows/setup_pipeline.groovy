@@ -348,21 +348,7 @@ pipeline {
             }
         }
 
-        stage('Apply Database Schema') {
-
-            steps {
-
-                script {
-
-                    runTrackedStage(
-                        'Apply Database Schema'
-                    ) {
-
-                        bat 'scripts\\batch\\mysql\\setup\\run_liquibase.bat'
-                    }
-                }
-            }
-        }
+        
 
         stage('Configure Database RBAC') {
 
