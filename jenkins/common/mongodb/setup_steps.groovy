@@ -282,3 +282,4 @@ def execute(Map context) {
             bat 'scripts\\batch\\mongodb\\rbac\\validate_database_rbac.bat'
         }
     }
+}
