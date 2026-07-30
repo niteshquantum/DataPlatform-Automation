@@ -51,11 +51,13 @@ def configure():
                     "THEN CREATE ROLE {i} NOLOGIN; END IF; END $$"
                 ).format(n=sql.Literal(n), i=sql.Identifier(n))
             )
-            cur.execute(
-                sql.SQL("ALTER ROLE {} CREATEROLE CREATEDB").format(
-                    sql.Identifier(ROLE_NAMES["admin"])
-                )
-            )
+            admin_user = u["admin"]["username"]
+
+            cur.execute(sql.SQL(
+                "ALTER ROLE {} WITH LOGIN CREATEDB CREATEROLE"
+            ).format(
+                sql.Identifier(admin_user)
+            ))
 
         for r, x in u.items():
             cur.execute(
