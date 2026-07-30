@@ -247,14 +247,24 @@ def execute(Map context) {
             bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
         }
     }
-    stage('Create MongoDB Database') {
+    stage('Create Collections') {
 
     runTrackedStage(
-        'Create MongoDB Database'
+        'Create Collections'
     ) {
-        bat 'scripts\\batch\\mongodb\\setup\\create_database.bat'
+        bat 'scripts\\batch\\mongodb\\setup\\create_collections.bat'
+        }
     }
-}
+
+    stage('Create Indexes') {
+
+        runTrackedStage(
+            'Create Indexes'
+        ) {
+            bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
+        }
+    }
+
     stage('Configure MongoDB RBAC') {
 
         runTrackedStage(
@@ -272,6 +282,3 @@ def execute(Map context) {
             bat 'scripts\\batch\\mongodb\\rbac\\validate_database_rbac.bat'
         }
     }
-}
-
-return this
