@@ -35,8 +35,17 @@ def configure():
         sql(cursor, f"GRANT SELECT ON `{db}`.* TO `{ROLE_NAMES['viewer']}`")
         for role, credentials in users.items():
             username = credentials["username"]
-            sql(cursor, "CREATE USER IF NOT EXISTS %s@'%%' IDENTIFIED BY %s", (username, credentials["password"]))
-            sql(cursor, "ALTER USER %s@'%%' IDENTIFIED BY %s", (username, credentials["password"]))
+            sql(
+                cursor,
+                f"CREATE USER IF NOT EXISTS `{username}`@'%' IDENTIFIED BY %s",
+                (credentials["password"],)
+            )
+
+            sql(
+                cursor,
+                f"ALTER USER `{username}`@'%' IDENTIFIED BY %s",
+                (credentials["password"],)
+            )
             sql(cursor, "GRANT `%s` TO %s@'%%'" % (ROLE_NAMES[role], "`" + username + "`"))
             sql(cursor, "SET DEFAULT ROLE `%s` TO %s@'%%'" % (ROLE_NAMES[role], "`" + username + "`"))
             log.info("user and role reconciled: %s -> %s", username, ROLE_NAMES[role])
