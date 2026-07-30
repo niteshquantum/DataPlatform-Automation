@@ -46,8 +46,8 @@ def configure():
                 f"ALTER USER `{username}`@'%' IDENTIFIED BY %s",
                 (credentials["password"],)
             )
-            sql(cursor, "GRANT `%s` TO %s@'%%'" % (ROLE_NAMES[role], "`" + username + "`"))
-            sql(cursor, "SET DEFAULT ROLE `%s` TO %s@'%%'" % (ROLE_NAMES[role], "`" + username + "`"))
+            sql(cursor, f"GRANT `{ROLE_NAMES[role]}` TO `{username}`@'%'")
+            sql(cursor, f"SET DEFAULT ROLE `{ROLE_NAMES[role]}` TO `{username}`@'%'")
             log.info("user and role reconciled: %s -> %s", username, ROLE_NAMES[role])
         conn.commit(); log.info("RBAC configuration PASS")
     finally: cursor.close(); conn.close()
@@ -92,6 +92,12 @@ def validate():
     if not all(results): raise SystemExit(1)
 
 def main():
-    args = command_arguments("MySQL RBAC"); configure()
-    if args.command == "validate" or not args.skip_validation: validate()
-if __name__ == "__main__": main()
+    args = command_arguments("MySQL RBAC")
+
+    if args.command == "configure":
+        configure()
+        if not args.skip_validation:
+            validate()
+
+    elif args.command == "validate":
+        validate()
