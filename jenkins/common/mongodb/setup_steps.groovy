@@ -218,7 +218,8 @@ def execute(Map context) {
     }
 
     if (instanceState == 'INSTANCE_INSTALLED_BUT_STOPPED' ||
-        instanceState == 'NO_INSTANCE') {
+        instanceState == 'NO_INSTANCE' ||
+        instanceState == 'INSTANCE_CONFIGURATION_MISMATCH') {
 
         stage('Start MongoDB') {
 

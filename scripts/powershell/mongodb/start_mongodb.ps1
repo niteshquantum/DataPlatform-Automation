@@ -427,12 +427,17 @@ if ($ServiceInfo) {
         [int]$ServicePortMatch.Groups['port'].Value -ne [int]$MongoPort
     $ServiceHasLogAppend = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--logappend(?:\s|$)'
     $ServiceHasService = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--service(?:\s|$)'
+    $ServiceHasAuth = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--auth(?:\s|$)'
     $ServiceUsesCurrentWorkspace = $ServiceExecutable -and
         $ServiceExecutable.Equals($ExpectedMongodPath, [System.StringComparison]::OrdinalIgnoreCase) -and
         $ServiceConfiguration.PathName -match [regex]::Escape($DataPath) -and
         $ServiceConfiguration.PathName -match [regex]::Escape($LogPath)
-    $ServiceNeedsRecreation = -not $ServiceUsesCurrentWorkspace -or
-        $ServiceNeedsPortUpdate -or -not $ServiceHasLogAppend -or -not $ServiceHasService
+    $ServiceNeedsRecreation =
+        -not $ServiceUsesCurrentWorkspace -or
+        $ServiceNeedsPortUpdate -or
+        -not $ServiceHasLogAppend -or
+        -not $ServiceHasService -or
+        -not $ServiceHasAuth
 
     if ($ServiceNeedsRecreation) {
         if ($ServiceNeedsPortUpdate -and $ServicePortMatch.Success) {

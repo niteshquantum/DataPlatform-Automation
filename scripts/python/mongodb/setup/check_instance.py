@@ -133,7 +133,32 @@ def _get_service_status(service_name):
     except Exception:
         return None
 
+def _service_has_auth(service_name):
+    """Return True if Windows service is configured with --auth."""
+    if not service_name:
+        return False
 
+    try:
+        script = (
+            "$svc = Get-CimInstance Win32_Service -Filter \"Name='{0}'\" "
+            "-ErrorAction SilentlyContinue; "
+            "if ($svc) {{ "
+            "  if ($svc.PathName -match '(?i)(?:^|\\s)--auth(?:\\s|$)') {{ 'TRUE' }} "
+            "  else {{ 'FALSE' }} "
+            "}} else {{ 'FALSE' }}"
+        ).format(service_name.replace("'", "''"))
+
+        completed = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        return completed.stdout.strip().upper() == "TRUE"
+
+    except Exception:
+        return False
 import tempfile
 
 # Cache helper script path to avoid rewriting on every call
@@ -260,6 +285,10 @@ def check():
         client.admin.command("ping")
         client.close()
         result["MONGODB_AVAILABLE"] = "TRUE"
+        if not _service_has_auth("MongoDBAutomation"):
+            result["ERROR"] = "Managed MongoDB service is missing --auth."
+            result["INSTANCE_STATE"] = "INSTANCE_INSTALLED_BUT_STOPPED"
+            return result
     except PyMongoError as e:
         result["ERROR"] = str(e)
         if result["PROJECT_BINARIES_EXIST"] == "TRUE":
