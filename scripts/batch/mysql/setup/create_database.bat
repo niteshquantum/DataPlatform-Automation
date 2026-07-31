@@ -64,22 +64,18 @@ echo ERROR: MYSQL_USER NOT DEFINED
 exit /b 1
 )
 
-
-
 REM =====================================
 REM MYSQL CLIENT
 REM =====================================
 
-set "MYSQL_EXE=%ROOT%\databases\mysql\server\bin\mysql.exe"
-
-if not exist "%MYSQL_EXE%" (
+where mysql >nul 2>&1
+if errorlevel 1 (
     echo ERROR: MYSQL CLIENT NOT FOUND
-    echo Expected:
-    echo %MYSQL_EXE%
+    echo Expected: mysql (on System PATH^)
     exit /b 1
 )
-echo MySQL Client : %MYSQL_EXE%
-echo.
+
+set "MYSQL_EXE=mysql"
 
 echo Host     : %MYSQL_HOST%
 echo Port     : %MYSQL_PORT%
