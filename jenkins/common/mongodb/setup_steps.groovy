@@ -148,7 +148,7 @@ def execute(Map context) {
         }
     }
 
-    stage('Check MongoDB Instance') {
+     stage('Check MongoDB Instance') {
 
         runTrackedStage(
             'Check MongoDB Instance'
@@ -248,23 +248,10 @@ def execute(Map context) {
             bat 'scripts\\batch\\mongodb\\setup\\validate_mongodb.bat'
         }
     }
-    stage('Create Collections') {
 
-    runTrackedStage(
-        'Create Collections'
-    ) {
-        bat 'scripts\\batch\\mongodb\\setup\\create_collections.bat'
-        }
-    }
-
-    stage('Create Indexes') {
-
-        runTrackedStage(
-            'Create Indexes'
-        ) {
-            bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
-        }
-    }
+    // ============================
+    // Configure RBAC FIRST
+    // ============================
 
     stage('Configure MongoDB RBAC') {
 
@@ -283,5 +270,28 @@ def execute(Map context) {
             bat 'scripts\\batch\\mongodb\\rbac\\validate_database_rbac.bat'
         }
     }
+
+    // ============================
+    // Create Collections & Indexes
+    // ============================
+
+    stage('Create Collections') {
+
+        runTrackedStage(
+            'Create Collections'
+        ) {
+            bat 'scripts\\batch\\mongodb\\setup\\create_collections.bat'
+        }
+    }
+
+    stage('Create Indexes') {
+
+        runTrackedStage(
+            'Create Indexes'
+        ) {
+            bat 'scripts\\batch\\mongodb\\setup\\create_indexes.bat'
+        }
+    }
 }
+
 return this
