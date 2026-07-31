@@ -5,14 +5,12 @@ MongoDB Generic Data Loader
 Automatically loads CSV and JSON files from incoming/ into MongoDB collections
 using dynamic collection naming and parameterless inserts.
 """
-import platform
 import csv
 import json
 import sys
 import logging
 from datetime import datetime
 from pathlib import Path
-import sys
 
 try:
     import pandas as pd
@@ -26,6 +24,11 @@ except ImportError:
     MongoClient = None
     PyMongoError = None
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from scripts.python.mongodb.setup.config_loader import load_config  # noqa: E402
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -36,38 +39,25 @@ logger = logging.getLogger(__name__)
 HISTORY_FILE = 'metadata/data_load_history.jsonl'
 
 
-def load_config(config_path):
-    """Load MongoDB configuration from file."""
-    config = {}
-    try:
-        if config_path.exists():
-            with open(config_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
-                        continue
-                    if '=' in line:
-                        key, value = line.split('=', 1)
-                        config[key.strip()] = value.strip()
-        return config
-    except Exception as e:
-        logger.error(f"Error reading config file {config_path}: {e}")
-        return {}
-
-
 def connect_mongodb(config):
     """Connect to MongoDB using configuration."""
     try:
         if MongoClient is None:
             raise ImportError('pymongo is not installed')
 
-        host = config.get('MONGODB_HOST', 'localhost')
-        port = int(config.get('MONGODB_PORT', 27017))
-        database = config.get('MONGODB_DATABASE', 'test')
+        host = config["MONGODB_HOST"]
+        port = int(config["MONGODB_PORT"])
+        database = config["MONGODB_DATABASE"]
 
         logger.info(f"Connecting to MongoDB at {host}:{port}/{database}")
 
-        client = MongoClient(host, port, serverSelectionTimeoutMS=5000)
+        client = MongoClient(
+            host=config["MONGODB_HOST"],
+            port=int(config["MONGODB_PORT"]),
+            username=config["RBAC_ADMIN_USERNAME"],
+            password=config["RBAC_ADMIN_PASSWORD"],
+            authSource="admin",
+        )
         # Verify connection
         client.admin.command('ping')
 
@@ -306,26 +296,10 @@ def main():
     """Main function to load all files from incoming/ into MongoDB."""
     logger.info('Starting MongoDB data loader...')
 
-    project_root = Path(__file__).resolve().parent.parent
+    project_root = ROOT
     incoming_dir = project_root / "incoming" / "mongodb"
     archive_dir = project_root / "archive" / "mongodb"
     failed_dir = project_root / "failed" / "mongodb"
-
-
-    if platform.system() == "Windows":
-        config_path = (
-            project_root
-            / "config"
-            / "windows"
-            / "mongodb.conf"
-        )
-    else:
-        config_path = (
-            project_root
-            / "config"
-            / "ubuntu"
-            / "mongodb.conf"
-        )
 
     # Verify incoming directory exists
     if not incoming_dir.exists():
@@ -333,7 +307,7 @@ def main():
         sys.exit(1)
 
     # Load MongoDB configuration
-    config = load_config(config_path)
+    config = load_config()
     if not config:
         logger.error('No MongoDB configuration found')
         sys.exit(1)
