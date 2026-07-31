@@ -1,14 +1,25 @@
 from pathlib import Path
 import sys
 
+from pymongo import MongoClient
+
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT))
 
-from scripts.python.mongodb.setup.db_connection import get_db  # noqa: E402
+from scripts.python.mongodb.setup.config_loader import load_config  # noqa: E402
 
 
 def main():
-    db = get_db()
+    config = load_config()
+
+    client = MongoClient(
+        host=config["MONGODB_HOST"],
+        port=int(config["MONGODB_PORT"]),
+        username=config["RBAC_ADMIN_USERNAME"],
+        password=config["RBAC_ADMIN_PASSWORD"],
+        authSource="admin",
+    )
+    db = client[config["MONGODB_DATABASE"]]
 
     print("=" * 50)
     print("MONGODB INDEX VALIDATION")
@@ -32,6 +43,8 @@ def main():
     print("=" * 50)
     print("MONGODB INDEX VALIDATION COMPLETED")
     print("=" * 50)
+
+    client.close()
 
 
 if __name__ == "__main__":
