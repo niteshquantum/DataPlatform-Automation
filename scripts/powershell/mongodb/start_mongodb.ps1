@@ -511,7 +511,12 @@ if ($ServiceInfo) {
         if (Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue) {
             throw "Managed MongoDB service '$ServiceName' could not be fully removed."
         }
+        Write-Host "MongodExe : $MongodExe"
+        Write-Host "Exists    : $(Test-Path -LiteralPath $MongodExe)"
 
+        if (-not (Test-Path -LiteralPath $MongodExe)) {
+            throw "mongod.exe not found: $MongodExe"
+        }
         & $MongodExe `
             --dbpath "$DataPath" `
             --logpath "$LogPath" `
