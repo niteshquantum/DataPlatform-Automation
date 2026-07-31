@@ -294,7 +294,8 @@ pipeline {
 
                 withEnv([
                     "SOURCE_TYPE=${params.SOURCE_TYPE}",
-                    "SOURCE_PATH=${params.SOURCE_PATH}"
+                    "SOURCE_PATH=${params.SOURCE_PATH}",
+                    "DATABASE=mysql"
                 ]) {
 
                     bat 'scripts\\batch\\common\\download_dataset.bat'
