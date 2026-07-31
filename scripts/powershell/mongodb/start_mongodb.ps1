@@ -397,7 +397,12 @@ if ($Listener) {
     if ($ServiceConfiguration) {
 
         $ServiceHasAuth = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--auth(?:\s|$)'
-
+        Write-Host ""
+        Write-Host "===== SERVICE DEBUG ====="
+        Write-Host "Service PathName : $($ServiceConfiguration.PathName)"
+        Write-Host "ServiceHasAuth   : $ServiceHasAuth"
+        Write-Host "========================="
+        Write-Host ""
         if (-not $ServiceHasAuth) {
 
             Write-Host ""
