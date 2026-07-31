@@ -387,11 +387,38 @@ if ($Listener) {
         throw "Foreign process detected on MongoDB port $MongoPort. Expected project-managed mongod at: $ExpectedMongodPath"
     }
 
-    Write-Host ""
-    Write-Host "Project-managed MongoDB already running on port $MongoPort"
-    Write-Host ""
+    $ServiceName = "MongoDBAutomation"
 
-    exit 0
+    $ServiceConfiguration = Get-CimInstance `
+        Win32_Service `
+        -Filter "Name='$ServiceName'" `
+        -ErrorAction SilentlyContinue
+
+    if ($ServiceConfiguration) {
+
+        $ServiceHasAuth = $ServiceConfiguration.PathName -match '(?i)(?:^|\s)--auth(?:\s|$)'
+
+        if (-not $ServiceHasAuth) {
+
+            Write-Host ""
+            Write-Host "Managed service is missing --auth."
+            Write-Host "Stopping existing MongoDB so service can be recreated..."
+            Write-Host ""
+
+            Stop-Process -Id $OwnerProcessId -Force
+
+            Start-Sleep -Seconds 3
+        }
+        else {
+
+            Write-Host ""
+            Write-Host "Project-managed MongoDB already running on port $MongoPort"
+            Write-Host ""
+
+            exit 0
+        }
+    }
+
 }
 
 # =====================================
