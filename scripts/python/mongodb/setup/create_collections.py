@@ -1,7 +1,6 @@
 from pathlib import Path
 import json
 import sys
-
 from pymongo import MongoClient
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -29,6 +28,7 @@ def collection_names():
 
 def main():
     config = load_config()
+
     client = MongoClient(
         host=config["MONGODB_HOST"],
         port=int(config["MONGODB_PORT"]),
@@ -36,6 +36,7 @@ def main():
         password=config["RBAC_ADMIN_PASSWORD"],
         authSource="admin",
     )
+
     db = client[config["MONGODB_DATABASE"]]
     existing = set(db.list_collection_names())
 
@@ -47,12 +48,15 @@ def main():
         if name in existing:
             print(f"[OK] Collection already exists: {name}")
             continue
+
         db.create_collection(name)
         print(f"[OK] Collection created: {name}")
 
     print("=" * 50)
     print("MONGODB COLLECTION CREATION COMPLETED")
     print("=" * 50)
+
+    client.close()
 
 
 if __name__ == "__main__":
