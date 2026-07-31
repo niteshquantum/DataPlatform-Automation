@@ -16,36 +16,42 @@ def client(c,user=None,password=None):
 def configure():
  c,u=database_rbac_config(DATABASE);log=get_rbac_logger(DATABASE)
  if c.get('RBAC_ENABLED','true').lower()=='false':log.info('RBAC disabled by configuration');return
- # With --auth, MongoDB's localhost exception permits bootstrap of the first admin user.
- bootstrap=client(c);admin=bootstrap['admin']
- try:
-  command_line = admin.command("getCmdLineOpts")
-
-  print("===== MongoDB getCmdLineOpts =====")
-  print(command_line)
-  print("==================================")
-
-  authorization = command_line.get("parsed", {}).get("security", {}).get("authorization")
-
-  print("Authorization =", authorization)
-
-  if authorization != "enabled":
-      raise RuntimeError(
-          f"Authorization check failed. authorization={authorization}, command_line={command_line}"
-      )
-
-  info = admin.command('usersInfo', u['admin']['username'])
-  if not info.get('users'):
-      admin.command(
-            'createUser',
-            u['admin']['username'],
-            pwd=u['admin']['password'],
-            roles=['root']
-        )
-  info=admin.command('usersInfo',u['admin']['username'])
-  if not info.get('users'): admin.command('createUser',u['admin']['username'],pwd=u['admin']['password'],roles=['root']);log.info('bootstrap admin created')
- finally: bootstrap.close()
  x=client(c,u['admin']['username'],u['admin']['password']);a=x['admin'];db=c['MONGODB_DATABASE']
+ try:
+  a.command('usersInfo',u['admin']['username'])
+ except OperationFailure as auth_error:
+  x.close()
+  if auth_error.code != 18: raise
+  # With --auth, MongoDB's localhost exception permits bootstrap of the first admin user.
+  bootstrap=client(c);admin=bootstrap['admin']
+  try:
+   info=admin.command('usersInfo',u['admin']['username'])
+  except OperationFailure as bootstrap_error:
+   bootstrap.close()
+   if bootstrap_error.code == 13: raise auth_error
+   raise
+  if info.get('users'):
+   bootstrap.close()
+   raise auth_error
+  try:
+   command_line = admin.command("getCmdLineOpts")
+
+   print("===== MongoDB getCmdLineOpts =====")
+   print(command_line)
+   print("==================================")
+
+   authorization = command_line.get("parsed", {}).get("security", {}).get("authorization")
+
+   print("Authorization =", authorization)
+
+   if authorization != "enabled":
+       raise RuntimeError(
+           f"Authorization check failed. authorization={authorization}, command_line={command_line}"
+       )
+
+   admin.command('createUser',u['admin']['username'],pwd=u['admin']['password'],roles=['root']);log.info('bootstrap admin created')
+  finally: bootstrap.close()
+  x=client(c,u['admin']['username'],u['admin']['password']);a=x['admin']
  role_specs={
   'developer': [{'resource':{'db':db,'collection':''},'actions':['find','insert','update','remove','createCollection','createIndex','dropIndex','collMod']}],
   'qa': [{'resource':{'db':db,'collection':''},'actions':['find']}],
