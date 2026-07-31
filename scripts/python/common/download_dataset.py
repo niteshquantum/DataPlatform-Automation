@@ -87,10 +87,18 @@ def download_dataset():
 
     create_directory(destination_directory)
 
-    output_file = (
-        destination_directory /
-        output_filename
-    )
+    source = Path(source_path)
+
+    if source.is_dir():
+
+        output_file = destination_directory
+
+    else:
+
+        output_file = (
+            destination_directory /
+            output_filename
+        )
 
     force = (
         config.get("FORCE_DOWNLOAD", "false").lower() == "true"
@@ -119,37 +127,7 @@ def download_dataset():
 
     return output_file
 
-    print()
-    print("Downloading dataset...")
-    print()
 
-    downloader.download(
-        config,
-        str(output_file)
-    )
-
-    print()
-    print("[SUCCESS] Dataset downloaded successfully.")
-    print(output_file)
-
-    return output_file
-
-
-    print()
-    print("Downloading dataset...")
-    print()
-
-    gdown.download(
-        config["DATASET_URL"],
-        str(output_file),
-        quiet=False
-    )
-
-    print()
-    print("[SUCCESS] Dataset downloaded successfully.")
-    print(output_file)
-
-    return output_file
 
 
 def main():
