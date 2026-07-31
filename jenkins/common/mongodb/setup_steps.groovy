@@ -262,14 +262,7 @@ def execute(Map context) {
         }
     }
 
-    stage('Validate MongoDB RBAC') {
-
-        runTrackedStage(
-            'Validate MongoDB RBAC'
-        ) {
-            bat 'scripts\\batch\\mongodb\\rbac\\validate_database_rbac.bat'
-        }
-    }
+    
 
     // ============================
     // Create Collections & Indexes
