@@ -103,14 +103,15 @@ def download_dataset():
     force = (
         config.get("FORCE_DOWNLOAD", "false").lower() == "true"
     )
+    if source.is_file():
 
-    if output_file.exists() and not force:
+        if output_file.exists() and not force:
 
-        print()
-        print("[INFO] Dataset already exists:")
-        print(output_file)
+            print()
+            print("[INFO] Dataset already exists:")
+            print(output_file)
 
-        return output_file
+            return output_file
 
     print()
     print("Downloading dataset...")
