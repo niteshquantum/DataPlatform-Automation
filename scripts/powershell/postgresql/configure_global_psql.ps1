@@ -112,18 +112,6 @@ $InstanceWrapperPath = Join-Path $GlobalDirectory $InstanceWrapperName
 $GlobalCommand = "$GlobalDirectory\psql.cmd"
 
 $CommandContent = @"
-# @echo off
-
-# set "PGPASSWORD=$PgPassword"
-
-# "$PsqlExe" ^
-# --host="$PgHost" ^
-# --port="$PgPort" ^
-# --username="$PgUser" ^
-# --dbname="$PgDatabase" %*
-
-# set "PGPASSWORD="
-# "@
 
 @echo off
 
