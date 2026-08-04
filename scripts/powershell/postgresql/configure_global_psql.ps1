@@ -132,18 +132,32 @@ if (!(Test-Path $GlobalCommand)) {
     throw "Global psql command creation failed"
 }
 
+# $MachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+# $PathEntries = $MachinePath -split ";"
+# if ($PathEntries -notcontains $GlobalDirectory) {
+#     Write-Host ""
+#     Write-Host "Adding psql command directory to System PATH..."
+#     $NewPath = $MachinePath.TrimEnd(";") + ";" + $GlobalDirectory
+#     [Environment]::SetEnvironmentVariable("Path", $NewPath, "Machine")
+# }
+# else {
+#     Write-Host ""
+#     Write-Host "psql command directory already exists in System PATH"
+# }
+
 $MachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 $PathEntries = $MachinePath -split ";"
-if ($PathEntries -notcontains $GlobalDirectory) {
-    Write-Host ""
-    Write-Host "Adding psql command directory to System PATH..."
-    $NewPath = $MachinePath.TrimEnd(";") + ";" + $GlobalDirectory
-    [Environment]::SetEnvironmentVariable("Path", $NewPath, "Machine")
+
+if ($PathEntries -contains $GlobalDirectory) {
+    $PathEntries = $PathEntries | Where-Object { $_ -ne $GlobalDirectory }
 }
-else {
-    Write-Host ""
-    Write-Host "psql command directory already exists in System PATH"
-}
+
+Write-Host ""
+Write-Host "Adding psql command directory to the beginning of System PATH..."
+
+$NewPath = "$GlobalDirectory;" + ($PathEntries -join ";")
+
+[Environment]::SetEnvironmentVariable("Path", $NewPath, "Machine")
 
 Write-Host ""
 Write-Host "====================================="
