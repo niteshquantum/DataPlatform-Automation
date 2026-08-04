@@ -113,7 +113,21 @@ $UserExists = ($UserExistsOutput -replace '[^\d]', '')
 if ([int]$UserExists -gt 0) {
 
     Write-Host "User '$PgUser' already exists."
-    Write-Host "Skipping user creation."
+    Write-Host "Updating password..."
+
+    $env:PGPASSWORD = $PgPassword
+
+    & $PsqlExe `
+        --host="$PgHost" `
+        --port="$PgPort" `
+        --username=postgres `
+        --dbname="postgres" `
+        --command="ALTER USER ""${PgUser}"" WITH PASSWORD '${PgPassword}';" `
+        2>&1 | Out-Null
+
+    $env:PGPASSWORD = $null
+
+    Write-Host "Password updated successfully."
 
 }
 else {
