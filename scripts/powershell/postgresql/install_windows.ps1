@@ -76,11 +76,12 @@ if ($BinReady -and $DataReady) {
 
     exit 0
 }
-
 # ---- If binaries exist but data not initialized, go straight to initdb ----
 
 if ($BinReady -and !$DataReady) {
-
+    
+    $PwFile = Join-Path $env:TEMP "postgres_password.txt"
+    Set-Content -Path $PwFile -Value $PgPassword -Encoding ASCII
     Write-Log "Binaries found but data directory not initialized - running initdb..."
 
     New-Item -ItemType Directory -Path $PgProjectData -Force | Out-Null
@@ -88,13 +89,18 @@ if ($BinReady -and !$DataReady) {
     $env:PATH = "$PgProjectBin;$env:PATH"
 
     & (Join-Path $PgProjectBin "initdb.exe") `
-        -D "$PgProjectData" `
-        -U postgres `
-        --encoding=UTF8
+    -D "$PgProjectData" `
+    -U postgres `
+    --pwfile="$PwFile" `
+    --auth=scram-sha-256 `
+    --encoding=UTF8
 
     if ($LASTEXITCODE -ne 0) {
+        Remove-Item $PwFile -Force -ErrorAction SilentlyContinue
         throw "initdb failed with exit code $LASTEXITCODE"
     }
+
+    Remove-Item $PwFile -Force -ErrorAction SilentlyContinue
 
     $PgConfFile = Join-Path $PgProjectData "postgresql.conf"
 
