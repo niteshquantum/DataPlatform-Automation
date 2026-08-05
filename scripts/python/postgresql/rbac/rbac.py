@@ -108,7 +108,12 @@ def configure():
     conn.autocommit = True
     cur = conn.cursor()
     try:
-        for role in ("developer", "qa", "viewer"):
+        for role in ("admin", "developer", "qa", "viewer"):
+            cur.execute(
+                sql.SQL("GRANT CREATE ON SCHEMA public TO {}").format(
+                    sql.Identifier(ROLE_NAMES["admin"])
+                )
+            )
             cur.execute(
                 sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
                     sql.Identifier(db), sql.Identifier(ROLE_NAMES[role])
