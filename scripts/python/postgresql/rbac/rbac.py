@@ -138,9 +138,18 @@ def configure():
         )
 
         cur.execute(
-            sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}, {}").format(
-                sql.Identifier(ROLE_NAMES["qa"]),
-                sql.Identifier(ROLE_NAMES["viewer"]),
+            sql.SQL(
+                "GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO {}"
+            ).format(
+                sql.Identifier(ROLE_NAMES["qa"])
+            )
+        )
+
+        cur.execute(
+            sql.SQL(
+                "GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}"
+            ).format(
+                sql.Identifier(ROLE_NAMES["viewer"])
             )
         )
 
@@ -177,12 +186,25 @@ def configure():
                 ALTER DEFAULT PRIVILEGES
                 FOR ROLE {}
                 IN SCHEMA public
-                GRANT SELECT
+                GRANT SELECT, INSERT, UPDATE
                 ON TABLES
-                TO {}, {}
+                TO {}
             """).format(
                 sql.Identifier(developer_user),
                 sql.Identifier(ROLE_NAMES["qa"]),
+            )
+        )
+
+        cur.execute(
+            sql.SQL("""
+                ALTER DEFAULT PRIVILEGES
+                FOR ROLE {}
+                IN SCHEMA public
+                GRANT SELECT
+                ON TABLES
+                TO {}
+            """).format(
+                sql.Identifier(developer_user),
                 sql.Identifier(ROLE_NAMES["viewer"]),
             )
         )
