@@ -151,46 +151,47 @@ def configure():
                 sql.Identifier(ROLE_NAMES["qa"]),
             )
         )
-
+        developer_user = u["developer"]["username"]
+        
         cur.execute(
-            sql.SQL(
-                """
+            sql.SQL("""
                 ALTER DEFAULT PRIVILEGES
                 FOR ROLE {}
                 IN SCHEMA public
                 GRANT SELECT, INSERT, UPDATE, DELETE
                 ON TABLES
                 TO {}
-                """
-            ).format(
-                sql.Identifier(ROLE_NAMES["developer"]),
+            """).format(
+                sql.Identifier(developer_user),
                 sql.Identifier(ROLE_NAMES["developer"]),
             )
         )
 
         cur.execute(
-            sql.SQL(
-                """
+            sql.SQL("""
                 ALTER DEFAULT PRIVILEGES
                 FOR ROLE {}
                 IN SCHEMA public
                 GRANT SELECT
                 ON TABLES
                 TO {}, {}
-                """
-            ).format(
-                sql.Identifier(ROLE_NAMES["developer"]),
+            """).format(
+                sql.Identifier(developer_user),
                 sql.Identifier(ROLE_NAMES["qa"]),
                 sql.Identifier(ROLE_NAMES["viewer"]),
             )
         )
 
         cur.execute(
-            sql.SQL(
-                "ALTER DEFAULT PRIVILEGES FOR ROLE {} IN SCHEMA public "
-                "GRANT EXECUTE ON FUNCTIONS TO {}, {}"
-            ).format(
-                sql.Identifier(c["POSTGRESQL_USER"]),
+            sql.SQL("""
+                ALTER DEFAULT PRIVILEGES
+                FOR ROLE {}
+                IN SCHEMA public
+                GRANT EXECUTE
+                ON FUNCTIONS
+                TO {}, {}
+            """).format(
+                sql.Identifier(developer_user),
                 sql.Identifier(ROLE_NAMES["developer"]),
                 sql.Identifier(ROLE_NAMES["qa"]),
             )
