@@ -280,7 +280,20 @@ def validate():
     check("developer can delete", True, "developer", "DELETE FROM public.dp_rbac_validation_tmp WHERE id=2")
     check("developer cannot manage users", False, "developer", "CREATE ROLE dp_denied LOGIN")
     check("qa can read", True, "qa", "SELECT * FROM public.dp_rbac_validation_tmp")
-    check("qa cannot write", False, "qa", "INSERT INTO public.dp_rbac_validation_tmp VALUES (1)")
+    check("qa can insert", True, "qa",
+      "INSERT INTO public.dp_rbac_validation_tmp VALUES (1)")
+    check(
+    "qa can update",
+    True,
+    "qa",
+    "UPDATE public.dp_rbac_validation_tmp SET id=3 WHERE id=1"
+        )
+    check(
+    "qa cannot delete",
+    False,
+    "qa",
+    "DELETE FROM public.dp_rbac_validation_tmp WHERE id=3"
+        )
     check("viewer can read", True, "viewer", "SELECT * FROM public.dp_rbac_validation_tmp")
     check("viewer cannot insert", False, "viewer", "INSERT INTO public.dp_rbac_validation_tmp VALUES (1)")
     check("viewer cannot modify schema", False, "viewer", "ALTER TABLE public.dp_rbac_validation_tmp ADD COLUMN x integer")
